@@ -6,6 +6,7 @@ import { CustomerRoutes } from './modules/customer/routes/CustomerRoutes';
 import { SalonProvider } from './modules/salon/context/SalonContext';
 import { SalonRoutes } from './modules/salon/routes/SalonRoutes';
 import { DevPanel } from './shared/components/DevPanel';
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
 
 function App() {
   return (
@@ -13,26 +14,33 @@ function App() {
     // (see shared/store/AppDataProvider.jsx) — CustomerProvider and
     // SalonProvider below are now thin, module-specific views over it
     // rather than independent state of their own.
-    <AppDataProvider>
-      <BrowserRouter>
-        <CustomerProvider>
-          <SalonProvider>
-            <Routes>
-              {/* Customer Module Routes */}
-              <Route path="/customer/*" element={<CustomerRoutes />} />
+    //
+    // ErrorBoundary is the outermost element so a render crash anywhere
+    // in either app shows a recoverable screen instead of a blank page —
+    // found necessary during testing when a timestamp-vs-Date mismatch in
+    // the slot-hold countdown crashed checkout to white.
+    <ErrorBoundary>
+      <AppDataProvider>
+        <BrowserRouter>
+          <CustomerProvider>
+            <SalonProvider>
+              <Routes>
+                {/* Customer Module Routes */}
+                <Route path="/customer/*" element={<CustomerRoutes />} />
 
-              {/* Salon Partner Module Routes */}
-              <Route path="/salon/*" element={<SalonRoutes />} />
+                {/* Salon Partner Module Routes */}
+                <Route path="/salon/*" element={<SalonRoutes />} />
 
-              {/* Root redirect to Customer App */}
-              <Route path="/" element={<Navigate to="/customer" replace />} />
-              <Route path="*" element={<Navigate to="/customer" replace />} />
-            </Routes>
-            <DevPanel />
-          </SalonProvider>
-        </CustomerProvider>
-      </BrowserRouter>
-    </AppDataProvider>
+                {/* Root redirect to Customer App */}
+                <Route path="/" element={<Navigate to="/customer" replace />} />
+                <Route path="*" element={<Navigate to="/customer" replace />} />
+              </Routes>
+              <DevPanel />
+            </SalonProvider>
+          </CustomerProvider>
+        </BrowserRouter>
+      </AppDataProvider>
+    </ErrorBoundary>
   );
 }
 

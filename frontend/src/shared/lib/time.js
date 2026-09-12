@@ -108,7 +108,13 @@ export const nowMinutesOfDay = (date = new Date()) => date.getHours() * 60 + dat
 
 export const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60000);
 
-export const msUntil = (date) => Math.max(0, date.getTime() - Date.now());
+// Accepts either a Date or a raw epoch-ms timestamp — holds store
+// `expiresAt` as a plain number (Date.now() + ttl), and HoldCountdown
+// passes that straight through, so this must handle both.
+export const msUntil = (date) => {
+  const target = date instanceof Date ? date.getTime() : date;
+  return Math.max(0, target - Date.now());
+};
 
 export const formatCountdown = (ms) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));

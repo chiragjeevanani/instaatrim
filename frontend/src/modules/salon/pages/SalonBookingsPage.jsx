@@ -184,10 +184,10 @@ export const SalonBookingsPage = () => {
                       </div>
                     ))}
                     <div className="border-t border-stone-200/70 pt-1.5 flex justify-between items-center text-[11.5px] text-stone-900">
-                      <span className="text-[10.5px] text-stone-500 font-normal">
-                        Total ({b.paymentMethod}):
+                      <span className="text-[10px] text-stone-500 font-normal truncate pr-2">
+                        {b.paymentMethod}
                       </span>
-                      <span className="font-bold text-rose-900">₹{b.totalAmount}</span>
+                      <span className="font-bold text-rose-900 shrink-0">₹{b.totalAmount}</span>
                     </div>
                   </div>
 

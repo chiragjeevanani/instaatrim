@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { requestCurrentPosition, nearestKnownLocality } from '../../../shared/lib/geo';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Search, Navigation, Loader2, MapPinOff, Plus, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Search, Navigation, Loader2, MapPinOff, Plus, CheckCircle2, MapPin } from 'lucide-react';
 
 // SRS §6.2 fix: this page used to be titled "Add Address" while having no
 // way to add one — "Use Current Location" just assigned a hardcoded mock
@@ -262,6 +262,16 @@ export const AddressLocationPage = () => {
               ))
             )}
           </div>
+        </div>
+
+        {/* Decorative footer strip — keeps the page from ending in bare empty space when the address list is short */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 py-8 text-center min-h-[140px]">
+          <div className="w-11 h-11 rounded-2xl bg-white/70 border border-purple-200/60 flex items-center justify-center shadow-xs">
+            <MapPin className="w-5 h-5 text-brand-maroon" />
+          </div>
+          <p className="text-[11px] text-stone-500 max-w-[220px] leading-relaxed">
+            We use your address to show salons that are actually nearby and estimate accurate travel time.
+          </p>
         </div>
       </div>
     </motion.div>

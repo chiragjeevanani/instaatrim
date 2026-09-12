@@ -35,7 +35,7 @@ export const CheckoutPage = () => {
   } = useCustomer();
   const { state } = useAppData();
 
-  const [paymentMethod, setPaymentMethod] = useState('UPI (Google Pay)');
+  const [paymentMethod, setPaymentMethod] = useState('UPI (Google Pay / PhonePe)');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [holdExpired, setHoldExpired] = useState(false);

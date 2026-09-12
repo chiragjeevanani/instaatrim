@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bug, X, Wifi, WifiOff, Turtle } from 'lucide-react';
 import { getLatencySettings, setLatencySettings } from '../services/latency';
 
 // Floating dev-only control for exercising loading/error/offline states
-// without touching code. Not part of any SRS clause — it exists so the
-// "build the failure path first" convention (Phase 6) is actually testable
-// by whoever is reviewing the build, not just by the code that uses it.
+// without touching code. Hidden by default — a floating bug icon has no
+// place in a client demo — and surfaced only via a deliberate trigger:
+// press Ctrl+Shift+D, or open the app with ?dev=1 in the URL.
 export const DevPanel = () => {
+  const [enabled, setEnabled] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('dev') === '1'
+  );
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(getLatencySettings());
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        setEnabled((v) => !v);
+        setOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  if (!enabled) return null;
 
   const apply = (patch) => {
     setLatencySettings(patch);
@@ -65,7 +81,7 @@ export const DevPanel = () => {
           </div>
 
           <p className="text-[10px] text-stone-500 leading-snug pt-1 border-t border-stone-700">
-            Simulates API conditions client-side. Not shipped to end users.
+            Simulates API conditions client-side. Not shipped to end users. Ctrl+Shift+D to hide.
           </p>
         </div>
       ) : (

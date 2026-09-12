@@ -115,7 +115,7 @@ export const SalonServicesPage = () => {
                   <img
                     src={service.image}
                     alt={service.name}
-                    className="w-15 h-15 rounded-xl object-cover bg-stone-100 shrink-0"
+                    className="w-16 h-16 rounded-xl object-cover bg-stone-100 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
@@ -185,7 +185,7 @@ export const SalonServicesPage = () => {
                     </span>
                     <button
                       onClick={() => toggleServiceActive(service.id)}
-                      className={`w-8 h-4.5 rounded-full p-0.5 transition-colors cursor-pointer relative shadow-inner ${
+                      className={`w-8 h-[18px] rounded-full p-0.5 transition-colors cursor-pointer relative shadow-inner ${
                         service.isActive ? 'bg-rose-900' : 'bg-stone-300'
                       }`}
                     >

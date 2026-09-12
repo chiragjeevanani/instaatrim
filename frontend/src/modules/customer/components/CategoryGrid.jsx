@@ -52,7 +52,7 @@ export const CategoryGrid = () => {
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.92 }}
             onClick={() => navigate('/customer/trends')}
-            className="w-13 h-13 p-1.5 bg-[#1e2329] text-white rounded-2xl shadow-md border border-stone-700/60 flex flex-col items-center justify-center transition-transform cursor-pointer"
+            className="w-14 h-14 p-1.5 bg-[#1e2329] text-white rounded-2xl shadow-md border border-stone-700/60 flex flex-col items-center justify-center transition-transform cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-amber-400 mb-0.5" />
             <span className="text-[7.5px] font-bold tracking-wider text-stone-300">EXPLORE</span>

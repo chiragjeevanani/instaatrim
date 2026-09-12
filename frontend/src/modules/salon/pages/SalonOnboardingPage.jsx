@@ -39,7 +39,7 @@ export const SalonOnboardingPage = () => {
         </button>
         <div>
           <h1 className="text-xs font-semibold text-stone-800">Partner Onboarding &amp; Verification</h1>
-          <p className="text-[10px] text-stone-500 font-normal">Section 20: Partner Workflow</p>
+          <p className="text-[10px] text-stone-500 font-normal">Registration, documents & bank verification</p>
         </div>
       </header>
 

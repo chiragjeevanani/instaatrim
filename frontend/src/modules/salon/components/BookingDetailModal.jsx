@@ -172,10 +172,20 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-stone-500 pt-1 border-t border-stone-100 font-normal">
-                <span>Payment Mode:</span>
                 <span className="font-semibold text-stone-700 flex items-center gap-1">
                   <CreditCard className="w-3 h-3 text-stone-400 stroke-[2]" />
-                  {booking.paymentMethod} ({booking.paymentStatus})
+                  {booking.paymentMethod}
+                </span>
+                <span
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                    booking.paymentStatus === 'Successful'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : booking.paymentStatus === 'Pending'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-stone-200 text-stone-600'
+                  }`}
+                >
+                  {booking.paymentStatus}
                 </span>
               </div>
             </div>

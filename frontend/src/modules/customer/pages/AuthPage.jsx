@@ -106,8 +106,8 @@ export const AuthPage = () => {
           )}
         </header>
 
-        {/* Content Container */}
-        <div className="flex-1 flex flex-col justify-start pt-4">
+        {/* Content Container — vertically centered so the form doesn't strand near the top with empty space beneath it */}
+        <div className="flex-1 flex flex-col justify-center pb-10">
           {/* Brand Logo Header - InstaaTrim */}
           <div
             className="mb-5 cursor-pointer flex items-center gap-2.5"

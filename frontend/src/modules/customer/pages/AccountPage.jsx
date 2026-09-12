@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { BottomNav } from '../components/BottomNav';
 import { ReferEarnModal } from '../components/ReferEarnModal';
 import { EliteModal } from '../components/EliteModal';
+import { InfoSheet } from '../../../shared/components/InfoSheet';
 import {
   User,
   Crown,
@@ -16,7 +17,10 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
-  Store
+  Store,
+  Phone,
+  Mail,
+  MessageCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -30,6 +34,9 @@ export const AccountPage = () => {
     setIsReferModalOpen,
     setIsEliteModalOpen
   } = useCustomer();
+
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isSafetyOpen, setIsSafetyOpen] = useState(false);
 
   const handleLogoutOrLogin = () => {
     if (user.isLoggedIn) {
@@ -158,7 +165,7 @@ export const AccountPage = () => {
             <div className="flex items-center gap-2.5">
               <MapPin className="w-3.5 h-3.5 text-brand-maroon" />
               <div>
-                <p className="font-bold text-stone-900 text-xs">Delivery / Salon Location</p>
+                <p className="font-bold text-stone-900 text-xs">Salon Visit Location</p>
                 <p className="text-[10px] text-stone-500">{currentLocation?.area || 'South Tukoganj'}</p>
               </div>
             </div>
@@ -167,7 +174,7 @@ export const AccountPage = () => {
 
           {/* Customer Support */}
           <div
-            onClick={() => alert('Customer Care: support@instatrim.com | Toll-Free: 1800-200-8899')}
+            onClick={() => setIsSupportOpen(true)}
             className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
@@ -182,7 +189,7 @@ export const AccountPage = () => {
 
           {/* Privacy & Policies */}
           <div
-            onClick={() => alert('InstaaTrim 100% Certified Partner Salons & Verified Professionals')}
+            onClick={() => setIsSafetyOpen(true)}
             className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
@@ -209,6 +216,48 @@ export const AccountPage = () => {
       <BottomNav />
       <ReferEarnModal />
       <EliteModal />
+
+      <InfoSheet
+        isOpen={isSupportOpen}
+        onClose={() => setIsSupportOpen(false)}
+        icon={<HelpCircle className="w-4 h-4" />}
+        title="Customer Support & FAQs"
+      >
+        <div className="flex items-center gap-2.5 bg-white/70 rounded-xl p-2.5 border border-purple-100">
+          <Phone className="w-3.5 h-3.5 text-brand-maroon shrink-0" />
+          <span>Toll-Free: <b>1800-200-8899</b> (9 AM – 9 PM, all days)</span>
+        </div>
+        <div className="flex items-center gap-2.5 bg-white/70 rounded-xl p-2.5 border border-purple-100">
+          <Mail className="w-3.5 h-3.5 text-brand-maroon shrink-0" />
+          <span>support@instaatrim.com</span>
+        </div>
+        <div className="flex items-center gap-2.5 bg-white/70 rounded-xl p-2.5 border border-purple-100">
+          <MessageCircle className="w-3.5 h-3.5 text-brand-maroon shrink-0" />
+          <span>Live chat is available inside any active booking.</span>
+        </div>
+        <div className="pt-1">
+          <p className="font-bold text-stone-800 mb-1.5">Frequently asked</p>
+          <div className="space-y-1.5 text-stone-600">
+            <p><b className="text-stone-800">Can I cancel for free?</b> Yes, up to 1 hour before your slot.</p>
+            <p><b className="text-stone-800">How does Instant Booking work?</b> The salon confirms a chair the moment you book — no waiting for approval.</p>
+            <p><b className="text-stone-800">Is payment refunded on cancellation?</b> Full refund within the free window; see the cancellation policy at checkout.</p>
+          </div>
+        </div>
+      </InfoSheet>
+
+      <InfoSheet
+        isOpen={isSafetyOpen}
+        onClose={() => setIsSafetyOpen(false)}
+        icon={<Shield className="w-4 h-4" />}
+        title="Safety & Privacy Policy"
+      >
+        <p>InstaaTrim only lists salons that have completed our verification process — business documents, in-person hygiene review and an active commercial agreement.</p>
+        <ul className="list-disc pl-4 space-y-1 text-stone-600">
+          <li>Sanitised tools and single-use kits at every verified partner</li>
+          <li>Your booking, contact and payment details are never shared with a salon beyond what's needed to serve you</li>
+          <li>Reviews are only left by customers with a completed, verified booking</li>
+        </ul>
+      </InfoSheet>
     </motion.div>
   );
 };

@@ -176,16 +176,21 @@ const bookings = {
 
   create: (payload) =>
     withLatency(() => {
+      // Defaults are applied UNDER the payload, then the two fields that
+      // need "fall back if falsy" rather than "fall back only if absent"
+      // are computed last against the already-merged object — spreading
+      // `payload` after setting these previously let a null dateKey from
+      // an unpicked slot silently clobber the computed fallback.
       const booking = {
         id: newBookingId(),
         status: BOOKING_STATUS.CONFIRMED,
-        dateKey: payload.dateKey || dateKey(new Date()),
         createdAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
         paymentStatus: 'Pending',
         stationId: null,
         staffId: null,
         ...payload
       };
+      booking.dateKey = payload.dateKey || dateKey(new Date());
       dispatch({ type: 'ADD_BOOKING', payload: booking });
       return clone(booking);
     }),

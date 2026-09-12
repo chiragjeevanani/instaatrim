@@ -200,7 +200,7 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
               <button
                 type="button"
                 onClick={() => setIsInstantEligible(!isInstantEligible)}
-                className={`w-8 h-4.5 rounded-full p-0.5 transition-colors cursor-pointer relative ${
+                className={`w-8 h-[18px] rounded-full p-0.5 transition-colors cursor-pointer relative ${
                   isInstantEligible ? 'bg-brand-maroon' : 'bg-stone-300'
                 }`}
               >

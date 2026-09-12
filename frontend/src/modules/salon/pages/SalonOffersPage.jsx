@@ -114,7 +114,7 @@ export const SalonOffersPage = () => {
                 {/* Switch */}
                 <button
                   onClick={() => toggleOfferActive(offer.id)}
-                  className={`w-8 h-4.5 rounded-full p-0.5 transition-colors cursor-pointer relative shrink-0 shadow-inner ${
+                  className={`w-8 h-[18px] rounded-full p-0.5 transition-colors cursor-pointer relative shrink-0 shadow-inner ${
                     offer.isActive ? 'bg-rose-900' : 'bg-stone-300'
                   }`}
                   title={offer.isActive ? 'Pause offer' : 'Activate offer'}

@@ -72,7 +72,7 @@ export const BottomNav = () => {
               : 'text-stone-500 hover:text-stone-800'
           }`}
         >
-          <Calendar className="w-4.5 h-4.5 stroke-[1.6]" />
+          <Calendar className="w-[18px] h-[18px] stroke-[1.6]" />
           <span className="text-[9.5px] font-medium leading-none mt-1">Bookings</span>
           {currentPath === '/customer/bookings' && (
             <div className="w-1 h-1 bg-brand-maroon rounded-full mt-0.5" />
@@ -88,7 +88,7 @@ export const BottomNav = () => {
               : 'text-stone-500 hover:text-stone-800'
           }`}
         >
-          <User className="w-4.5 h-4.5 stroke-[1.6]" />
+          <User className="w-[18px] h-[18px] stroke-[1.6]" />
           <span className="text-[9.5px] font-medium leading-none mt-1">Account</span>
           {currentPath === '/customer/account' && (
             <div className="w-1 h-1 bg-brand-maroon rounded-full mt-0.5" />

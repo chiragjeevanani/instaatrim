@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
+import { useAppData } from '../../../shared/store/AppDataProvider';
+import { processPayment } from '../../../shared/lib/payments';
+import { releaseHold, isHoldStillValid } from '../../../shared/lib/slotLock';
+import { HoldCountdown } from '../components/HoldCountdown';
 import {
   ArrowLeft,
   Calendar,
@@ -10,7 +14,10 @@ import {
   CreditCard,
   Smartphone,
   Banknote,
-  AlertCircle
+  Landmark,
+  Wallet,
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -20,13 +27,18 @@ export const CheckoutPage = () => {
     cartItems,
     cartSummary,
     bookingSlot,
+    setBookingSlot,
     currentLocation,
     appliedCoupon,
-    createBooking
+    createBooking,
+    showToast
   } = useCustomer();
+  const { state } = useAppData();
 
   const [paymentMethod, setPaymentMethod] = useState('UPI (Google Pay)');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  const [holdExpired, setHoldExpired] = useState(false);
 
   if (cartItems.length === 0) {
     return (
@@ -44,38 +56,57 @@ export const CheckoutPage = () => {
   }
 
   const paymentOptions = [
-    {
-      id: 'upi-gpay',
-      name: 'UPI (Google Pay / PhonePe)',
-      sub: 'Instant 1-click payment',
-      icon: <Smartphone className="w-4 h-4 text-emerald-600" />
-    },
-    {
-      id: 'card',
-      name: 'Credit / Debit Card',
-      sub: 'Visa, MasterCard, RuPay',
-      icon: <CreditCard className="w-4 h-4 text-blue-600" />
-    },
-    {
-      id: 'pay-at-salon',
-      name: 'Pay at Salon',
-      sub: 'Pay cash or card after service',
-      icon: <Banknote className="w-4 h-4 text-amber-600" />
-    }
+    { id: 'upi-gpay', name: 'UPI (Google Pay / PhonePe)', sub: 'Instant 1-click payment', icon: <Smartphone className="w-4 h-4 text-emerald-600" /> },
+    { id: 'card', name: 'Credit / Debit Card', sub: 'Visa, MasterCard, RuPay', icon: <CreditCard className="w-4 h-4 text-blue-600" /> },
+    { id: 'netbanking', name: 'Net Banking', sub: 'All major Indian banks', icon: <Landmark className="w-4 h-4 text-indigo-600" /> },
+    { id: 'wallet', name: 'Wallets', sub: 'Paytm, Amazon Pay & more', icon: <Wallet className="w-4 h-4 text-purple-600" /> },
+    { id: 'pay-at-salon', name: 'Pay at Salon', sub: 'Pay cash or card after service', icon: <Banknote className="w-4 h-4 text-amber-600" /> }
   ];
 
-  const handlePayAndConfirm = () => {
+  const handleHoldExpire = () => {
+    if (holdExpired) return;
+    setHoldExpired(true);
+    showToast('Your held slot expired. Please pick a new one.');
+  };
+
+  const handlePayAndConfirm = async () => {
+    setPaymentError(null);
+
+    // Re-validate the hold immediately before charging — it may have
+    // lapsed in the seconds since the slot picker closed.
+    if (bookingSlot.holdId && !isHoldStillValid({ id: bookingSlot.holdId }, state.holds)) {
+      setHoldExpired(true);
+      showToast('Your held slot has expired. Please choose a new slot.');
+      return;
+    }
+
     setIsProcessing(true);
-    setTimeout(() => {
-      const newBooking = createBooking({
+    try {
+      const payment =
+        paymentMethod === 'Pay at Salon'
+          ? { status: 'Pending', transactionId: null }
+          : await processPayment({ amount: cartSummary.finalAmount, method: paymentMethod });
+
+      const newBooking = await createBooking({
         salonId: cartItems[0]?.salonId || 'sal-1',
         salonName: cartItems[0]?.salonName || 'Luxe Glow Salon & Spa',
         address: currentLocation?.area || 'South Tukoganj, Indore',
-        paymentMethod: paymentMethod
+        paymentMethod,
+        paymentStatus: payment.status,
+        transactionId: payment.transactionId,
+        holdId: bookingSlot.holdId,
+        staffId: bookingSlot.staffId
       });
-      setIsProcessing(false);
+
+      await releaseHold(bookingSlot.holdId);
+      setBookingSlot((prev) => ({ ...prev, holdId: null, holdExpiresAt: null }));
       navigate(`/customer/booking-confirmation/${newBooking.id}`);
-    }, 1100);
+    } catch (err) {
+      setPaymentError(err?.message || 'Payment failed. Please try again.');
+      showToast(err?.message || 'Payment failed');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -86,15 +117,36 @@ export const CheckoutPage = () => {
       className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 overflow-x-hidden box-border"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-purple-100 flex items-center gap-2">
-        <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95">
-          <ArrowLeft className="w-4 h-4 stroke-[2]" />
-        </button>
-        <div>
-          <h1 className="text-xs font-bold text-stone-900">Review &amp; Payment</h1>
-          <p className="text-[10px] text-stone-500">Secure Checkout</p>
+      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-purple-100 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95">
+            <ArrowLeft className="w-4 h-4 stroke-[2]" />
+          </button>
+          <div>
+            <h1 className="text-xs font-bold text-stone-900">Review &amp; Payment</h1>
+            <p className="text-[10px] text-stone-500">Secure Checkout</p>
+          </div>
         </div>
+        {bookingSlot.holdExpiresAt && !holdExpired && (
+          <HoldCountdown expiresAt={bookingSlot.holdExpiresAt} onExpire={handleHoldExpire} />
+        )}
       </header>
+
+      {holdExpired && (
+        <div className="mx-3.5 mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-red-800">Your slot hold expired</p>
+            <p className="text-[10.5px] text-red-700 mt-0.5">Go back and pick a slot again — someone else may now hold it.</p>
+            <button
+              onClick={() => navigate(-1)}
+              className="mt-2 text-[11px] font-bold text-red-700 underline"
+            >
+              Pick a new slot
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="p-3.5 space-y-3">
         {/* Appointment Slot & Venue Summary */}
@@ -103,9 +155,7 @@ export const CheckoutPage = () => {
             <span className="text-[10.5px] font-bold text-stone-400 uppercase tracking-wider">Appointment</span>
             <span
               className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
-                bookingSlot.type === 'Instant'
-                  ? 'bg-amber-100 text-amber-900'
-                  : 'bg-rose-100 text-brand-maroon'
+                bookingSlot.type === 'Instant' ? 'bg-amber-100 text-amber-900' : 'bg-rose-100 text-brand-maroon'
               }`}
             >
               {bookingSlot.type === 'Instant' ? 'Express Instant' : 'Scheduled'}
@@ -118,7 +168,7 @@ export const CheckoutPage = () => {
             </div>
             <div>
               <p className="text-xs font-bold text-stone-900">
-                {bookingSlot.type === 'Instant' ? 'Today (Ready in 15 mins)' : `${bookingSlot.date} at ${bookingSlot.time}`}
+                {bookingSlot.type === 'Instant' ? `Today (${bookingSlot.time})` : `${bookingSlot.date} at ${bookingSlot.time}`}
               </p>
               <p className="text-[10.5px] text-stone-500 mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
@@ -157,15 +207,11 @@ export const CheckoutPage = () => {
                 key={opt.id}
                 onClick={() => setPaymentMethod(opt.name)}
                 className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
-                  paymentMethod === opt.name
-                    ? 'border-brand-maroon bg-rose-50/50'
-                    : 'border-stone-200 hover:bg-stone-50'
+                  paymentMethod === opt.name ? 'border-brand-maroon bg-rose-50/50' : 'border-stone-200 hover:bg-stone-50'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-white rounded-lg border border-stone-200 shadow-xs">
-                    {opt.icon}
-                  </div>
+                  <div className="p-1.5 bg-white rounded-lg border border-stone-200 shadow-xs">{opt.icon}</div>
                   <div>
                     <p className="text-xs font-bold text-stone-900">{opt.name}</p>
                     <p className="text-[9.5px] text-stone-500">{opt.sub}</p>
@@ -173,9 +219,7 @@ export const CheckoutPage = () => {
                 </div>
                 <div
                   className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                    paymentMethod === opt.name
-                      ? 'border-brand-maroon bg-brand-maroon'
-                      : 'border-stone-400'
+                    paymentMethod === opt.name ? 'border-brand-maroon bg-brand-maroon' : 'border-stone-400'
                   }`}
                 >
                   {paymentMethod === opt.name && <div className="w-1 h-1 bg-white rounded-full" />}
@@ -184,6 +228,13 @@ export const CheckoutPage = () => {
             ))}
           </div>
         </div>
+
+        {paymentError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-2.5 flex items-start gap-2">
+            <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+            <p className="text-[10.5px] text-red-700 leading-snug">{paymentError}</p>
+          </div>
+        )}
 
         {/* Cancellation Notice */}
         <div className="bg-stone-200/60 rounded-xl p-2.5 flex items-start gap-2 text-xs text-stone-600">
@@ -220,9 +271,9 @@ export const CheckoutPage = () => {
       {/* Sticky Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto p-3 bg-white/95 backdrop-blur-md border-t border-stone-200 z-40 shadow-soft-up box-border">
         <button
-          disabled={isProcessing}
+          disabled={isProcessing || holdExpired}
           onClick={handlePayAndConfirm}
-          className="w-full py-3 bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75"
+          className="w-full py-3 bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <div className="flex items-center gap-2">

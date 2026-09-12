@@ -16,9 +16,11 @@ import {
   UserX,
   CreditCard
 } from 'lucide-react';
+import { formatDateKeyFriendly } from '../../../shared/lib/time';
+import { stationLabelFor } from '../../../shared/store/selectors';
 
 export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
-  const { checkInCustomer, startService, completeService, cancelBooking, markNoShow, openModal, closeModal } = useSalon();
+  const { checkInCustomer, startService, completeService, cancelBooking, markNoShow, stations, staff, openModal, closeModal } = useSalon();
 
   // Prevent background scrolling and notify context when modal is open
   useEffect(() => {
@@ -90,13 +92,13 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
                 </span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${
-                    booking.status === 'In-Service'
+                    booking.status === 'Service Started'
                       ? 'bg-rose-700 animate-pulse'
                       : booking.status === 'Checked-In'
                       ? 'bg-sky-600'
                       : booking.status === 'Completed'
                       ? 'bg-emerald-600'
-                      : booking.status === 'Cancelled' || booking.status === 'No-Show'
+                      : booking.status === 'Cancelled' || booking.status === 'No Show'
                       ? 'bg-red-500'
                       : 'bg-amber-500'
                   }`} />
@@ -108,7 +110,7 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
                 <span className="text-[9.5px] font-bold text-stone-400 uppercase tracking-wider block">
                   Slot / Time
                 </span>
-                <span className="text-xs font-bold text-stone-900">{booking.slotTime}</span>
+                <span className="text-xs font-bold text-stone-900">{formatDateKeyFriendly(booking.dateKey)}, {booking.time}</span>
               </div>
             </div>
 
@@ -181,7 +183,7 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
             {/* Station / Chair Assigned */}
             <div className="bg-white rounded-xl p-3 border border-stone-200/80 shadow-xs flex items-center justify-between text-xs">
               <span className="text-stone-500 font-normal text-[11px]">Assigned Station:</span>
-              <span className="font-bold text-stone-900 text-xs">{booking.chairNumber}</span>
+              <span className="font-bold text-stone-900 text-xs">{stationLabelFor(booking, stations, staff)}</span>
             </div>
 
             {/* Operational Action Buttons (Section 24 Lifecycle) */}
@@ -212,7 +214,7 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
                 </button>
               )}
 
-              {booking.status === 'In-Service' && (
+              {booking.status === 'Service Started' && (
                 <button
                   onClick={() => {
                     completeService(booking.id);
@@ -225,7 +227,7 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
                 </button>
               )}
 
-              {booking.status !== 'Completed' && booking.status !== 'Cancelled' && booking.status !== 'No-Show' && (
+              {booking.status !== 'Completed' && booking.status !== 'Cancelled' && booking.status !== 'No Show' && (
                 <div className="grid grid-cols-2 gap-2 pt-0.5">
                   <button
                     onClick={() => {

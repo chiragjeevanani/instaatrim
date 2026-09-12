@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { ShoppingBag, Search, MapPin, ChevronDown } from 'lucide-react';
@@ -6,6 +6,18 @@ import { ShoppingBag, Search, MapPin, ChevronDown } from 'lucide-react';
 export const TopBar = ({ onSearchClick }) => {
   const navigate = useNavigate();
   const { currentLocation, setIsReferModalOpen, setIsEliteModalOpen, cartItems, setIsCartOpen } = useCustomer();
+  // Defect D3 fix: this used to be a plain <div> — tapping it navigated to
+  // the listing with nothing typed, so a home-screen search was impossible.
+  const [query, setQuery] = useState('');
+
+  const runSearch = () => {
+    if (onSearchClick) {
+      onSearchClick();
+      return;
+    }
+    const trimmed = query.trim();
+    navigate(trimmed ? `/customer/salons?q=${encodeURIComponent(trimmed)}` : '/customer/salons');
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full max-w-[480px] mx-auto bg-[#f8f4fb]/95 backdrop-blur-md pt-1.5 px-3.5 pb-1 box-border border-b border-purple-100">
@@ -72,17 +84,25 @@ export const TopBar = ({ onSearchClick }) => {
       </div>
 
       {/* Search Input Bar - Ultra-slim matching reference */}
-      <div
-        className="relative cursor-pointer w-full bg-[#eaddf3] hover:bg-[#e2d2ed] transition-colors rounded-xl flex items-center h-[34px] px-2.5 text-xs border border-purple-200/50"
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          runSearch();
+        }}
+        className="relative w-full bg-[#eaddf3] hover:bg-[#e2d2ed] focus-within:bg-[#e2d2ed] transition-colors rounded-xl flex items-center h-[34px] px-2.5 text-xs border border-purple-200/50"
         data-purpose="service-search"
-        onClick={onSearchClick || (() => navigate('/customer/salons'))}
       >
         <Search className="w-3.5 h-3.5 text-purple-600 mr-2 shrink-0 stroke-[1.8]" />
-        <div className="truncate text-stone-600 font-normal text-[11.5px] select-none">
-          <span>Search for </span>
-          <span className="text-brand-maroon font-semibold">'Body Polishing'</span>
-        </div>
-      </div>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => onSearchClick && onSearchClick()}
+          type="search"
+          placeholder="Search for 'Body Polishing'"
+          aria-label="Search salons and services"
+          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-stone-800 placeholder:text-stone-500 font-normal text-[11.5px] focus:outline-none focus:ring-0"
+        />
+      </form>
     </header>
   );
 };

@@ -1,7 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockSubCategories } from '../data/mockData';
+import { CATEGORIES } from '../../../shared/data/seed';
 import { motion } from 'framer-motion';
+
+// This used to keep its own separate "sub-category" taxonomy
+// (mockSubCategories) with different ids and titles than the home
+// category grid above it — two lists that could quietly drift apart.
+// It now reuses the single shared taxonomy so there's one place that
+// defines what a category is and how it maps to services.
+const subCategorySlugs = ['waxing', 'facial', 'body-polishing', 'mani-pedi', 'hair', 'mehandi'];
+const mockSubCategories = subCategorySlugs
+  .map((slug) => CATEGORIES.find((c) => c.slug === slug))
+  .filter(Boolean)
+  .map((c) => ({ id: c.id, title: c.shortName, image: c.image, slug: c.slug }));
 
 export const SubCategoryGrid = () => {
   const navigate = useNavigate();
@@ -29,7 +40,7 @@ export const SubCategoryGrid = () => {
           <motion.div
             key={item.id}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(`/customer/salons?category=${encodeURIComponent(item.title)}`)}
+            onClick={() => navigate(`/customer/salons?category=${item.slug}`)}
             className="relative rounded-xl overflow-hidden aspect-[4/4.8] bg-[#eaddf3] group cursor-pointer shadow-2xs"
           >
             <img

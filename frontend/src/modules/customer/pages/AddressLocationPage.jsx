@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
-import { mockLocations } from '../data/mockData';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Search, Navigation } from 'lucide-react';
+import { requestCurrentPosition, nearestKnownLocality } from '../../../shared/lib/geo';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Search, Navigation, Loader2, MapPinOff, Plus, CheckCircle2 } from 'lucide-react';
 
+// SRS §6.2 fix: this page used to be titled "Add Address" while having no
+// way to add one — "Use Current Location" just assigned a hardcoded mock
+// entry, and there was no manual City / Area / Landmark / PIN form at all.
+// It now requests real device location with proper permission-state
+// handling, and offers a genuine manual-entry form.
 export const AddressLocationPage = () => {
   const navigate = useNavigate();
-  const { currentLocation, setCurrentLocation, savedLocations, showToast } = useCustomer();
+  const { currentLocation, setCurrentLocation, savedLocations, addLocation, showToast } = useCustomer();
   const [searchQuery, setSearchQuery] = useState('');
+  const [locateState, setLocateState] = useState('idle'); // idle | locating | error
+  const [locateError, setLocateError] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [form, setForm] = useState({ area: '', landmark: '', city: 'Indore', pincode: '' });
+  const [formErrors, setFormErrors] = useState({});
 
   const filteredLocations = savedLocations.filter(
     (loc) =>
@@ -22,10 +32,52 @@ export const AddressLocationPage = () => {
     navigate('/customer');
   };
 
-  const handleUseCurrentLocation = () => {
-    const defaultCurrent = mockLocations[0];
-    setCurrentLocation(defaultCurrent);
-    showToast('Detected location: South Tukoganj');
+  const handleUseCurrentLocation = async () => {
+    setLocateState('locating');
+    setLocateError(null);
+    try {
+      const { lat, lng } = await requestCurrentPosition();
+      const nearest = nearestKnownLocality(lat, lng);
+      const newLoc = await addLocation({
+        area: nearest.area,
+        address: `Near ${nearest.area}, ${nearest.city}, ${nearest.pincode} (from device location)`,
+        landmark: 'Detected via GPS',
+        city: nearest.city,
+        pincode: nearest.pincode,
+        lat,
+        lng
+      });
+      setLocateState('idle');
+      showToast(`Detected location: ${newLoc.area}`);
+      navigate('/customer');
+    } catch (err) {
+      setLocateState('error');
+      setLocateError(err.message || 'Could not determine your location.');
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!form.area.trim()) errors.area = 'Area is required';
+    if (!form.city.trim()) errors.city = 'City is required';
+    if (!/^\d{6}$/.test(form.pincode.trim())) errors.pincode = 'Enter a valid 6-digit PIN code';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleAddManualAddress = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    const newLoc = await addLocation({
+      area: form.area.trim(),
+      landmark: form.landmark.trim(),
+      city: form.city.trim(),
+      pincode: form.pincode.trim(),
+      address: `${form.area.trim()}${form.landmark ? ', ' + form.landmark.trim() : ''}, ${form.city.trim()}, ${form.pincode.trim()}`
+    });
+    showToast(`Address saved: ${newLoc.area}`);
+    setIsFormOpen(false);
+    setForm({ area: '', landmark: '', city: 'Indore', pincode: '' });
     navigate('/customer');
   };
 
@@ -37,21 +89,9 @@ export const AddressLocationPage = () => {
       transition={{ duration: 0.2 }}
       className="w-full flex justify-center items-start min-h-screen text-stone-900 antialiased select-none bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5]"
     >
-      <div className="relative w-full max-w-[480px] min-w-0 min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col justify-between overflow-hidden border-x border-purple-200/50 box-border">
-        {/* Background Illustration Layer */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-85">
-          <img
-            alt="Isometric City Illustration"
-            className="w-full h-full object-cover object-bottom"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlTjjswxFLsYZZVJgio9zBctRsC7XV7377gRTnXT8Yj5t1GJ9j_1Dmp41EU_V_gKu0BKtvxDPSHOYD5O8m3ikijcWiiz6JXbhuIAmkqSDwKgJEhjzsYJsC2gi7cHHWK_bKjaGZAivzyHA4Av_6NOkzjSgDyRMvguCAARr8DxdX9359ZdeaZlWFM51htJvVrzWvqlPX2QmGipTsawAdKbvzLuMnJqyZOsQ7M2_b7CgpJi9ggNXpitZM8InyjAJbGFBflJw"
-          />
-          {/* Soft Gradient Mask for seamless blend */}
-          <div className="absolute inset-x-0 top-0 h-[48%] bg-gradient-to-b from-[#f8f4fb] via-[#f8f4fb]/90 to-transparent"></div>
-        </div>
-
+      <div className="relative w-full max-w-[480px] min-w-0 min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col overflow-y-auto border-x border-purple-200/50 box-border pb-8">
         {/* Top Header & Search Area */}
         <div className="relative z-10 w-full flex flex-col pt-3 px-3.5">
-          {/* Header Nav - Compact & Slender */}
           <nav className="flex items-center gap-2 mb-2.5">
             <button
               aria-label="Go back"
@@ -61,10 +101,10 @@ export const AddressLocationPage = () => {
             >
               <ArrowLeft className="w-4 h-4 stroke-[2]" />
             </button>
-            <h1 className="text-sm font-bold text-stone-900 tracking-tight">Add Address</h1>
+            <h1 className="text-sm font-bold text-stone-900 tracking-tight">Your Addresses</h1>
           </nav>
 
-          {/* Search Bar - Styled identically to Home page search bar */}
+          {/* Search Bar */}
           <div className="w-full relative">
             <div className="relative flex items-center">
               <Search className="w-3.5 h-3.5 text-stone-500 absolute left-3 pointer-events-none stroke-[1.8]" />
@@ -72,81 +112,156 @@ export const AddressLocationPage = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full h-[34px] pl-8 pr-3 text-[12px] bg-[#eaddf3] text-stone-900 placeholder:text-stone-500 rounded-2xl border border-purple-200/60 focus:outline-none focus:ring-1 focus:ring-purple-400 transition-all"
-                placeholder="Search area, street name..."
+                placeholder="Search saved addresses..."
                 type="text"
               />
             </div>
           </div>
-
-          {/* Search Suggestions dropdown */}
-          {searchQuery && (
-            <div className="mt-2 bg-white/95 backdrop-blur-md rounded-xl p-2 border border-stone-200 shadow-md space-y-1 z-30">
-              {filteredLocations.length === 0 ? (
-                <p className="text-xs text-stone-500 p-2 text-center">No location found matching "{searchQuery}"</p>
-              ) : (
-                filteredLocations.map((loc) => (
-                  <div
-                    key={loc.id}
-                    onClick={() => handleSelectLocation(loc)}
-                    className="p-2 rounded-lg hover:bg-stone-50 cursor-pointer text-left transition-colors"
-                  >
-                    <p className="text-xs font-bold text-stone-900">{loc.area}</p>
-                    <p className="text-[10px] text-stone-500 truncate">{loc.address}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {/* Subtitle Notice */}
-          {!searchQuery && (
-            <div className="mt-3.5 text-center flex flex-col items-center px-2">
-              <p className="text-[11px] text-stone-500 font-medium">
-                You don't have any saved address
-              </p>
-              <h2 className="text-xs font-bold text-stone-800 tracking-tight mt-0.5">
-                Add your address now to continue
-              </h2>
-            </div>
-          )}
         </div>
 
-        {/* Center Pin & Detected Location */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-6 pointer-events-none px-4">
-          <div className="relative flex flex-col items-center animate-bounce duration-1000">
-            {/* Slender Royal Violet Pin */}
-            <svg className="w-8 h-8 text-brand-maroon drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                clipRule="evenodd"
-                d="M11.54 22.351A2.42 2.42 0 018.66 21.05C6.037 17.514 3.75 13.902 3.75 10.5a8.25 8.25 0 1116.5 0c0 3.402-2.287 7.014-4.91 10.55a2.42 2.42 0 01-2.88 1.301zM12 13.5a3 3 0 100-6 3 3 0 000 6z"
-                fillRule="evenodd"
-              ></path>
-            </svg>
-            <div className="w-5 h-1 bg-black/20 rounded-full blur-[1px] mt-0.5"></div>
-          </div>
-
-          {/* Detected Location Badge - Compact & Clean */}
-          <div className="mt-2.5 bg-white/95 backdrop-blur-md py-2 px-3.5 rounded-xl border border-stone-200/80 shadow-sm text-center max-w-[260px]">
-            <h3 className="font-bold text-stone-900 text-[11.5px] leading-tight">
-              {currentLocation?.area || 'South Tukoganj'}
-            </h3>
-            <p className="text-[9.5px] text-stone-500 leading-tight mt-0.5">
-              {currentLocation?.address || 'South Tukoganj, Indore, Madhya Pradesh, 452001, India'}
-            </p>
-          </div>
-        </div>
-
-        {/* Bottom Action Bar */}
-        <div className="relative z-20 w-full px-4 pb-5 pt-2 bg-gradient-to-t from-[#ede1f5] via-[#ede1f5]/90 to-transparent">
+        {/* Use current location */}
+        <div className="px-3.5 mt-3">
           <button
             onClick={handleUseCurrentLocation}
-            className="w-full h-[38px] bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            data-purpose="use-current-location-button"
+            disabled={locateState === 'locating'}
+            className="w-full h-[42px] bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-70"
             type="button"
           >
-            <Navigation className="w-3.5 h-3.5 fill-current" />
-            <span>Use Current Location</span>
+            {locateState === 'locating' ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Getting your location…</span>
+              </>
+            ) : (
+              <>
+                <Navigation className="w-3.5 h-3.5 fill-current" />
+                <span>Use Current Location</span>
+              </>
+            )}
           </button>
+
+          <AnimatePresence>
+            {locateState === 'error' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-2 bg-red-50 border border-red-200 rounded-xl p-2.5 flex items-start gap-2"
+              >
+                <MapPinOff className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-red-700 leading-snug">{locateError}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Saved addresses list */}
+        <div className="px-3.5 mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+              {searchQuery ? 'Search Results' : 'Saved Addresses'}
+            </span>
+            <button
+              onClick={() => setIsFormOpen((v) => !v)}
+              className="flex items-center gap-1 text-[10.5px] font-bold text-brand-maroon active:opacity-70"
+              type="button"
+            >
+              <Plus className="w-3 h-3" />
+              Add New
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {isFormOpen && (
+              <motion.form
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                onSubmit={handleAddManualAddress}
+                className="bg-white rounded-xl border border-stone-200 shadow-xs p-3 mb-3 space-y-2 overflow-hidden"
+              >
+                <div>
+                  <label htmlFor="addr-area" className="text-[10px] font-bold text-stone-500 block mb-1">Area *</label>
+                  <input
+                    id="addr-area"
+                    value={form.area}
+                    onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
+                    placeholder="e.g. Vijay Nagar"
+                    className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
+                  />
+                  {formErrors.area && <p className="text-[10px] text-red-600 mt-0.5">{formErrors.area}</p>}
+                </div>
+                <div>
+                  <label htmlFor="addr-landmark" className="text-[10px] font-bold text-stone-500 block mb-1">Landmark</label>
+                  <input
+                    id="addr-landmark"
+                    value={form.landmark}
+                    onChange={(e) => setForm((f) => ({ ...f, landmark: e.target.value }))}
+                    placeholder="e.g. Near C21 Mall"
+                    className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="addr-city" className="text-[10px] font-bold text-stone-500 block mb-1">City *</label>
+                    <input
+                      id="addr-city"
+                      value={form.city}
+                      onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                      className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
+                    />
+                    {formErrors.city && <p className="text-[10px] text-red-600 mt-0.5">{formErrors.city}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="addr-pin" className="text-[10px] font-bold text-stone-500 block mb-1">PIN Code *</label>
+                    <input
+                      id="addr-pin"
+                      value={form.pincode}
+                      inputMode="numeric"
+                      maxLength={6}
+                      onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value.replace(/\D/g, '') }))}
+                      className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
+                    />
+                    {formErrors.pincode && <p className="text-[10px] text-red-600 mt-0.5">{formErrors.pincode}</p>}
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full h-9 bg-stone-900 text-white text-xs font-bold rounded-lg mt-1 active:scale-[0.98] transition-transform"
+                >
+                  Save Address
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+
+          <div className="space-y-2">
+            {filteredLocations.length === 0 ? (
+              <p className="text-xs text-stone-500 p-3 text-center bg-white/60 rounded-xl border border-dashed border-stone-300">
+                {searchQuery ? `No saved address matches "${searchQuery}"` : 'No saved addresses yet — add one above.'}
+              </p>
+            ) : (
+              filteredLocations.map((loc) => (
+                <div
+                  key={loc.id}
+                  onClick={() => handleSelectLocation(loc)}
+                  className={`p-3 rounded-xl bg-white border cursor-pointer transition-colors flex items-start justify-between gap-2 ${
+                    currentLocation?.id === loc.id ? 'border-brand-maroon shadow-xs' : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-bold text-stone-900">{loc.area}</p>
+                      {currentLocation?.id === loc.id && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-brand-maroon shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-stone-500 truncate mt-0.5">{loc.address}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </motion.div>

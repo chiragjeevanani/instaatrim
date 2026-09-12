@@ -1,14 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockCategories } from '../data/mockData';
+import { CATEGORIES as mockCategories } from '../../../shared/data/seed';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
 export const CategoryGrid = () => {
   const navigate = useNavigate();
 
+  // Defect D1 fix: category tiles used to pass a display label
+  // ("Salon for Women") as a free-text search term that matched no salon
+  // field, so every tile landed on an empty list. Each category now has a
+  // stable slug the listing page resolves through a real taxonomy lookup.
   const handleCategoryClick = (category) => {
-    navigate(`/customer/salons?category=${encodeURIComponent(category.shortName)}`);
+    navigate(`/customer/salons?category=${category.slug}`);
   };
 
   return (

@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSalon } from '../context/SalonContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Phone, Scissors, Check, Sparkles } from 'lucide-react';
+import { X, User, Phone, Check, Sparkles, AlertTriangle } from 'lucide-react';
+import { occupiedStationIds } from '../../../shared/store/selectors';
+import { dateKey } from '../../../shared/lib/time';
 
 export const NewBookingModal = ({ isOpen, onClose }) => {
-  const { services, createWalkInBooking, openModal, closeModal } = useSalon();
+  const { services, stations, staff, bookings, createWalkInBooking, openModal, closeModal } = useSalon();
+
+  // Defect D9 fix: walk-ins used to be seated at a hardcoded "Chair 4"
+  // with no check against real occupancy, so the salon could seat more
+  // guests than it has stations. Only stations that are actually free
+  // right now are offered.
+  const todayKey = dateKey(new Date());
+  const occupied = useMemo(() => occupiedStationIds(bookings.filter((b) => b.dateKey === todayKey)), [bookings, todayKey]);
+  const freeStations = stations.filter((s) => !occupied.has(s.id));
 
   // Prevent background scrolling and notify context when modal is open
   useEffect(() => {
@@ -22,7 +32,7 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState(services[0]?.id || '');
-  const [chairNumber, setChairNumber] = useState('Chair 1 (Pooja)');
+  const [stationId, setStationId] = useState(freeStations[0]?.id || '');
   const [paymentMethod, setPaymentMethod] = useState('Pay at Salon (Cash)');
   const [notes, setNotes] = useState('');
 
@@ -30,11 +40,14 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!stationId) return; // no free station — button is disabled, but guard anyway
     const serviceObj = services.find((s) => s.id === selectedServiceId) || services[0];
+    const station = stations.find((s) => s.id === stationId);
     createWalkInBooking({
       customerName: customerName || 'Walk-In Guest',
       customerPhone: customerPhone || '+91 98000 00000',
-      chairNumber,
+      stationId,
+      staffId: station?.staffId || null,
       services: [serviceObj],
       totalAmount: serviceObj.price,
       paymentMethod,
@@ -133,16 +146,27 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="text-[10.5px] font-bold text-stone-700 block mb-1">Station / Chair</label>
-                <select
-                  value={chairNumber}
-                  onChange={(e) => setChairNumber(e.target.value)}
-                  className="w-full bg-white text-stone-800 text-xs rounded-xl border border-stone-200 px-2.5 py-2 outline-none font-medium shadow-2xs cursor-pointer"
-                >
-                  <option value="Chair 1 (Pooja)">Chair 1 (Pooja)</option>
-                  <option value="Chair 2 (Kavita)">Chair 2 (Kavita)</option>
-                  <option value="Chair 3 (Meena)">Chair 3 (Meena)</option>
-                  <option value="Chair 4 (Express)">Chair 4 (Express)</option>
-                </select>
+                {freeStations.length === 0 ? (
+                  <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-xl px-2.5 py-2 text-[10.5px] text-red-700 font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span>All stations occupied</span>
+                  </div>
+                ) : (
+                  <select
+                    value={stationId}
+                    onChange={(e) => setStationId(e.target.value)}
+                    className="w-full bg-white text-stone-800 text-xs rounded-xl border border-stone-200 px-2.5 py-2 outline-none font-medium shadow-2xs cursor-pointer"
+                  >
+                    {freeStations.map((s) => {
+                      const staffMember = staff.find((st) => st.id === s.staffId);
+                      return (
+                        <option key={s.id} value={s.id}>
+                          {s.name}{staffMember ? ` (${staffMember.name})` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -174,10 +198,11 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-2.5 bg-rose-900 hover:bg-rose-950 active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 mt-2"
+              disabled={freeStations.length === 0}
+              className="w-full py-2.5 bg-rose-900 hover:bg-rose-950 active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Confirm &amp; Seat Guest</span>
+              <span>{freeStations.length === 0 ? 'No Stations Available' : 'Confirm & Seat Guest'}</span>
             </button>
           </form>
         </motion.div>

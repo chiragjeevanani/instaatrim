@@ -16,16 +16,19 @@ import {
 } from 'lucide-react';
 import { BookingDetailModal } from '../components/BookingDetailModal';
 import { NewBookingModal } from '../components/NewBookingModal';
+import { dateKey as toDateKey, formatDateKeyFriendly } from '../../../shared/lib/time';
+import { stationLabelFor } from '../../../shared/store/selectors';
 
 export const SalonBookingsPage = () => {
-  const { bookings, checkInCustomer, startService, completeService } = useSalon();
+  const { bookings, stations, staff, checkInCustomer, startService, completeService } = useSalon();
+  const todayKey = toDateKey(new Date());
 
   const [activeTab, setActiveTab] = useState('Today');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
 
-  const tabs = ['Today', 'All', 'In-Service', 'Instant (⚡)', 'Scheduled', 'Completed'];
+  const tabs = ['Today', 'All', 'In Progress', 'Instant (⚡)', 'Scheduled', 'Completed'];
 
   const filteredBookings = bookings.filter((b) => {
     // Search query filter
@@ -38,10 +41,10 @@ export const SalonBookingsPage = () => {
 
     // Tab filter
     if (activeTab === 'Today') {
-      return b.slotTime.includes('Today') || b.slotTime.includes('Now');
+      return b.dateKey === todayKey;
     }
-    if (activeTab === 'In-Service') {
-      return b.status === 'In-Service' || b.status === 'Checked-In';
+    if (activeTab === 'In Progress') {
+      return b.status === 'Service Started' || b.status === 'Checked-In';
     }
     if (activeTab === 'Instant (⚡)') {
       return b.bookingMode === 'Instant';
@@ -128,7 +131,7 @@ export const SalonBookingsPage = () => {
           ) : (
             filteredBookings.map((b) => {
               const isInstant = b.bookingMode === 'Instant';
-              const isInService = b.status === 'In-Service';
+              const isInService = b.status === 'Service Started';
               const isCheckedIn = b.status === 'Checked-In';
               const isCompleted = b.status === 'Completed';
 
@@ -149,7 +152,7 @@ export const SalonBookingsPage = () => {
                           {b.customerName}
                         </h3>
                         <p className="text-[10px] text-stone-400 leading-tight mt-0.5 font-normal">
-                          {b.customerPhone} • {b.chairNumber}
+                          {b.customerPhone} • {stationLabelFor(b, stations, staff)}
                         </p>
                       </div>
                     </div>
@@ -167,7 +170,7 @@ export const SalonBookingsPage = () => {
                       </span>
                       <div className="flex items-center justify-end gap-1 text-[10.5px] font-semibold text-stone-600 mt-1">
                         <Clock className="w-3 h-3 text-stone-400 stroke-[2]" />
-                        <span>{b.slotTime.replace('Today, ', '')}</span>
+                        <span>{b.dateKey === todayKey ? b.time : `${formatDateKeyFriendly(b.dateKey)}, ${b.time}`}</span>
                       </div>
                     </div>
                   </div>
@@ -229,7 +232,7 @@ export const SalonBookingsPage = () => {
                         </button>
                       )}
 
-                      {b.status === 'In-Service' && (
+                      {b.status === 'Service Started' && (
                         <button
                           onClick={() => completeService(b.id)}
                           className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-[10px] rounded-lg shadow-2xs transition-transform flex items-center gap-1"

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
+import { formatDateKeyFriendly } from '../../../shared/lib/time';
 import confetti from 'canvas-confetti';
 import { Calendar, Clock, MapPin, Check, ArrowRight, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -80,7 +81,7 @@ export const BookingConfirmationPage = () => {
               <Calendar className="w-3.5 h-3.5 text-brand-maroon" />
               <div>
                 <span className="text-[9px] text-stone-400 font-bold uppercase block">Date</span>
-                <span className="text-xs font-bold text-stone-800">{booking.date}</span>
+                <span className="text-xs font-bold text-stone-800">{formatDateKeyFriendly(booking.dateKey)}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -97,7 +98,7 @@ export const BookingConfirmationPage = () => {
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
               Booked Services
             </span>
-            {booking.items?.map((item, idx) => (
+            {booking.services?.map((item, idx) => (
               <div key={idx} className="flex justify-between text-xs text-stone-700">
                 <span className="text-[11px]">{item.name || item.title}</span>
                 <span className="font-bold text-xs">₹{item.price}</span>

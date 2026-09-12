@@ -47,7 +47,7 @@ export const SalonDashboardPage = () => {
 
   // Active bookings for today
   const activeBookings = bookings.filter(
-    (b) => b.status === 'In-Service' || b.status === 'Checked-In' || b.status === 'Confirmed'
+    (b) => b.status === 'Service Started' || b.status === 'Checked-In' || b.status === 'Confirmed'
   );
 
   return (
@@ -251,7 +251,7 @@ export const SalonDashboardPage = () => {
           ) : (
             activeBookings.slice(0, 4).map((b) => {
               const isInstant = b.bookingMode === 'Instant';
-              const isInService = b.status === 'In-Service';
+              const isInService = b.status === 'Service Started';
               const isCheckedIn = b.status === 'Checked-In';
 
               return (
@@ -278,7 +278,7 @@ export const SalonDashboardPage = () => {
 
                     <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-600 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/60">
                       <Clock className="w-3 h-3 text-stone-400 stroke-[2]" />
-                      <span>{b.slotTime.replace('Today, ', '')}</span>
+                      <span>{b.time}</span>
                     </div>
                   </div>
 
@@ -327,7 +327,7 @@ export const SalonDashboardPage = () => {
                         </button>
                       )}
 
-                      {b.status === 'In-Service' && (
+                      {b.status === 'Service Started' && (
                         <button
                           onClick={() => completeService(b.id)}
                           className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-[10px] rounded-lg shadow-2xs transition-transform flex items-center gap-1"

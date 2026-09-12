@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockSalons } from '../data/mockData';
+import { useAppData } from '../../../shared/store/AppDataProvider';
 import { useCustomer } from '../context/CustomerContext';
 import { CartDrawer } from '../components/CartDrawer';
 import { SlotPickerModal } from '../components/SlotPickerModal';
+import { reviewSummary } from '../../../shared/store/selectors';
+import { parseHoursRange, nowMinutesOfDay } from '../../../shared/lib/time';
 import {
   ArrowLeft,
   Star,
@@ -16,13 +18,15 @@ import {
   ShoppingBag,
   Plus,
   Check,
-  Shield
+  Shield,
+  MessageSquareText
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const SalonProfilePage = () => {
   const { salonId } = useParams();
   const navigate = useNavigate();
+  const { state } = useAppData();
   const {
     favoriteSalonIds,
     toggleFavorite,
@@ -34,17 +38,33 @@ export const SalonProfilePage = () => {
     bookingSlot
   } = useCustomer();
 
-  const salon = mockSalons.find((s) => s.id === salonId) || mockSalons[0];
+  const salon = state.salons.find((s) => s.id === salonId) || state.salons[0];
+  const services = useMemo(
+    () => state.services.filter((s) => s.salonId === salon.id && s.isActive),
+    [state.services, salon.id]
+  );
+  const reviews = useMemo(() => state.reviews.filter((r) => r.salonId === salon.id), [state.reviews, salon.id]);
+  const summary = useMemo(() => reviewSummary(reviews), [reviews]);
+
   const isFav = favoriteSalonIds.includes(salon.id);
 
   const [activeCategory, setActiveCategory] = useState('All');
 
-  const categories = ['All', ...new Set(salon.services.map((s) => s.category))];
+  const categories = ['All', ...new Set(services.map((s) => s.category))];
 
-  const filteredServices =
-    activeCategory === 'All'
-      ? salon.services
-      : salon.services.filter((s) => s.category === activeCategory);
+  const filteredServices = activeCategory === 'All' ? services : services.filter((s) => s.category === activeCategory);
+
+  // Open Now is computed from the salon's real hours + the store-open flag
+  // instead of a hardcoded literal.
+  const isOpenNow = useMemo(() => {
+    if (!salon.isStoreOpen) return false;
+    const { openMin, closeMin, closed } = parseHoursRange(salon.openHoursLegacy);
+    if (closed) return false;
+    const nowMin = nowMinutesOfDay();
+    return nowMin >= openMin && nowMin <= closeMin;
+  }, [salon.isStoreOpen, salon.openHoursLegacy]);
+
+  const instantReady = salon.hasInstantBooking && salon.isInstantBookingEnabled && salon.isStoreOpen;
 
   return (
     <motion.div
@@ -87,31 +107,39 @@ export const SalonProfilePage = () => {
               <span>{salon.rating}</span>
               <span className="font-normal">({salon.reviewsCount})</span>
             </div>
-            <span className="text-stone-300">{salon.distance}</span>
+            <span className="text-stone-300">{salon.distanceKm != null ? `${salon.distanceKm.toFixed(1)} km` : ''}</span>
             <span className="text-stone-300">•</span>
-            <span className="text-emerald-300 font-semibold">Open Now</span>
+            <span className={isOpenNow ? 'text-emerald-300 font-semibold' : 'text-stone-400 font-semibold'}>
+              {isOpenNow ? 'Open Now' : 'Closed'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Instant Booking Banner */}
+      {/* Instant Booking Banner — now reflects the partner's live toggle, wait time and open/closed state (Defect D8 fix) */}
       {salon.hasInstantBooking && (
-        <div className="bg-amber-50/90 border-b border-amber-200/80 px-3.5 py-2 flex items-center justify-between">
+        <div className={`px-3.5 py-2 flex items-center justify-between border-b ${instantReady ? 'bg-amber-50/90 border-amber-200/80' : 'bg-stone-100 border-stone-200'}`}>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-stone-900 shadow-xs shrink-0">
-              <Zap className="w-3 h-3 fill-stone-950" />
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center shadow-xs shrink-0 ${instantReady ? 'bg-amber-400 text-stone-900' : 'bg-stone-300 text-stone-600'}`}>
+              <Zap className="w-3 h-3 fill-current" />
             </div>
             <div>
-              <span className="text-[11px] font-bold text-amber-950">Instant Booking Ready</span>
-              <p className="text-[9.5px] text-amber-800">Seat ready in 15 mins</p>
+              <span className={`text-[11px] font-bold ${instantReady ? 'text-amber-950' : 'text-stone-600'}`}>
+                {instantReady ? 'Instant Booking Ready' : 'Instant Booking Unavailable'}
+              </span>
+              <p className={`text-[9.5px] ${instantReady ? 'text-amber-800' : 'text-stone-500'}`}>
+                {instantReady ? `Seat ready in ${salon.instantWaitMinutes} mins` : !salon.isStoreOpen ? 'Salon is currently closed' : 'Partner has paused instant bookings'}
+              </p>
             </div>
           </div>
-          <button
-            onClick={() => setIsSlotPickerOpen(true)}
-            className="text-[10px] font-bold bg-amber-400 text-stone-950 px-2.5 py-1 rounded-lg active:scale-95 shadow-xs"
-          >
-            {bookingSlot.type === 'Instant' ? 'Instant Active' : 'Book Instant'}
-          </button>
+          {instantReady && (
+            <button
+              onClick={() => setIsSlotPickerOpen(true)}
+              className="text-[10px] font-bold bg-amber-400 text-stone-950 px-2.5 py-1 rounded-lg active:scale-95 shadow-xs"
+            >
+              {bookingSlot.type === 'Instant' ? 'Instant Active' : 'Book Instant'}
+            </button>
+          )}
         </div>
       )}
 
@@ -123,7 +151,7 @@ export const SalonProfilePage = () => {
         </div>
         <div className="flex items-center gap-2 text-stone-600 text-[11px]">
           <Clock className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-          <span>{salon.openHours}</span>
+          <span>{salon.openHoursLegacy}</span>
         </div>
         <div className="flex items-center gap-2 text-stone-600 text-[11px]">
           <Phone className="w-3.5 h-3.5 text-stone-500 shrink-0" />
@@ -148,6 +176,26 @@ export const SalonProfilePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Photo gallery — previously the salon carried an images[] array that nothing ever rendered */}
+      {salon.images?.length > 1 && (
+        <section className="bg-white pt-2.5 pb-3 border-b border-stone-200/70">
+          <div className="px-3.5 mb-2">
+            <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Gallery</h2>
+          </div>
+          <div className="flex gap-2 px-3.5 overflow-x-auto no-scrollbar">
+            {salon.images.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt={`${salon.name} ${i + 1}`}
+                className="h-24 w-32 shrink-0 rounded-xl object-cover border border-stone-200"
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Service Menu */}
       <section className="mt-2 bg-white pt-2.5 border-b border-stone-200/70">
@@ -175,6 +223,9 @@ export const SalonProfilePage = () => {
 
         {/* Service Items */}
         <div className="divide-y divide-stone-100">
+          {filteredServices.length === 0 && (
+            <p className="p-3.5 text-[11px] text-stone-500">No active services in this category right now.</p>
+          )}
           {filteredServices.map((service) => {
             const isInCart = cartItems.some((item) => item.id === service.id);
 
@@ -183,11 +234,6 @@ export const SalonProfilePage = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-xs font-bold text-stone-900 leading-snug">{service.name}</h3>
-                    {service.offer && (
-                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200 shrink-0">
-                        {service.offer}
-                      </span>
-                    )}
                   </div>
                   <p className="text-[10.5px] text-stone-500 mt-0.5 line-clamp-2 leading-tight">{service.description}</p>
                   <div className="flex items-center gap-2 mt-1.5 text-xs">
@@ -231,6 +277,58 @@ export const SalonProfilePage = () => {
         </div>
       </section>
 
+      {/* Reviews — SRS §6.5 / §10.4 gap fix: customers could previously
+          write a review but never read one for any salon. */}
+      <section className="mt-2 bg-white pt-3 pb-4 border-b border-stone-200/70 px-3.5">
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+            Reviews ({summary.total})
+          </h2>
+          {summary.total > 0 && (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-stone-800">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              {summary.average}
+            </span>
+          )}
+        </div>
+
+        {reviews.length === 0 ? (
+          <p className="text-[11px] text-stone-500">No reviews yet — be the first to book and rate this salon.</p>
+        ) : (
+          <div className="space-y-2.5">
+            {reviews.map((rev) => (
+              <div key={rev.id} className="p-2.5 bg-stone-50/80 rounded-xl border border-stone-200/70 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-stone-900">{rev.customerName}</span>
+                    {rev.verifiedBooking && (
+                      <span className="text-[8.5px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> Verified Booking
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center text-amber-500">
+                    {[...Array(rev.rating)].map((_, idx) => (
+                      <Star key={idx} className="w-3 h-3 fill-amber-400 stroke-[1.8]" />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[10.5px] text-stone-600 leading-snug">"{rev.comment}"</p>
+                {rev.reply && (
+                  <div className="p-2 bg-purple-50/70 rounded-lg border border-purple-200/50 text-[9.5px] text-purple-950 flex items-start gap-1.5">
+                    <MessageSquareText className="w-3 h-3 mt-0.5 shrink-0 text-brand-maroon" />
+                    <div>
+                      <span className="font-semibold text-brand-maroon">Salon Owner Response: </span>
+                      {rev.reply}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Floating Bottom Cart Bar */}
       {cartItems.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto p-2.5 bg-white/95 backdrop-blur-md border-t border-stone-200 z-40 shadow-soft-up box-border">
@@ -254,7 +352,7 @@ export const SalonProfilePage = () => {
 
       {/* Cart Drawer & Slot Picker */}
       <CartDrawer />
-      <SlotPickerModal />
+      <SlotPickerModal salonId={salon.id} />
     </motion.div>
   );
 };

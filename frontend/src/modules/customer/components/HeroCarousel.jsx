@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { mockBanners } from '../data/mockData';
+import { BANNERS as mockBanners } from '../../../shared/data/seed';
 import { useNavigate } from 'react-router-dom';
 
 export const HeroCarousel = () => {

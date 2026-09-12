@@ -1,250 +1,272 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
-import { mockLocations, mockCoupons, mockInitialBookings } from '../data/mockData';
+import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import { useAppData } from '../../../shared/store/AppDataProvider';
+import { api } from '../../../shared/services/api';
+import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/store/selectors';
+
+// Phase 0 note: this context used to be the sole owner of bookings,
+// locations and favourites in a private useState — which is exactly why
+// the salon partner panel could never see a customer's booking or vice
+// versa (Defect D7 in the SRS gap audit). It is now a thin view over the
+// shared `AppDataProvider` store: bookings, locations and the customer
+// profile all live there, this file just exposes them in the shape pages
+// already expect. Cart contents and in-progress slot selection stay local
+// — they're pre-booking scratch state, not data either app needs to see.
 
 const CustomerContext = createContext();
 
 export const CustomerProvider = ({ children }) => {
-  // Auth state
-  const [user, setUser] = useState({
-    isLoggedIn: true,
-    name: 'Ananya Sharma',
-    phone: '7000792773',
-    email: 'ananya.sharma@example.com',
-    isElite: true,
-    referralCode: 'ANANYA50'
-  });
+  const { state } = useAppData();
 
-  // Location state
-  const [savedLocations, setSavedLocations] = useState(mockLocations);
-  const [currentLocation, setCurrentLocation] = useState(mockLocations[0]);
+  const user = useMemo(
+    () => state.customers.find((c) => c.id === state.currentCustomerId) || state.customers[0],
+    [state.customers, state.currentCustomerId]
+  );
 
-  // Cart state
+  // ---------------- Locations (shared store) ----------------
+  const savedLocations = useMemo(
+    () => state.locations.filter((l) => l.userId === user.id),
+    [state.locations, user.id]
+  );
+  const currentLocation = useMemo(
+    () => savedLocations.find((l) => l.isCurrent) || savedLocations[0],
+    [savedLocations]
+  );
+
+  const setCurrentLocation = useCallback((loc) => {
+    api.locations.setCurrent(loc.id).catch(() => {});
+  }, []);
+
+  const addLocation = useCallback(
+    async (data) => {
+      const loc = await api.locations.add(user.id, data);
+      await api.locations.setCurrent(loc.id);
+      return loc;
+    },
+    [user.id]
+  );
+
+  // ---------------- Cart (transient, local to this checkout session) ----------------
   const [cartItems, setCartItems] = useState([]);
-  const [appliedCoupon, setAppliedCoupon] = useState(mockCoupons[0]); // Default ELITE10
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Booking process slot selection
   const [bookingSlot, setBookingSlot] = useState({
-    type: 'Scheduled', // 'Scheduled' or 'Instant'
+    type: 'Scheduled',
+    dateKey: null,
     date: 'Tomorrow',
     time: '11:00 AM'
   });
   const [isSlotPickerOpen, setIsSlotPickerOpen] = useState(false);
 
-  // Other global modals
   const [isReferModalOpen, setIsReferModalOpen] = useState(false);
   const [isEliteModalOpen, setIsEliteModalOpen] = useState(false);
 
-  // Bookings state
-  const [bookings, setBookings] = useState(mockInitialBookings);
-
-  // Favorites state
-  const [favoriteSalonIds, setFavoriteSalonIds] = useState(['sal-1']);
-
-  // Toast notification
   const [toastMessage, setToastMessage] = useState(null);
-
-  const showToast = (msg) => {
+  const showToast = useCallback((msg) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
-  };
+    setTimeout(() => setToastMessage(null), 3000);
+  }, []);
 
-  // Cart operations
-  const addToCart = (service, salon) => {
-    setCartItems((prev) => {
-      // If service already in cart, don't duplicate
-      const exists = prev.find((item) => item.id === service.id);
-      if (exists) {
-        showToast('Service is already in your cart');
-        return prev;
-      }
-      showToast(`Added ${service.name} to cart`);
-      return [
-        ...prev,
-        {
-          ...service,
-          salonId: salon ? salon.id : service.salonId,
-          salonName: salon ? salon.name : service.salonName
+  const addToCart = useCallback(
+    (service, salon) => {
+      setCartItems((prev) => {
+        const exists = prev.find((item) => item.id === service.id);
+        if (exists) {
+          showToast('Service is already in your cart');
+          return prev;
         }
-      ];
-    });
-  };
+        // Cart is scoped to one salon (Defect D2 fix) — adding a service
+        // from a different salon than what's already in the cart starts a
+        // fresh cart instead of silently mixing two salons into one
+        // booking.
+        const incomingSalonId = salon ? salon.id : service.salonId;
+        const existingSalonId = prev[0]?.salonId;
+        const base = existingSalonId && existingSalonId !== incomingSalonId ? [] : prev;
+        if (base.length === 0 && prev.length > 0) {
+          showToast(`Started a new cart for ${salon ? salon.name : service.salonName}`);
+        } else {
+          showToast(`Added ${service.name} to cart`);
+        }
+        return [
+          ...base,
+          {
+            ...service,
+            salonId: incomingSalonId,
+            salonName: salon ? salon.name : service.salonName
+          }
+        ];
+      });
+    },
+    [showToast]
+  );
 
-  const removeFromCart = (serviceId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== serviceId));
-    showToast('Removed from cart');
-  };
+  const removeFromCart = useCallback(
+    (serviceId) => {
+      setCartItems((prev) => prev.filter((item) => item.id !== serviceId));
+      showToast('Removed from cart');
+    },
+    [showToast]
+  );
 
-  const clearCart = () => {
-    setCartItems([]);
-  };
+  const clearCart = useCallback(() => setCartItems([]), []);
 
-  // Coupon operations
-  const applyCoupon = (code) => {
-    const coupon = mockCoupons.find((c) => c.code.toLowerCase() === code.trim().toLowerCase());
-    if (coupon) {
-      setAppliedCoupon(coupon);
-      showToast(`Applied promo coupon ${coupon.code}!`);
-      return { success: true, message: `Coupon applied: ${coupon.code}` };
-    }
-    showToast('Invalid coupon code');
-    return { success: false, message: 'Invalid or expired coupon' };
-  };
+  const applyCoupon = useCallback(
+    async (code) => {
+      const coupon = await api.coupons.findByCode(code);
+      if (coupon) {
+        if (coupon.firstBookingOnly && !isFirstBookingForCustomer(state, user.id)) {
+          showToast(`${coupon.code} is valid on your first booking only`);
+          return { success: false, message: 'First-booking coupon already used' };
+        }
+        setAppliedCoupon(coupon);
+        showToast(`Applied promo coupon ${coupon.code}!`);
+        return { success: true, message: `Coupon applied: ${coupon.code}` };
+      }
+      showToast('Invalid coupon code');
+      return { success: false, message: 'Invalid or expired coupon' };
+    },
+    [showToast, state, user.id]
+  );
 
-  const removeCoupon = () => {
+  const removeCoupon = useCallback(() => {
     setAppliedCoupon(null);
     showToast('Coupon removed');
-  };
+  }, [showToast]);
 
-  // Financial calculations
   const cartSummary = useMemo(() => {
     const subtotal = cartItems.reduce((acc, item) => acc + (item.price || 0), 0);
-    const originalSubtotal = cartItems.reduce(
-      (acc, item) => acc + (item.originalPrice || item.price || 0),
-      0
-    );
+    const originalSubtotal = cartItems.reduce((acc, item) => acc + (item.originalPrice || item.price || 0), 0);
     let discount = 0;
-
     if (appliedCoupon && subtotal >= (appliedCoupon.minOrder || 0)) {
-      if (appliedCoupon.discountPercent) {
-        const calculated = (subtotal * appliedCoupon.discountPercent) / 100;
-        discount = Math.min(calculated, appliedCoupon.maxDiscount || calculated);
-      } else if (appliedCoupon.flatDiscount) {
-        discount = appliedCoupon.flatDiscount;
-      }
+      discount = computeDiscount(appliedCoupon, subtotal);
     }
-
     const finalAmount = Math.max(0, subtotal - discount);
     const totalSavings = originalSubtotal - finalAmount;
-
-    return {
-      subtotal,
-      originalSubtotal,
-      discount,
-      finalAmount,
-      totalSavings
-    };
+    return { subtotal, originalSubtotal, discount, finalAmount, totalSavings };
   }, [cartItems, appliedCoupon]);
 
-  // Booking actions
-  const createBooking = (bookingData) => {
-    const newId = `IT-${Math.floor(10000 + Math.random() * 90000)}`;
-    const newBooking = {
-      id: newId,
-      salonId: bookingData.salonId || 'sal-1',
-      salonName: bookingData.salonName || 'Luxe Glow Salon & Spa',
-      address: bookingData.address || currentLocation.area,
-      bookingType: bookingSlot.type,
-      status: 'Confirmed',
-      date: bookingSlot.type === 'Instant' ? 'Today (Instant)' : bookingSlot.date,
-      time: bookingSlot.type === 'Instant' ? 'Within 15 mins' : bookingSlot.time,
-      items: cartItems.length > 0 ? [...cartItems] : (bookingData.items || []),
-      totalAmount: cartSummary.subtotal,
-      discountAmount: cartSummary.discount,
-      finalPaid: cartSummary.finalAmount,
-      couponApplied: appliedCoupon ? appliedCoupon.code : null,
-      paymentMethod: bookingData.paymentMethod || 'UPI (Google Pay)',
-      paymentStatus: 'Successful',
-      bookedAt: new Date().toLocaleString('en-IN', {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-      })
-    };
+  // ---------------- Bookings (shared store) ----------------
+  const bookings = useMemo(() => state.bookings.filter((b) => b.customerId === user.id), [state.bookings, user.id]);
 
-    setBookings((prev) => [newBooking, ...prev]);
-    clearCart();
-    return newBooking;
-  };
+  const createBooking = useCallback(
+    async (bookingData) => {
+      const booking = await api.bookings.create({
+        customerId: user.id,
+        customerName: user.name || 'Customer',
+        customerPhone: user.phone,
+        salonId: bookingData.salonId || 'sal-1',
+        salonName: bookingData.salonName || 'Luxe Glow Salon & Spa',
+        address: bookingData.address || currentLocation?.area,
+        bookingMode: bookingSlot.type,
+        dateKey: bookingSlot.dateKey,
+        time: bookingSlot.type === 'Instant' ? 'Within 15 mins' : bookingSlot.time,
+        services: cartItems.length > 0 ? cartItems.map((i) => ({ id: i.id, name: i.name, price: i.price, duration: i.duration })) : bookingData.items || [],
+        totalAmount: cartSummary.subtotal,
+        discountAmount: cartSummary.discount,
+        finalPaid: cartSummary.finalAmount,
+        couponApplied: appliedCoupon ? appliedCoupon.code : null,
+        paymentMethod: bookingData.paymentMethod || 'UPI (Google Pay)',
+        paymentStatus: bookingData.paymentStatus || 'Successful',
+        transactionId: bookingData.transactionId || null,
+        holdId: bookingData.holdId || null,
+        stationId: bookingData.stationId || null,
+        staffId: bookingData.staffId || null
+      });
+      clearCart();
+      return booking;
+    },
+    [user.id, user.name, user.phone, currentLocation, bookingSlot, cartItems, cartSummary, appliedCoupon, clearCart]
+  );
 
-  const cancelBooking = (bookingId) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: 'Cancelled' } : b))
-    );
-    showToast(`Booking ${bookingId} cancelled`);
-  };
+  const cancelBooking = useCallback(
+    (bookingId, reason = 'Cancelled by customer') => {
+      api.bookings
+        .updateStatus(bookingId, 'Cancelled', { cancelReason: reason })
+        .then(() => showToast(`Booking ${bookingId} cancelled`))
+        .catch((e) => showToast(e.message || 'Could not cancel booking'));
+    },
+    [showToast]
+  );
 
-  const rescheduleBooking = (bookingId, newDate, newTime) => {
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === bookingId
-          ? {
-              ...b,
-              date: newDate,
-              time: newTime,
-              status: 'Confirmed'
-            }
-          : b
-      )
-    );
-    showToast(`Booking ${bookingId} rescheduled`);
-  };
-
-  const rateBooking = (bookingId, rating, review) => {
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === bookingId
-          ? {
-              ...b,
-              userRating: rating,
-              userReview: review
-            }
-          : b
-      )
-    );
-    showToast('Thank you for your rating & review!');
-  };
-
-  // Favorites
-  const toggleFavorite = (salonId) => {
-    setFavoriteSalonIds((prev) => {
-      const exists = prev.includes(salonId);
-      if (exists) {
-        showToast('Removed from favorites');
-        return prev.filter((id) => id !== salonId);
-      } else {
-        showToast('Saved to favorites');
-        return [...prev, salonId];
+  const rescheduleBooking = useCallback(
+    async (bookingId, dateKey, newTime, newDateLabel) => {
+      try {
+        const updated = await api.bookings.reschedule(bookingId, { dateKey, time: newTime });
+        showToast(`Booking ${bookingId} rescheduled to ${newDateLabel || dateKey}, ${newTime}`);
+        return updated;
+      } catch (e) {
+        showToast(e.message || 'Could not reschedule booking');
+        throw e;
       }
-    });
-  };
+    },
+    [showToast]
+  );
 
-  // Auth actions
-  const login = (phone, name = 'Customer') => {
-    setUser({
-      isLoggedIn: true,
-      name: name,
-      phone: phone,
-      email: `${phone}@instatrim.com`,
-      isElite: true,
-      referralCode: `TRIM${phone.slice(-4)}`
-    });
-    showToast('Logged in successfully');
-  };
+  const rateBooking = useCallback(
+    (bookingId, rating, review) => {
+      api.bookings
+        .addRating(bookingId, { rating, review })
+        .then(() => showToast('Thank you for your rating & review!'))
+        .catch(() => showToast('Could not submit review'));
+    },
+    [showToast]
+  );
 
-  const logout = () => {
-    setUser({
-      isLoggedIn: false,
-      name: '',
-      phone: '',
-      email: '',
-      isElite: false,
-      referralCode: ''
-    });
-    showToast('Logged out');
-  };
+  // ---------------- Favourites (persisted on the customer profile) ----------------
+  const favoriteSalonIds = user.favoriteSalonIds || [];
+
+  const toggleFavorite = useCallback(
+    (salonId) => {
+      const exists = favoriteSalonIds.includes(salonId);
+      const next = exists ? favoriteSalonIds.filter((id) => id !== salonId) : [...favoriteSalonIds, salonId];
+      api.customers.updateProfile({ favoriteSalonIds: next }).catch(() => {});
+      showToast(exists ? 'Removed from favorites' : 'Saved to favorites');
+    },
+    [favoriteSalonIds, showToast]
+  );
+
+  // ---------------- Auth ----------------
+  const login = useCallback(
+    (phone, name = 'Customer') => {
+      api.customers
+        .loginWithPhone(phone, name)
+        .then(() => showToast('Logged in successfully'))
+        .catch(() => showToast('Login failed, please try again'));
+    },
+    [showToast]
+  );
+
+  const loginWithProvider = useCallback(
+    (provider, profile) => {
+      api.customers
+        .loginWithProvider(provider, profile)
+        .then(() => showToast(`Logged in with ${provider}`))
+        .catch(() => showToast('Login failed, please try again'));
+    },
+    [showToast]
+  );
+
+  const logout = useCallback(() => {
+    api.customers
+      .logout()
+      .then(() => showToast('Logged out'))
+      .catch(() => {});
+  }, [showToast]);
+
+  const updateProfile = useCallback((patch) => api.customers.updateProfile(patch), []);
 
   return (
     <CustomerContext.Provider
       value={{
         user,
         login,
+        loginWithProvider,
         logout,
+        updateProfile,
         currentLocation,
         setCurrentLocation,
         savedLocations,
-        setSavedLocations,
+        addLocation,
         cartItems,
         addToCart,
         removeFromCart,
@@ -275,7 +297,6 @@ export const CustomerProvider = ({ children }) => {
       }}
     >
       {children}
-      {/* Toast popup */}
       {toastMessage && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-stone-900/90 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg backdrop-blur-md transition-all animate-bounce">
           {toastMessage}

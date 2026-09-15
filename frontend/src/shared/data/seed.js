@@ -98,6 +98,30 @@ export const CATEGORIES = [
     colSpan: 1,
     image:
       'https://lh3.googleusercontent.com/aida-public/AB6AXuBGB09T7yYSPz5m59qdMGcUYGYQVykYtorxa7jd6IqL3pgchl6qF2VO0YGkH6Qe09SZwdC5B4B_GFx7BB4aWbj4QK3MiGc4NA8pBTUksF7qRW3NYwaaFKzshP5rtuAkn_b46G5_FazHzgZ4GSuBdC60c-an6LChHDZaafiezSOlS0IPnh0iR7xTTZ4Er43ZrK1nO4IqJJfBPlPPwCvPJjDPfYMHkz8HLFOeCxHDZZUfto0qhwcTXyg4BQ'
+  },
+  // Beard & Grooming — the app previously carried only categories that
+  // read as women-only (Waxing, Mani-Pedi, Makeup, Mehandi) with no
+  // men's-grooming equivalent anywhere, despite the source SRS
+  // describing a general marketplace with Beard and Grooming as
+  // first-class categories (§6.3). Added here with real services and
+  // staff below so they're not empty categories.
+  {
+    id: 'cat-beard',
+    slug: 'beard',
+    name: 'Beard Grooming',
+    shortName: 'Beard Grooming',
+    serviceCategories: ['Beard'],
+    colSpan: 1,
+    image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80'
+  },
+  {
+    id: 'cat-grooming',
+    slug: 'grooming',
+    name: 'Men\'s Grooming',
+    shortName: 'Men\'s Grooming',
+    serviceCategories: ['Grooming'],
+    colSpan: 1,
+    image: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=400&q=80'
   }
 ];
 
@@ -169,7 +193,7 @@ export const SALONS = [
     mobile: '+91 98260 11223',
     email: 'contact@luxeglow.in',
     tagline: 'Premium Korean Aesthetics & Luxury Wellness',
-    category: 'Women',
+    category: 'Unisex',
     rating: 4.8,
     reviewsCount: 320,
     lat: 22.7204,
@@ -198,7 +222,7 @@ export const SALONS = [
     address: 'Plot 14, Opposite Treasure Island, South Tukoganj, Indore, MP',
     phone: '+91 98260 11223',
     amenities: ['AC & Ambient Music', 'Sanitized Kits', 'Beverage Service', 'Valet Parking', 'Card/UPI Accepted'],
-    totalChairs: 4,
+    totalChairs: 5,
     occupiedChairs: 2,
     partnerLoginId: 'luxeglow@instaatrim.com',
     partnerPassword: 'demo1234'
@@ -250,7 +274,7 @@ export const SALONS = [
     mobile: '+91 94250 88990',
     email: 'contact@aurawellness.in',
     tagline: 'Holistic Ayurvedic & Aroma Body Therapies',
-    category: 'Women',
+    category: 'Unisex',
     rating: 4.7,
     reviewsCount: 240,
     lat: 22.7089,
@@ -286,8 +310,8 @@ export const SALONS = [
     ownerName: 'Priyanka Oswal',
     mobile: '+91 98930 77123',
     email: 'contact@glambar.in',
-    tagline: 'Bridal Makeup, Nail Extravaganza & Dtan Care',
-    category: 'Women',
+    tagline: 'Makeup, Nail Artistry & Men\'s Grooming Studio',
+    category: 'Unisex',
     rating: 4.9,
     reviewsCount: 420,
     lat: 22.7515,
@@ -311,7 +335,7 @@ export const SALONS = [
     holidays: [],
     address: 'Malhar Mega Mall Road, Scheme 54, Vijay Nagar, Indore',
     phone: '+91 98930 77123',
-    amenities: ['Gel Nail Bar', 'Bridal Suite', 'Air Conditioned', 'Free Wi-Fi'],
+    amenities: ['Gel Nail Bar', 'Grooming Lounge', 'Air Conditioned', 'Free Wi-Fi'],
     totalChairs: 3,
     occupiedChairs: 0,
     partnerLoginId: 'glambar@instaatrim.com',
@@ -330,13 +354,20 @@ export const STAFF = [
   { id: 'stf-2', salonId: 'sal-1', name: 'Kavita', role: 'Beautician', serviceCategories: ['Waxing', 'Facial'], weeklyHours: defaultWeeklyHours('09:30 AM', '08:30 PM'), leaves: [] },
   { id: 'stf-3', salonId: 'sal-1', name: 'Meena', role: 'Spa Specialist', serviceCategories: ['Body Polishing', 'Spa'], weeklyHours: defaultWeeklyHours('09:30 AM', '08:30 PM'), leaves: [] },
   { id: 'stf-4', salonId: 'sal-1', name: 'Anjali', role: 'Facial Expert', serviceCategories: ['Facial'], weeklyHours: defaultWeeklyHours('09:30 AM', '08:30 PM'), leaves: [] },
+  // Staff rosters were entirely female across every salon — no barber or
+  // male grooming specialist anywhere — which read as strongly as the
+  // women-only categories did. One added per salon below.
+  { id: 'stf-9', salonId: 'sal-1', name: 'Arjun Rathore', role: 'Grooming Specialist', serviceCategories: ['Beard'], weeklyHours: defaultWeeklyHours('09:30 AM', '08:30 PM'), leaves: [] },
 
   { id: 'stf-5', salonId: 'sal-2', name: 'Ritika', role: 'Hair Stylist', serviceCategories: ['Hair Studio', 'Waxing'], weeklyHours: defaultWeeklyHours('10:00 AM', '09:00 PM'), leaves: [] },
   { id: 'stf-6', salonId: 'sal-2', name: 'Simran', role: 'Nail Technician', serviceCategories: ['Mani-Pedi'], weeklyHours: defaultWeeklyHours('10:00 AM', '09:00 PM'), leaves: [] },
+  { id: 'stf-10', salonId: 'sal-2', name: 'Karan Bhatt', role: 'Barber', serviceCategories: ['Grooming'], weeklyHours: defaultWeeklyHours('10:00 AM', '09:00 PM'), leaves: [] },
 
   { id: 'stf-7', salonId: 'sal-3', name: 'Kajal', role: 'Massage Therapist', serviceCategories: ['Spa'], weeklyHours: defaultWeeklyHours('09:00 AM', '08:00 PM'), leaves: [] },
+  { id: 'stf-12', salonId: 'sal-3', name: 'Aditya Verma', role: 'Massage Therapist', serviceCategories: ['Spa'], weeklyHours: defaultWeeklyHours('09:00 AM', '08:00 PM'), leaves: [] },
 
-  { id: 'stf-8', salonId: 'sal-4', name: 'Divya', role: 'Makeup Artist', serviceCategories: ['Makeup', 'Facial'], weeklyHours: defaultWeeklyHours('10:30 AM', '09:30 PM'), leaves: [] }
+  { id: 'stf-8', salonId: 'sal-4', name: 'Divya', role: 'Makeup Artist', serviceCategories: ['Makeup', 'Facial'], weeklyHours: defaultWeeklyHours('10:30 AM', '09:30 PM'), leaves: [] },
+  { id: 'stf-11', salonId: 'sal-4', name: 'Rohan Kapoor', role: 'Grooming Specialist', serviceCategories: ['Grooming'], weeklyHours: defaultWeeklyHours('10:30 AM', '09:30 PM'), leaves: [] }
 ];
 
 export const STATIONS = [
@@ -344,16 +375,17 @@ export const STATIONS = [
   { id: 'stn-1b', salonId: 'sal-1', name: 'Chair 2', staffId: 'stf-2' },
   { id: 'stn-1c', salonId: 'sal-1', name: 'Chair 3', staffId: 'stf-3' },
   { id: 'stn-1d', salonId: 'sal-1', name: 'Chair 4', staffId: 'stf-4' },
+  { id: 'stn-1e', salonId: 'sal-1', name: 'Chair 5', staffId: 'stf-9' },
 
   { id: 'stn-2a', salonId: 'sal-2', name: 'Chair 1', staffId: 'stf-5' },
   { id: 'stn-2b', salonId: 'sal-2', name: 'Chair 2', staffId: 'stf-6' },
-  { id: 'stn-2c', salonId: 'sal-2', name: 'Chair 3', staffId: null },
+  { id: 'stn-2c', salonId: 'sal-2', name: 'Chair 3', staffId: 'stf-10' },
 
   { id: 'stn-3a', salonId: 'sal-3', name: 'Chair 1', staffId: 'stf-7' },
-  { id: 'stn-3b', salonId: 'sal-3', name: 'Chair 2', staffId: null },
+  { id: 'stn-3b', salonId: 'sal-3', name: 'Chair 2', staffId: 'stf-12' },
 
   { id: 'stn-4a', salonId: 'sal-4', name: 'Chair 1', staffId: 'stf-8' },
-  { id: 'stn-4b', salonId: 'sal-4', name: 'Chair 2', staffId: null },
+  { id: 'stn-4b', salonId: 'sal-4', name: 'Chair 2', staffId: 'stf-11' },
   { id: 'stn-4c', salonId: 'sal-4', name: 'Chair 3', staffId: null }
 ];
 
@@ -482,6 +514,43 @@ export const SERVICES = [
     originalPrice: 1099,
     isInstantEligible: false,
     image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=400&q=80'
+  }),
+
+  // Men's grooming — real content behind the Beard/Grooming categories
+  // rather than empty tiles, and the reason every salon carries at
+  // least one service that has nothing to do with a women-only catalogue.
+  svc({
+    id: 'srv-10',
+    salonId: 'sal-1',
+    name: 'Classic Beard Trim & Hot Towel Shave',
+    category: 'Beard',
+    description: 'Precision beard shaping, straight-razor edge work and a hot towel finish.',
+    duration: '35 mins',
+    price: 349,
+    originalPrice: 549,
+    image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=400&q=80'
+  }),
+  svc({
+    id: 'srv-11',
+    salonId: 'sal-2',
+    name: 'Men\'s Signature Haircut & Beard Styling',
+    category: 'Grooming',
+    description: 'Scissor-and-clipper haircut paired with beard line-up and finishing balm.',
+    duration: '50 mins',
+    price: 499,
+    originalPrice: 799,
+    image: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=400&q=80'
+  }),
+  svc({
+    id: 'srv-12',
+    salonId: 'sal-4',
+    name: 'Men\'s Grooming Facial & Beard Detox',
+    category: 'Grooming',
+    description: 'Deep-cleanse facial formulated for coarser skin, paired with a beard detox scrub.',
+    duration: '40 mins',
+    price: 449,
+    originalPrice: 749,
+    image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=400&q=80'
   })
 ];
 
@@ -568,12 +637,24 @@ export const REVIEWS = [
   {
     id: 'rev-3',
     salonId: 'sal-2',
-    customerName: 'Nisha Patel',
+    customerName: 'Rohit Malhotra',
     rating: 4,
     date: '3 days ago',
     comment: 'Loved the keratin spa, hair feels so smooth. Salon could use better parking.',
     service: 'Keratin Hair Spa',
-    reply: 'Thanks Nisha, noting the parking feedback for our next partner review!',
+    reply: 'Thanks Rohit, noting the parking feedback for our next partner review!',
+    verifiedBooking: true,
+    bookingId: null
+  },
+  {
+    id: 'rev-4',
+    salonId: 'sal-2',
+    customerName: 'Vikram Nair',
+    rating: 5,
+    date: '5 days ago',
+    comment: 'Best beard styling I\'ve had in Indore. Karan really knows his shape-ups.',
+    service: 'Men\'s Signature Haircut & Beard Styling',
+    reply: 'Thank you Vikram! Karan will be glad to hear that.',
     verifiedBooking: true,
     bookingId: null
   }
@@ -763,7 +844,7 @@ export const BOOKINGS = [
   {
     id: 'IT-10833',
     customerId: 'cust-3',
-    customerName: 'Sneha Verma',
+    customerName: 'Aman Khanna',
     customerPhone: '+91 94250 88912',
     salonId: 'sal-1',
     salonName: 'Luxe Glow Salon & Spa',
@@ -773,12 +854,12 @@ export const BOOKINGS = [
     dateKey: null,
     dayOffset: 0,
     time: '04:15 PM',
-    stationId: null,
-    staffId: null,
-    services: [{ id: 'srv-2', name: 'Full Arms, Underarms & Full Legs - Rica Tin Wax', price: 949, duration: '1 hr 5 mins' }],
-    totalAmount: 949,
+    stationId: 'stn-1e',
+    staffId: 'stf-9',
+    services: [{ id: 'srv-10', name: 'Classic Beard Trim & Hot Towel Shave', price: 349, duration: '35 mins' }],
+    totalAmount: 349,
     discountAmount: 0,
-    finalPaid: 949,
+    finalPaid: 349,
     couponApplied: null,
     paymentMethod: 'UPI (Prepaid)',
     paymentStatus: 'Successful',
@@ -815,7 +896,7 @@ export const BOOKINGS = [
   {
     id: 'IT-10755',
     customerId: 'cust-5',
-    customerName: 'Tanvi Joshi',
+    customerName: 'Rahul Kapoor',
     customerPhone: '+91 91112 55431',
     salonId: 'sal-1',
     salonName: 'Luxe Glow Salon & Spa',

@@ -21,7 +21,7 @@ export const SalonServicesPage = () => {
 
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const categories = ['All', 'Waxing', 'Facial', 'Spa', 'Body Polishing', 'Mani-Pedi'];
+  const categories = ['All', 'Waxing', 'Facial', 'Spa', 'Body Polishing', 'Mani-Pedi', 'Grooming', 'Beard'];
 
   const filteredServices = services.filter((s) => {
     if (selectedCategory === 'All') return true;

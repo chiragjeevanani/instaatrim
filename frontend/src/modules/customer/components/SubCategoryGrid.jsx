@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 // category grid above it — two lists that could quietly drift apart.
 // It now reuses the single shared taxonomy so there's one place that
 // defines what a category is and how it maps to services.
-const subCategorySlugs = ['waxing', 'facial', 'body-polishing', 'mani-pedi', 'hair', 'mehandi'];
+const subCategorySlugs = ['waxing', 'facial', 'body-polishing', 'mani-pedi', 'hair', 'beard', 'grooming', 'mehandi'];
 const mockSubCategories = subCategorySlugs
   .map((slug) => CATEGORIES.find((c) => c.slug === slug))
   .filter(Boolean)
@@ -20,7 +20,7 @@ export const SubCategoryGrid = () => {
   return (
     <section className="mt-8 px-4 w-full max-w-full min-w-0 box-border" data-purpose="sub-categories-showcase">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[13px] font-bold text-stone-900 tracking-tight">Home Salon For Women</h2>
+        <h2 className="text-[13px] font-bold text-stone-900 tracking-tight">Popular Services Near You</h2>
         <button
           onClick={() => navigate('/customer/salons')}
           className="inline-flex items-center text-[10.5px] font-bold text-brand-maroon group active:opacity-80"

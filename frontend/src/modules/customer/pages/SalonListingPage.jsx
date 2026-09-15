@@ -138,7 +138,7 @@ export const SalonListingPage = () => {
             <span>Instant Booking</span>
           </button>
 
-          {['All', 'Women', 'Unisex'].map((g) => (
+          {['All', 'Men', 'Women', 'Unisex'].map((g) => (
             <button
               key={g}
               onClick={() => setSelectedGender(g)}

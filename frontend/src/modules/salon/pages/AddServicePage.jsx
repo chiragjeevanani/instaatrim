@@ -48,6 +48,10 @@ export const AddServicePage = () => {
     'Body Polishing',
     'Mani-Pedi',
     'Hair Studio',
+    'Beard',
+    'Grooming',
+    'Makeup',
+    'Mehandi',
     'Cleanup',
     'Bleach & D-Tan'
   ];

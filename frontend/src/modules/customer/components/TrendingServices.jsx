@@ -4,7 +4,7 @@ import { useAppData } from '../../../shared/store/AppDataProvider';
 import { Clock, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const filterTabs = ['All', 'Waxing', 'Facial', 'Mani-Pedi', 'Spa'];
+const filterTabs = ['All', 'Waxing', 'Facial', 'Mani-Pedi', 'Spa', 'Grooming', 'Beard'];
 
 // This used to render a curated, static array (mockTrendingServices) that
 // never reflected what a salon partner actually did to their catalogue —

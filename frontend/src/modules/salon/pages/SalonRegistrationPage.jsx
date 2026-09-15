@@ -10,20 +10,13 @@ import {
   Landmark,
   Sparkles,
   Check,
-  CheckCircle2,
   ChevronRight,
-  UploadCloud,
   ShieldCheck,
-  Clock,
-  Scissors,
   Eye,
   EyeOff,
   Loader2,
   AlertCircle,
-  HelpCircle,
-  Info,
-  BadgePercent,
-  Layers
+  BadgePercent
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 
@@ -56,14 +49,12 @@ export const SalonRegistrationPage = () => {
 
   // Form State
   const [formData, setFormData] = useState({
-    // Step 1
     name: '',
     category: 'Unisex',
     ownerName: '',
     mobile: '',
     email: '',
     password: '',
-    // Step 2
     city: 'Indore',
     area: '',
     address: '',
@@ -71,18 +62,15 @@ export const SalonRegistrationPage = () => {
     closeTime: '08:30 PM',
     totalChairs: 4,
     amenities: ['AC & Ambient Music', 'Sanitized Kits & Tools', 'Card/UPI/Contactless'],
-    // Step 3
     businessType: 'Sole Proprietorship',
     gstin: '',
     shopActLicense: '',
     coverImage: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
-    // Step 4
     accountHolderName: '',
     bankName: 'HDFC Bank',
     accountNumber: '',
     ifscCode: '',
     payoutCycle: 'Daily Automated',
-    // Step 5
     agreeTerms: true
   });
 
@@ -103,7 +91,6 @@ export const SalonRegistrationPage = () => {
     });
   };
 
-  // Step validation
   const isStep1Valid =
     formData.name.trim().length >= 3 &&
     formData.ownerName.trim().length >= 2 &&
@@ -186,7 +173,6 @@ export const SalonRegistrationPage = () => {
         ifscCode: formData.ifscCode.toUpperCase() || 'HDFC0001032'
       });
 
-      // Fire festive confetti
       confetti({
         particleCount: 90,
         spread: 70,
@@ -283,7 +269,6 @@ export const SalonRegistrationPage = () => {
             })}
           </div>
 
-          {/* Progress Bar Track */}
           <div className="w-full bg-stone-200/80 h-1.5 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-brand-maroon via-rose-600 to-emerald-500 rounded-full"
@@ -294,12 +279,9 @@ export const SalonRegistrationPage = () => {
           </div>
         </div>
 
-        {/* Form Body Container */}
+        {/* Form Body */}
         <div className="flex-1 flex flex-col justify-start pt-1 pb-4">
           <AnimatePresence mode="wait">
-            {/* ============================================================ */}
-            {/* STEP 1: Salon & Owner Profile */}
-            {/* ============================================================ */}
             {step === 1 && (
               <motion.div
                 key="step-1"
@@ -328,7 +310,6 @@ export const SalonRegistrationPage = () => {
                     />
                   </div>
 
-                  {/* Category Selection */}
                   <div>
                     <label className="text-[11px] font-bold text-stone-700 block mb-1.5">
                       Business Category <span className="text-rose-600">*</span>
@@ -425,9 +406,6 @@ export const SalonRegistrationPage = () => {
               </motion.div>
             )}
 
-            {/* ============================================================ */}
-            {/* STEP 2: Location & Salon Setup */}
-            {/* ============================================================ */}
             {step === 2 && (
               <motion.div
                 key="step-2"
@@ -560,9 +538,6 @@ export const SalonRegistrationPage = () => {
               </motion.div>
             )}
 
-            {/* ============================================================ */}
-            {/* STEP 3: Business KYC & Photos */}
-            {/* ============================================================ */}
             {step === 3 && (
               <motion.div
                 key="step-3"
@@ -618,7 +593,6 @@ export const SalonRegistrationPage = () => {
                     />
                   </div>
 
-                  {/* Salon Cover Photo Preview / Upload */}
                   <div>
                     <label className="text-[11px] font-bold text-stone-700 block mb-1.5">
                       Salon Storefront &amp; Ambience Photo
@@ -672,9 +646,6 @@ export const SalonRegistrationPage = () => {
               </motion.div>
             )}
 
-            {/* ============================================================ */}
-            {/* STEP 4: Bank Settlement Account */}
-            {/* ============================================================ */}
             {step === 4 && (
               <motion.div
                 key="step-4"
@@ -788,9 +759,6 @@ export const SalonRegistrationPage = () => {
               </motion.div>
             )}
 
-            {/* ============================================================ */}
-            {/* STEP 5: Review & Live Launch */}
-            {/* ============================================================ */}
             {step === 5 && (
               <motion.div
                 key="step-5"
@@ -805,7 +773,6 @@ export const SalonRegistrationPage = () => {
                   <p className="text-[11px] text-stone-500">Your partner account is ready to activate and receive bookings</p>
                 </div>
 
-                {/* Partner Card Preview */}
                 <div className="bg-white rounded-2xl p-3.5 border border-purple-200 shadow-2xs space-y-3">
                   <div className="flex items-start gap-3">
                     <img
@@ -826,7 +793,7 @@ export const SalonRegistrationPage = () => {
                         {formData.area}, {formData.city} • {formData.category}
                       </p>
                       <p className="text-[10px] text-stone-400 font-mono mt-0.5 truncate">
-                        Owner: {formData.ownerName} ({formData.mobile ? `+91 ${formData.mobile}` : '+91 9826011223'})
+                        Owner: {formData.ownerName} ({formData.mobile ? `+91 ${formData.mobile}` : '+91 9876543210'})
                       </p>
                     </div>
                   </div>
@@ -849,7 +816,6 @@ export const SalonRegistrationPage = () => {
                   </div>
                 </div>
 
-                {/* Terms & Commission Transparency */}
                 <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 space-y-1.5 text-stone-800">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-brand-maroon">
                     <BadgePercent className="w-4 h-4" />
@@ -862,7 +828,6 @@ export const SalonRegistrationPage = () => {
                   </ul>
                 </div>
 
-                {/* Agreement Checkbox */}
                 <label className="flex items-start gap-2.5 p-2 rounded-xl bg-white/70 border border-stone-200 cursor-pointer">
                   <input
                     type="checkbox"
@@ -878,7 +843,6 @@ export const SalonRegistrationPage = () => {
             )}
           </AnimatePresence>
 
-          {/* Error Banner */}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
@@ -890,7 +854,6 @@ export const SalonRegistrationPage = () => {
             </motion.div>
           )}
 
-          {/* CTA Button */}
           <div className="mt-4 pt-2">
             <button
               type="button"
@@ -922,7 +885,6 @@ export const SalonRegistrationPage = () => {
           </div>
         </div>
 
-        {/* Footer info */}
         <footer className="w-full text-center text-[10px] text-stone-400 leading-relaxed px-2 pt-2">
           Need partner support? Call our onboarding desk at{' '}
           <a className="text-brand-maroon font-bold hover:underline" href="tel:18001239999">

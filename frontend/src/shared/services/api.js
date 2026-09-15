@@ -50,14 +50,109 @@ const salons = {
 
   login: (loginId, password) =>
     withLatency(() => {
+      const trimmedLogin = String(loginId || '').trim().toLowerCase();
+      const cleanDigits = String(loginId || '').replace(/\D/g, '');
       const salon = getState().salons.find(
-        (s) => s.partnerLoginId?.toLowerCase() === String(loginId).toLowerCase()
+        (s) =>
+          s.partnerLoginId?.toLowerCase() === trimmedLogin ||
+          s.email?.toLowerCase() === trimmedLogin ||
+          (cleanDigits.length >= 10 && s.mobile?.replace(/\D/g, '').endsWith(cleanDigits.slice(-10)))
       );
       if (!salon || salon.partnerPassword !== password) {
-        throw new ApiError('Incorrect email or password.', 'AUTH_FAILED');
+        throw new ApiError('Incorrect email/mobile or password.', 'AUTH_FAILED');
       }
       dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: salon.id } });
       return clone(salon);
+    }),
+
+  loginWithOtp: (phoneOrEmail) =>
+    withLatency(() => {
+      const cleanDigits = String(phoneOrEmail || '').replace(/\D/g, '');
+      const trimmed = String(phoneOrEmail || '').trim().toLowerCase();
+      let salon = getState().salons.find(
+        (s) =>
+          (cleanDigits.length >= 10 && s.mobile?.replace(/\D/g, '').endsWith(cleanDigits.slice(-10))) ||
+          s.partnerLoginId?.toLowerCase() === trimmed ||
+          s.email?.toLowerCase() === trimmed
+      );
+      if (!salon) {
+        // Fall back to first demo salon if arbitrary number entered for testing
+        salon = getState().salons[0];
+      }
+      dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: salon.id } });
+      return clone(salon);
+    }),
+
+  register: (data) =>
+    withLatency(() => {
+      const id = `sal-${Date.now()}`;
+      const openTime = data.openTime || '09:30 AM';
+      const closeTime = data.closeTime || '08:30 PM';
+      const defaultHours = {
+        Sunday: { open: openTime, close: closeTime, closed: false },
+        Monday: { open: openTime, close: closeTime, closed: false },
+        Tuesday: { open: openTime, close: closeTime, closed: false },
+        Wednesday: { open: openTime, close: closeTime, closed: false },
+        Thursday: { open: openTime, close: closeTime, closed: false },
+        Friday: { open: openTime, close: closeTime, closed: false },
+        Saturday: { open: openTime, close: closeTime, closed: false }
+      };
+
+      const newSalon = {
+        id,
+        name: data.name || 'My Salon & Spa',
+        ownerName: data.ownerName || 'Partner Owner',
+        mobile: data.mobile?.startsWith('+91') ? data.mobile : `+91 ${data.mobile || '98765 43210'}`,
+        email: (data.email || `partner_${Date.now()}@instaatrim.com`).toLowerCase(),
+        partnerLoginId: (data.email || `partner_${Date.now()}@instaatrim.com`).toLowerCase(),
+        partnerPassword: data.password || 'demo1234',
+        tagline: data.tagline || 'Premier Beauty & Wellness Destination',
+        category: data.category || 'Unisex',
+        rating: 5.0,
+        reviewsCount: 1,
+        lat: 22.7204,
+        lng: 75.8721,
+        distanceKm: 1.1,
+        area: data.area || 'Indore Central',
+        locationCity: data.city || 'Indore',
+        startingPrice: Number(data.startingPrice) || 299,
+        coverImage:
+          data.coverImage ||
+          'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+        images: [
+          data.coverImage ||
+            'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
+        ],
+        offer: '15% OFF Launch Special',
+        hasInstantBooking: true,
+        isInstantBookingEnabled: true,
+        instantWaitMinutes: 15,
+        isVerified: true,
+        verificationStatus: 'Live',
+        isStoreOpen: true,
+        openHoursLegacy: `${openTime} - ${closeTime}`,
+        weeklyHours: defaultHours,
+        breaks: [],
+        holidays: [],
+        address: data.address || `${data.area || 'South Tukoganj'}, ${data.city || 'Indore'}`,
+        phone: data.mobile || '+91 98765 43210',
+        amenities: data.amenities && data.amenities.length > 0
+          ? data.amenities
+          : ['AC & Ambient Music', 'Sanitized Kits', 'Card/UPI Accepted', 'Beverage Service'],
+        totalChairs: Number(data.totalChairs) || 4,
+        occupiedChairs: 0,
+        gstin: data.gstin || '23AABCU9603R1ZM',
+        shopActLicense: data.shopActLicense || 'IND-MP-2025-8821',
+        bankName: data.bankName || 'HDFC Bank',
+        accountNumber: data.accountNumber ? `••••${data.accountNumber.slice(-4)}` : '••••4892',
+        ifscCode: data.ifscCode || 'HDFC0001032',
+        commissionRate: '12% Flat'
+      };
+
+      dispatch({ type: 'ADD_SALON', payload: newSalon });
+      dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: newSalon.id } });
+      return clone(newSalon);
     }),
 
   logout: () =>

@@ -94,6 +94,12 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Salons ----------------
+    case 'ADD_SALON': {
+      return {
+        ...state,
+        salons: [action.payload, ...state.salons]
+      };
+    }
     case 'PATCH_SALON': {
       const { salonId, patch } = action.payload;
       return {

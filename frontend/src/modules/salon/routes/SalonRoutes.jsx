@@ -13,13 +13,12 @@ import { SalonProfilePage } from '../pages/SalonProfilePage';
 import { SalonBusinessProfilePage } from '../pages/SalonBusinessProfilePage';
 import { EditSalonProfilePage } from '../pages/EditSalonProfilePage';
 import { SalonOnboardingPage } from '../pages/SalonOnboardingPage';
+import { SalonRegistrationPage } from '../pages/SalonRegistrationPage';
 import { AddServicePage } from '../pages/AddServicePage';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Routes reachable without a partner session — the login screen itself,
-// and onboarding, which exists precisely for someone who isn't a partner
-// yet and has nothing to log into.
-const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding'];
+// Routes reachable without a partner session — login and registration/onboarding
+const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding', '/salon/register'];
 
 export const SalonRoutes = () => {
   const location = useLocation();
@@ -34,12 +33,13 @@ export const SalonRoutes = () => {
   if (!isAuthenticated && !isPublicPath) {
     return <Navigate to="/salon/login" replace />;
   }
-  if (isAuthenticated && location.pathname.startsWith('/salon/login')) {
+  if (isAuthenticated && (location.pathname.startsWith('/salon/login') || location.pathname.startsWith('/salon/register'))) {
     return <Navigate to="/salon" replace />;
   }
 
   const isFullscreenSubpage =
     location.pathname.includes('/salon/login') ||
+    location.pathname.includes('/salon/register') ||
     location.pathname.includes('/salon/onboarding') ||
     location.pathname.includes('/salon/services/new') ||
     location.pathname.includes('/salon/services/edit') ||
@@ -56,6 +56,7 @@ export const SalonRoutes = () => {
         <div className="flex-1 w-full min-w-0">
           <Routes>
             <Route path="/login" element={<SalonLoginPage />} />
+            <Route path="/register" element={<SalonRegistrationPage />} />
             <Route path="/" element={<SalonDashboardPage />} />
             <Route path="/bookings" element={<SalonBookingsPage />} />
             <Route path="/services" element={<SalonServicesPage />} />

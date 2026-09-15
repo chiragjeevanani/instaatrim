@@ -9,6 +9,7 @@ import { SalonServicesPage } from '../pages/SalonServicesPage';
 import { SalonOffersPage } from '../pages/SalonOffersPage';
 import { SalonAnalyticsPage } from '../pages/SalonAnalyticsPage';
 import { SalonProfilePage } from '../pages/SalonProfilePage';
+import { SalonBusinessProfilePage } from '../pages/SalonBusinessProfilePage';
 import { EditSalonProfilePage } from '../pages/EditSalonProfilePage';
 import { SalonOnboardingPage } from '../pages/SalonOnboardingPage';
 import { AddServicePage } from '../pages/AddServicePage';
@@ -22,7 +23,8 @@ export const SalonRoutes = () => {
     location.pathname.includes('/salon/onboarding') ||
     location.pathname.includes('/salon/services/new') ||
     location.pathname.includes('/salon/services/edit') ||
-    location.pathname.includes('/salon/profile/edit');
+    location.pathname.includes('/salon/profile/edit') ||
+    location.pathname.includes('/salon/profile/business');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none">
@@ -41,6 +43,7 @@ export const SalonRoutes = () => {
             <Route path="/offers" element={<SalonOffersPage />} />
             <Route path="/analytics" element={<SalonAnalyticsPage />} />
             <Route path="/profile" element={<SalonProfilePage />} />
+            <Route path="/profile/business" element={<SalonBusinessProfilePage />} />
             <Route path="/profile/edit" element={<EditSalonProfilePage />} />
             <Route path="/onboarding" element={<SalonOnboardingPage />} />
           </Routes>

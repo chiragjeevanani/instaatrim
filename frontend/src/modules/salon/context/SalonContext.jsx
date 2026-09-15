@@ -12,16 +12,20 @@ import { dateKey, minutesToClock, nowMinutesOfDay } from '../../../shared/lib/ti
 // status change made here is visible on the customer side, both without a
 // page refresh.
 //
-// There is no partner login screen yet (that's Phase 2), so in the absence
-// of a session this defaults to the demo salon 'sal-1' — matching the
-// single-salon behaviour the prototype already had.
+// SalonRoutes now gates every route but /salon/login behind a real
+// partnerSession (see api.salons.login/logout) — salonId still falls back
+// to 'sal-1' here only as a defensive default for anything that somehow
+// renders outside that gate; authenticated routes always have a session.
 
 const SalonContext = createContext();
 
 export const SalonProvider = ({ children }) => {
   const { state } = useAppData();
 
+  const isAuthenticated = Boolean(state.partnerSession);
   const salonId = state.partnerSession?.salonId || 'sal-1';
+
+  const logout = useCallback(() => api.salons.logout(), []);
 
   const salonProfile = useMemo(() => {
     const salon = state.salons.find((s) => s.id === salonId);
@@ -288,6 +292,8 @@ export const SalonProvider = ({ children }) => {
     <SalonContext.Provider
       value={{
         salonId,
+        isAuthenticated,
+        logout,
         salonProfile,
         setSalonProfile,
         isStoreOpen,

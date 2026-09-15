@@ -15,7 +15,8 @@ import {
   ArrowLeftRight,
   Phone,
   Mail,
-  MessageCircle
+  MessageCircle,
+  LogOut
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -28,8 +29,15 @@ import { motion } from 'framer-motion';
 // actually expects behind a Profile tab.
 export const SalonProfilePage = () => {
   const navigate = useNavigate();
-  const { salonProfile, metrics } = useSalon();
+  const { salonProfile, metrics, logout } = useSalon();
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await logout();
+    navigate('/salon/login', { replace: true });
+  };
 
   return (
     <motion.div
@@ -175,6 +183,16 @@ export const SalonProfilePage = () => {
             <ChevronRight className="w-3.5 h-3.5 text-rose-700" />
           </div>
         </div>
+
+        {/* Log Out */}
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-xs text-stone-700 hover:bg-stone-50 active:scale-98 transition-all flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-60"
+        >
+          <LogOut className="w-3.5 h-3.5 text-stone-500" />
+          <span>{isLoggingOut ? 'Logging out…' : 'Log Out'}</span>
+        </button>
       </main>
 
       <InfoSheet

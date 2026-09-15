@@ -1,8 +1,9 @@
 import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import { SalonTopBar } from '../components/SalonTopBar';
 import { SalonBottomNav } from '../components/SalonBottomNav';
+import { SalonLoginPage } from '../pages/SalonLoginPage';
 import { SalonDashboardPage } from '../pages/SalonDashboardPage';
 import { SalonBookingsPage } from '../pages/SalonBookingsPage';
 import { SalonServicesPage } from '../pages/SalonServicesPage';
@@ -15,11 +16,30 @@ import { SalonOnboardingPage } from '../pages/SalonOnboardingPage';
 import { AddServicePage } from '../pages/AddServicePage';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Routes reachable without a partner session — the login screen itself,
+// and onboarding, which exists precisely for someone who isn't a partner
+// yet and has nothing to log into.
+const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding'];
+
 export const SalonRoutes = () => {
   const location = useLocation();
-  const { toast } = useSalon();
+  const { toast, isAuthenticated } = useSalon();
+
+  const isPublicPath = PUBLIC_PATHS.some((p) => location.pathname.startsWith(p));
+
+  // The actual auth gate — previously every /salon/* route was reachable
+  // by anyone with no credential check at all. An unauthenticated visitor
+  // is sent to the login screen; a logged-in partner who lands on the
+  // login screen is sent straight to their dashboard instead.
+  if (!isAuthenticated && !isPublicPath) {
+    return <Navigate to="/salon/login" replace />;
+  }
+  if (isAuthenticated && location.pathname.startsWith('/salon/login')) {
+    return <Navigate to="/salon" replace />;
+  }
 
   const isFullscreenSubpage =
+    location.pathname.includes('/salon/login') ||
     location.pathname.includes('/salon/onboarding') ||
     location.pathname.includes('/salon/services/new') ||
     location.pathname.includes('/salon/services/edit') ||
@@ -35,6 +55,7 @@ export const SalonRoutes = () => {
         {/* Dynamic Route Pages */}
         <div className="flex-1 w-full min-w-0">
           <Routes>
+            <Route path="/login" element={<SalonLoginPage />} />
             <Route path="/" element={<SalonDashboardPage />} />
             <Route path="/bookings" element={<SalonBookingsPage />} />
             <Route path="/services" element={<SalonServicesPage />} />

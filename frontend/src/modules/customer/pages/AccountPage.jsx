@@ -47,10 +47,7 @@ export const AccountPage = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <div
       className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Compact Header Profile Summary */}
@@ -258,6 +255,6 @@ export const AccountPage = () => {
           <li>Reviews are only left by customers with a completed, verified booking</li>
         </ul>
       </InfoSheet>
-    </motion.div>
+    </div>
   );
 };

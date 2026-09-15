@@ -54,12 +54,8 @@ export const SalonProfilePage = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="w-full max-w-[480px] min-w-0 bg-[#fbfaf9] font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+    <div
+      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
       <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
         {/* Salon Cover & Header Profile */}
@@ -90,10 +86,20 @@ export const SalonProfilePage = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-1 bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200 text-xs font-bold shrink-0">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
-                <span>{salonProfile.rating}</span>
-                <span className="text-[10px] font-medium text-stone-400">({salonProfile.reviewsCount})</span>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 bg-amber-50 text-amber-900 px-2 py-0.5 rounded-lg border border-amber-200 text-xs font-bold">
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                  <span>{salonProfile.rating}</span>
+                  <span className="text-[10px] font-medium text-stone-400">({salonProfile.reviewsCount})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/salon/profile/edit')}
+                  className="flex items-center gap-1 text-[10.5px] font-bold text-rose-900 bg-rose-50 hover:bg-rose-100 active:scale-95 px-2.5 py-1 rounded-lg border border-rose-200 transition-all cursor-pointer"
+                >
+                  <Edit2 className="w-3 h-3 stroke-[2]" />
+                  <span>Edit Profile</span>
+                </button>
               </div>
             </div>
 
@@ -233,6 +239,6 @@ export const SalonProfilePage = () => {
           </div>
         </div>
       </main>
-    </motion.div>
+    </div>
   );
 };

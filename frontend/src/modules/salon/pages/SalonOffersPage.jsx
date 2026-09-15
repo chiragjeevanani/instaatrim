@@ -20,12 +20,8 @@ export const SalonOffersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="w-full max-w-[480px] min-w-0 bg-[#fbfaf9] font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+    <div
+      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
       <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
         {/* Header */}
@@ -170,6 +166,6 @@ export const SalonOffersPage = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
-    </motion.div>
+    </div>
   );
 };

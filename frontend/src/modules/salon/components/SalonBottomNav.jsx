@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import { LayoutDashboard, Calendar, Scissors, Tag, BarChart3 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const SalonBottomNav = () => {
   const location = useLocation();
@@ -48,7 +49,7 @@ export const SalonBottomNav = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200/80 z-50 shadow-nav px-3 py-1.5 box-border"
+      className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-purple-200/50 z-50 shadow-nav px-3 py-1.5 box-border"
       data-purpose="salon-navigation"
     >
       <div className="flex items-center justify-between relative">
@@ -63,7 +64,7 @@ export const SalonBottomNav = () => {
             <button
               key={item.id}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all relative ${
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all relative cursor-pointer ${
                 isActive ? 'text-rose-950 font-semibold' : 'text-stone-400 hover:text-stone-700 font-medium'
               }`}
             >
@@ -78,9 +79,15 @@ export const SalonBottomNav = () => {
               <span className={`text-[10px] leading-none mt-1 tracking-tight ${isActive ? 'text-rose-950 font-bold' : 'text-stone-500'}`}>
                 {item.label}
               </span>
-              {isActive && (
-                <div className="w-1 h-1 bg-rose-900 rounded-full mt-1" />
-              )}
+              <div className="h-1.5 flex items-center justify-center mt-0.5">
+                {isActive && (
+                  <motion.div
+                    layoutId="salonBottomNavIndicator"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    className="w-1.5 h-1.5 bg-rose-900 rounded-full"
+                  />
+                )}
+              </div>
             </button>
           );
         })}

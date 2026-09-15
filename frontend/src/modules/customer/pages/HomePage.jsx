@@ -14,11 +14,7 @@ import { motion } from 'framer-motion';
 
 export const HomePage = () => {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+    <div
       className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] font-sans text-brand-textDark antialiased min-h-screen pb-28 mx-auto border-x border-purple-200/50 relative selection:bg-brand-lightPink flex flex-col justify-between overflow-x-hidden box-border"
     >
       <TopBar />
@@ -38,6 +34,6 @@ export const HomePage = () => {
       <SlotPickerModal />
       <ReferEarnModal />
       <EliteModal />
-    </motion.div>
+    </div>
   );
 };

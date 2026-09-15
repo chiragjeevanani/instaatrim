@@ -9,20 +9,26 @@ import { SalonServicesPage } from '../pages/SalonServicesPage';
 import { SalonOffersPage } from '../pages/SalonOffersPage';
 import { SalonAnalyticsPage } from '../pages/SalonAnalyticsPage';
 import { SalonProfilePage } from '../pages/SalonProfilePage';
+import { EditSalonProfilePage } from '../pages/EditSalonProfilePage';
 import { SalonOnboardingPage } from '../pages/SalonOnboardingPage';
+import { AddServicePage } from '../pages/AddServicePage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const SalonRoutes = () => {
   const location = useLocation();
   const { toast } = useSalon();
 
-  const isOnboarding = location.pathname.includes('/salon/onboarding');
+  const isFullscreenSubpage =
+    location.pathname.includes('/salon/onboarding') ||
+    location.pathname.includes('/salon/services/new') ||
+    location.pathname.includes('/salon/services/edit') ||
+    location.pathname.includes('/salon/profile/edit');
 
   return (
-    <div className="min-h-screen bg-[#f8f7f5] text-stone-900 flex justify-center antialiased select-none overflow-x-hidden">
-      <div className="w-full max-w-[480px] min-w-0 min-h-screen flex flex-col justify-between relative border-x border-stone-200/80 bg-white/40 shadow-sm box-border">
+    <div className="min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none">
+      <div className="w-full max-w-[480px] min-w-0 min-h-screen flex flex-col relative border-x border-purple-200/50 bg-transparent shadow-sm box-border">
         {/* Top Operational Header */}
-        {!isOnboarding && <SalonTopBar />}
+        {!isFullscreenSubpage && <SalonTopBar />}
 
         {/* Dynamic Route Pages */}
         <div className="flex-1 w-full min-w-0">
@@ -30,15 +36,18 @@ export const SalonRoutes = () => {
             <Route path="/" element={<SalonDashboardPage />} />
             <Route path="/bookings" element={<SalonBookingsPage />} />
             <Route path="/services" element={<SalonServicesPage />} />
+            <Route path="/services/new" element={<AddServicePage />} />
+            <Route path="/services/edit/:id" element={<AddServicePage />} />
             <Route path="/offers" element={<SalonOffersPage />} />
             <Route path="/analytics" element={<SalonAnalyticsPage />} />
             <Route path="/profile" element={<SalonProfilePage />} />
+            <Route path="/profile/edit" element={<EditSalonProfilePage />} />
             <Route path="/onboarding" element={<SalonOnboardingPage />} />
           </Routes>
         </div>
 
         {/* Mobile Navigation Bar */}
-        {!isOnboarding && <SalonBottomNav />}
+        {!isFullscreenSubpage && <SalonBottomNav />}
 
         {/* Global Operational Toast */}
         <AnimatePresence>

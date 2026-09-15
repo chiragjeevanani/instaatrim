@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import { motion } from 'framer-motion';
 import {
@@ -13,14 +14,12 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { ServiceModal } from '../components/ServiceModal';
 
 export const SalonServicesPage = () => {
+  const navigate = useNavigate();
   const { services, toggleServiceActive, toggleInstantEligible, deleteService } = useSalon();
 
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState(null);
 
   const categories = ['All', 'Waxing', 'Facial', 'Spa', 'Body Polishing', 'Mani-Pedi'];
 
@@ -30,22 +29,16 @@ export const SalonServicesPage = () => {
   });
 
   const handleEdit = (service) => {
-    setEditingService(service);
-    setIsModalOpen(true);
+    navigate('/salon/services/new', { state: { serviceId: service.id } });
   };
 
   const handleAddNew = () => {
-    setEditingService(null);
-    setIsModalOpen(true);
+    navigate('/salon/services/new');
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="w-full max-w-[480px] min-w-0 bg-[#fbfaf9] font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+    <div
+      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
       <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
         {/* Header with Add Button */}
@@ -202,13 +195,6 @@ export const SalonServicesPage = () => {
           )}
         </div>
       </main>
-
-      {/* Service Add/Edit Modal */}
-      <ServiceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        editingService={editingService}
-      />
-    </motion.div>
+    </div>
   );
 };

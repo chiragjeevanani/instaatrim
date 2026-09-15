@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Calendar, User } from 'lucide-react';
+import { Home, Store, Sparkles, Calendar, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const BottomNav = () => {
@@ -9,91 +9,76 @@ export const BottomNav = () => {
 
   const currentPath = location.pathname;
 
+  const navItems = [
+    {
+      id: 'home',
+      label: 'Home',
+      path: '/customer',
+      icon: Home,
+      exact: true
+    },
+    {
+      id: 'salons',
+      label: 'Salons',
+      path: '/customer/salons',
+      icon: Store
+    },
+    {
+      id: 'offers',
+      label: 'Offers',
+      path: '/customer/trends', // Offers / Deals & curated trends
+      icon: Sparkles
+    },
+    {
+      id: 'bookings',
+      label: 'Bookings',
+      path: '/customer/bookings',
+      icon: Calendar
+    },
+    {
+      id: 'account',
+      label: 'Account',
+      path: '/customer/account',
+      icon: User
+    }
+  ];
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200 z-50 shadow-nav px-2 py-1 box-border"
+      className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200/90 z-50 shadow-nav px-3 py-2 box-border pb-3"
       data-purpose="app-navigation"
     >
       <div className="flex items-center justify-between relative">
-        {/* Home Tab */}
-        <button
-          onClick={() => navigate('/customer')}
-          className={`flex flex-col items-center justify-center flex-1 py-0.5 transition-colors ${
-            currentPath === '/customer' || currentPath === '/customer/'
-              ? 'text-brand-maroon'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <Home className="w-4 h-4 stroke-[2.2] mb-0.5" />
-          <span className="text-[9.5px] font-bold leading-none">Home</span>
-          {(currentPath === '/customer' || currentPath === '/customer/') && (
-            <div className="w-1 h-1 bg-brand-maroon rounded-full mt-0.5" />
-          )}
-        </button>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = item.exact
+            ? currentPath === '/customer' || currentPath === '/customer/'
+            : currentPath.startsWith(item.path);
 
-        {/* Sokora Skincare Tab */}
-        <button
-          onClick={() => navigate('/customer/skincare')}
-          className={`flex flex-col items-center justify-center flex-1 py-0.5 transition-colors ${
-            currentPath === '/customer/skincare'
-              ? 'text-brand-maroon'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <span className="text-[7.5px] font-bold tracking-widest text-stone-400 uppercase leading-none">SOKORA</span>
-          <span className="text-[10px] font-serif font-bold text-stone-800 leading-tight mt-0.5">Skincare</span>
-          {currentPath === '/customer/skincare' && (
-            <div className="w-1 h-1 bg-brand-maroon rounded-full mt-0.5" />
-          )}
-        </button>
-
-        {/* Center Raised Floating Feature: K-Beauty Trends */}
-        <div className="flex-1 flex justify-center -mt-5">
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            whileHover={{ scale: 1.05 }}
-            onClick={() => navigate('/customer/trends')}
-            className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-200 via-[#eaddf3] to-purple-100 p-0.5 shadow-md border-2 border-white flex flex-col items-center justify-center"
-            data-purpose="trend-center-button"
-          >
-            <div className="w-full h-full rounded-full flex flex-col items-center justify-center text-center p-0.5">
-              <span className="text-[8px] font-serif font-bold text-stone-800 leading-none">K-Beauty</span>
-              <span className="text-[7.5px] text-stone-600 font-medium leading-none mt-0.5">Trends</span>
-            </div>
-          </motion.button>
-        </div>
-
-        {/* Bookings Tab */}
-        <button
-          onClick={() => navigate('/customer/bookings')}
-          className={`flex flex-col items-center justify-center flex-1 py-0.5 transition-colors ${
-            currentPath === '/customer/bookings'
-              ? 'text-brand-maroon'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <Calendar className="w-[18px] h-[18px] stroke-[1.6]" />
-          <span className="text-[9.5px] font-medium leading-none mt-1">Bookings</span>
-          {currentPath === '/customer/bookings' && (
-            <div className="w-1 h-1 bg-brand-maroon rounded-full mt-0.5" />
-          )}
-        </button>
-
-        {/* Account Tab */}
-        <button
-          onClick={() => navigate('/customer/account')}
-          className={`flex flex-col items-center justify-center flex-1 py-0.5 transition-colors ${
-            currentPath === '/customer/account'
-              ? 'text-brand-maroon'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <User className="w-[18px] h-[18px] stroke-[1.6]" />
-          <span className="text-[9.5px] font-medium leading-none mt-1">Account</span>
-          {currentPath === '/customer/account' && (
-            <div className="w-1 h-1 bg-brand-maroon rounded-full mt-0.5" />
-          )}
-        </button>
+          return (
+            <button
+              key={item.id}
+              onClick={() => navigate(item.path)}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors cursor-pointer relative ${
+                isActive
+                  ? 'text-brand-maroon font-semibold'
+                  : 'text-stone-500 hover:text-stone-800 font-medium'
+              }`}
+            >
+              <Icon className={`w-5 h-5 mb-1 transition-transform ${isActive ? 'stroke-[2.2] scale-105' : 'stroke-[1.8]'}`} />
+              <span className="text-[11px] leading-none tracking-tight">{item.label}</span>
+              <div className="h-2 flex items-center justify-center">
+                {isActive && (
+                  <motion.div
+                    layoutId="bottomNavIndicator"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    className="w-1.5 h-1.5 bg-brand-maroon rounded-full"
+                  />
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
-import { LayoutDashboard, Calendar, Scissors, Tag, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Calendar, Scissors, BarChart3, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const SalonBottomNav = () => {
@@ -34,16 +34,16 @@ export const SalonBottomNav = () => {
       icon: Scissors
     },
     {
-      id: 'offers',
-      label: 'Flash Deals',
-      path: '/salon/offers',
-      icon: Tag
-    },
-    {
       id: 'analytics',
       label: 'Analytics',
       path: '/salon/analytics',
       icon: BarChart3
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      path: '/salon/profile',
+      icon: User
     }
   ];
 

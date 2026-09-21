@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>InstaaTrim — Comprehensive Advertisement &amp; Marketing Implementation Guide</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 14mm 14mm 14mm 14mm;
+    @bottom-right {
+      content: "Page " counter(page);
+      font-size: 8pt;
+      color: #78716c;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1c1917;
+    background-color: #ffffff;
+    line-height: 1.45;
+    font-size: 9.5pt;
+  }
+
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Cover Page Styling */
+  .cover-container {
+    height: 98vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 30px 20px;
+    background: linear-gradient(145deg, #2b0b16 0%, #4a1324 45%, #78233f 100%);
+    color: #ffffff;
+    border-radius: 12px;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fef08a;
+  }
+
+  .cover-title {
+    font-size: 28pt;
+    font-weight: 900;
+    line-height: 1.15;
+    margin-top: 15px;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+  }
+
+  .cover-subtitle {
+    font-size: 13pt;
+    font-weight: 400;
+    color: #fbcfe8;
+    margin-top: 12px;
+    line-height: 1.4;
+    max-width: 90%;
+  }
+
+  .cover-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 16px 20px;
+    border-radius: 10px;
+    font-size: 8.5pt;
+  }
+
+  .cover-meta-item strong {
+    display: block;
+    color: #fde047;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  /* Section Styling */
+  .section-header {
+    border-bottom: 2px solid #78233f;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .section-title {
+    font-size: 14.5pt;
+    font-weight: 800;
+    color: #78233f;
+    letter-spacing: -0.3px;
+  }
+
+  .section-number {
+    font-size: 9pt;
+    font-weight: 800;
+    color: #a8a29e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  h3 {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #292524;
+    margin-top: 12px;
+    margin-bottom: 6px;
+  }
+
+  p {
+    margin-bottom: 8px;
+    color: #44403c;
+    text-align: justify;
+  }
+
+  /* Callout Card */
+  .callout {
+    background: #fdf2f8;
+    border-left: 4px solid #78233f;
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    margin: 10px 0 14px 0;
+    font-size: 9pt;
+    color: #701a75;
+  }
+
+  .callout strong {
+    color: #78233f;
+  }
+
+  /* Grid Layouts */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .card {
+    background: #fafaf9;
+    border: 1px solid #e7e5e4;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .card-highlight {
+    background: #fcf4f6;
+    border: 1px solid #fbcfe8;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .card-title {
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #78233f;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 7pt;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-primary {
+    background: #78233f;
+    color: #ffffff;
+  }
+
+  .badge-gold {
+    background: #fef08a;
+    color: #854d0e;
+    border: 1px solid #fde047;
+  }
+
+  .badge-green {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .badge-blue {
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 16px 0;
+    font-size: 8.5pt;
+  }
+
+  th {
+    background: #78233f;
+    color: #ffffff;
+    font-weight: 700;
+    text-align: left;
+    padding: 7px 9px;
+    border: 1px solid #78233f;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td {
+    padding: 6px 9px;
+    border: 1px solid #e7e5e4;
+    color: #292524;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) {
+    background: #fafaf9;
+  }
+
+  /* Metric KPI Blocks */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .kpi-box {
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-top: 3px solid #78233f;
+    padding: 8px 10px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .kpi-val {
+    font-size: 14pt;
+    font-weight: 900;
+    color: #78233f;
+    line-height: 1.1;
+  }
+
+  .kpi-lbl {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: #78716c;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  /* Wireframe visual simulator */
+  .wireframe-box {
+    background: #f5f5f4;
+    border: 1px dashed #a8a29e;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: monospace;
+    font-size: 7.5pt;
+    color: #44403c;
+    margin: 6px 0 10px 0;
+    line-height: 1.35;
+  }
+
+  ul, ol {
+    margin-left: 18px;
+    margin-bottom: 8px;
+    color: #44403c;
+    font-size: 9pt;
+  }
+
+  li {
+    margin-bottom: 3px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1: COVER PAGE ================= -->
+<div class="cover-container">
+  <div>
+    <span class="cover-badge">Strategic Product Architecture</span>
+    <h1 class="cover-title">InstaaTrim<br>Advertisement &amp; Marketing<br>Implementation Guide</h1>
+    <p class="cover-subtitle">
+      A 360-Degree Blueprint for In-App Native Advertising, Salon Partner Sponsored Boosts, FMCG Brand Partnerships, and High-Conversion Omnichannel Marketing.
+    </p>
+  </div>
+
+  <div>
+    <div class="cover-meta-grid">
+      <div class="cover-meta-item">
+        <strong>Document Purpose</strong>
+        Commercial &amp; Technical Ad Monetization Strategy
+      </div>
+      <div class="cover-meta-item">
+        <strong>Target Ecosystem</strong>
+        Customer App, Partner App, Super-Admin Portal
+      </div>
+      <div class="cover-meta-item">
+        <strong>Platform</strong>
+        InstaaTrim (Female Salon &amp; Wellness Marketplace)
+      </div>
+      <div class="cover-meta-item">
+        <strong>Target Timeline</strong>
+        Q3 – Q4 2026 Rollout &amp; Expansion
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= PAGE 2: EXECUTIVE SUMMARY & COMMERCIAL OPPORTUNITY ================= -->
+<div>
+  <div class="section-header">
+    <div class="section-title">1. Executive Summary &amp; Platform Ad Monetization</div>
+    <div class="section-number">Section 01</div>
+  </div>
+
+  <p>
+    On-demand beauty and wellness marketplaces (such as <strong>Urban Company, Fresha, Treatwell, Nykaa, and Zomato</strong>) experience a structural evolution where booking commissions represent only the baseline revenue stream. High-margin profitability is consistently unlocked by deploying <strong>Native In-App Advertising</strong>, <strong>Sponsored Visibility Listings</strong>, and <strong>Direct-to-Consumer (D2C) Beauty Brand Partnerships</strong>.
+  </p>
+
+  <div class="callout">
+    <strong>Strategic Business Advantage:</strong> In modern multi-vendor beauty apps, <strong>25% to 38%</strong> of net operating income can be generated via advertising without raising commission fees on salon partners. This keeps salon partner take-rates competitive while monetizing platform traffic.
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-box">
+      <div class="kpi-val">3.2x</div>
+      <div class="kpi-lbl">Higher CTR on In-App Ads</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val">28–35%</div>
+      <div class="kpi-lbl">Projected Revenue Share</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val">₹350–600</div>
+      <div class="kpi-lbl">Avg. CPM for Luxury Brands</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val">4.8%</div>
+      <div class="kpi-lbl">Avg. Upsell Conversion</div>
+    </div>
+  </div>
+
+  <h3>Three Core Monetization Vectors</h3>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">
+        <span>1. FMCG Brand Ads</span>
+        <span class="badge badge-primary">High CPM</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        Global and national cosmetic brands (L'Oréal, O3+, Dyson, Forest Essentials, Lakmé) sponsor carousel takeovers, product sample launches, and custom treatment kits.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>2. Salon Partner Boosts</span>
+        <span class="badge badge-gold">Self-Serve</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        Local salon partners pay a daily or weekly boost fee (e.g. ₹499/week) to appear at the top of local geo-fenced search queries and trending feeds to fill empty chairs.
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>3. Service Upsell Kits</span>
+        <span class="badge badge-green">In-Funnel</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        During the booking flow, customers select premium brand products (e.g. Organic Papaya / Revitalift). Brands pay placement fees plus revenue share on product selections.
+      </p>
+    </div>
+  </div>
+
+  <h3>High-Intent Consumer Context</h3>
+  <p>
+    Unlike general social media ads (Instagram, Facebook), customers on the InstaaTrim app have <strong>immediate booking intent and disposable spending readiness</strong>. An advertisement for an anti-aging facial or a keratin hair treatment is displayed at the exact moment the client is choosing a salon service, resulting in conversion rates 4x higher than standard display banners.
+  </p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= PAGE 3: IN-APP AD INVENTORY MAP - CUSTOMER APP ================= -->
+<div>
+  <div class="section-header">
+    <div class="section-title">2. Customer App: Complete Ad Inventory Map</div>
+    <div class="section-number">Section 02</div>
+  </div>
+
+  <p>
+    The following map outlines every high-impact touchpoint across the customer user journey where promotional advertising and sponsored placements can be monetized.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 22%;">Screen &amp; Placement</th>
+        <th style="width: 25%;">Ad Format &amp; Specs</th>
+        <th style="width: 28%;">Ideal Advertisers</th>
+        <th style="width: 25%;">Pricing &amp; Revenue Model</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Homepage Top Ad Carousel</strong><br><span style="font-size: 7.5pt; color: #78716c;">Prime Screen Real Estate</span></td>
+        <td>Dynamic auto-sliding banner card (16:9 ratio, 480x172px) with "Sponsored" tag, copy &amp; 1-click coupon.</td>
+        <td>Major cosmetic brands (L'Oréal, Dyson, O3+, Forest Essentials, Kama Ayurveda).</td>
+        <td><strong>Tenancy or CPM</strong>: ₹15,000–₹35,000/week per slide, or ₹450 CPM.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Brand Partner Showcase</strong><br><span style="font-size: 7.5pt; color: #78716c;">Direct Brand Collections</span></td>
+        <td>Horizontal scrollable logo tiles with promotional badge ("Up to 40% OFF", "Free Kit").</td>
+        <td>Official salon product partners, luxury skincare, hair styling equipment.</td>
+        <td><strong>Monthly Retainer</strong>: ₹10,000/month per brand slot + verified salon linking.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Mid-Page Native Campaign Banner</strong><br><span style="font-size: 7.5pt; color: #78716c;">Between Categories &amp; Trends</span></td>
+        <td>High-contrast gradient card with countdown badge, interactive copy button and instant cart coupon.</td>
+        <td>Co-sponsored seasonal campaigns (Bridal Glow Fest, Weekend Carnival).</td>
+        <td><strong>Hybrid CPC + CPA</strong>: ₹12 per click or flat campaign sponsorship.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Promoted Salons ("Sponsored Near You")</strong><br><span style="font-size: 7.5pt; color: #78716c;">Home &amp; Salon Listing Screen</span></td>
+        <td>Promoted salon card with "Ad / Featured" badge, highlighted gold border, and top rank pin.</td>
+        <td>Local salon owners seeking chair occupancy and new customer footfall.</td>
+        <td><strong>Auction CPC / Daily Budget</strong>: ₹8–₹15 per profile tap or ₹2,499/week.</td>
+      </tr>
+      <tr>
+        <td><strong>5. Sponsored Search Result Top Pin</strong><br><span style="font-size: 7.5pt; color: #78716c;">When User Searches Services</span></td>
+        <td>Position #1 slot pinned in search results for keywords like "Facial", "Bridal", "Hair Spa".</td>
+        <td>Specialized luxury studios, newly launched salon partners.</td>
+        <td><strong>Keyword Bidding (CPC)</strong>: ₹10–₹25 per click depending on keyword competition.</td>
+      </tr>
+      <tr>
+        <td><strong>6. Booking Flow Brand Kit Upsell</strong><br><span style="font-size: 7.5pt; color: #78716c;">Inside Service Booking Funnel</span></td>
+        <td>Brand selection cards (e.g. L'Oréal Revitalift vs. Biotique Organic vs. Pond's Miracle).</td>
+        <td>Cosmetics &amp; organic skincare manufacturers seeking direct salon adoption.</td>
+        <td><strong>Pay-Per-Selection (CPA)</strong>: ₹50–₹120 per customer selection + brand licensing.</td>
+      </tr>
+      <tr>
+        <td><strong>7. Post-Booking Confirmation Screen</strong><br><span style="font-size: 7.5pt; color: #78716c;">High Attention Wait Window</span></td>
+        <td>Full banner or card: "While you wait for your appointment: Grab 20% off post-care kits".</td>
+        <td>D2C skincare retail brands, taxi services (Uber), coffee shops near the salon.</td>
+        <td><strong>Affiliate / Revenue Share</strong>: 15–20% commission on outbound sales.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Visual Layout Mockup: Customer Homepage Ad Placements</h3>
+  <div class="wireframe-box">
+    [ TOP BAR: Location Selector | Search | Cart Icon ]<br>
+    -----------------------------------------------------------------------------------------<br>
+    ▼ <strong>[PLACEMENT 1: TOP AD CAROUSEL]</strong> (Sponsored • L'Oréal Parisian Glow Fest | 1-Click Code: LOREAL400)<br>
+    -----------------------------------------------------------------------------------------<br>
+    ▼ <strong>[PLACEMENT 2: BRAND PARTNER SHOWCASE]</strong> (Logos: L'Oréal [40% OFF] | Dyson [Pro] | O3+ [30% OFF])<br>
+    -----------------------------------------------------------------------------------------<br>
+    ▼ [ HERO CURATED RITUALS ] &amp; [ ELITE MEMBERSHIP PASS STRIP ]<br>
+    ▼ [ SERVICE CATEGORY GRID: Hair | Facial | Spa | Waxing | Mani-Pedi | Beard ]<br>
+    -----------------------------------------------------------------------------------------<br>
+    ▼ <strong>[PLACEMENT 3: MID-PAGE SPONSORED CAMPAIGN]</strong> (InstaaTrim Gold Carnival • Co-sponsored by Lakmé)<br>
+    -----------------------------------------------------------------------------------------<br>
+    ▼ <strong>[PLACEMENT 4: SPONSORED SALON SPOTLIGHT]</strong> ("Enrich Glamour Studio • Sponsored • Top Rated")<br>
+    ▼ [ TRENDING SERVICES NEAR YOU: Live catalogue with Add-to-Cart ]
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= PAGE 4: B2B PARTNER APP & SELF-SERVE AD ENGINE ================= -->
+<div>
+  <div class="section-header">
+    <div class="section-title">3. Salon Partner App &amp; B2B Monetization</div>
+    <div class="section-number">Section 03</div>
+  </div>
+
+  <p>
+    Beyond customer-facing ads, the <strong>Salon Partner Portal</strong> represents an under-monetized B2B marketplace. Salon owners are business decision-makers who purchase wholesale products, equipment, and customer acquisition tools daily.
+  </p>
+
+  <h3>1. "Boost My Salon" — Self-Serve Campaign Manager for Salons</h3>
+  <p>
+    Allow salon partners to boost their salon profile directly from their partner dashboard without requiring manual administrative negotiation.
+  </p>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">
+        <span>Tier 1: Weekend Rush</span>
+        <span class="badge badge-primary">₹799 / 3 Days</span>
+      </div>
+      <ul style="font-size: 8pt; margin-left: 14px;">
+        <li>Boosts salon rank to Top 3 in local 4km radius</li>
+        <li>Highlighted "Instant Booking" banner</li>
+        <li>Estimated +40% chair occupancy boost</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Tier 2: Weekly Spotlight</span>
+        <span class="badge badge-gold">₹1,799 / 7 Days</span>
+      </div>
+      <ul style="font-size: 8pt; margin-left: 14px;">
+        <li>Top 1 position in user category search</li>
+        <li>Featured badge on customer homepage</li>
+        <li>Includes 1 push notification broadcast</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Tier 3: Monthly Dominance</span>
+        <span class="badge badge-green">₹5,999 / Month</span>
+      </div>
+      <ul style="font-size: 8pt; margin-left: 14px;">
+        <li>Guaranteed top placement across city zone</li>
+        <li>Exclusive placement in Top Ad Carousel</li>
+        <li>Dedicated account manager &amp; analytics report</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>2. B2B Wholesale &amp; Supply Sponsorships</h3>
+  <p>
+    Wholesale beauty distributors (e.g. professional hair color tubs, wax heaters, disposable sanitary sheets, sanitization kits) can advertise inside the Partner Portal:
+  </p>
+  <ul>
+    <li><strong>Dashboard Supply Deals Banner:</strong> "Wholesale Deal: Buy 10 O3+ Bleach Kits, Get 2 Free + Free Shipping for InstaaTrim Partners".</li>
+    <li><strong>Academy &amp; Certification Ads:</strong> Beauty masterclasses and styling certifications for salon staff members (revenue share on course registrations).</li>
+  </ul>
+
+  <div class="section-header" style="margin-top: 18px;">
+    <div class="section-title">4. Omnichannel Marketing &amp; Retargeting Engine</div>
+    <div class="section-number">Section 04</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card-highlight">
+      <div class="card-title">
+        <span>WhatsApp Automated Retargeting</span>
+        <span class="badge badge-green">98% Open Rate</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        <strong>Cart Abandonment:</strong> Sends automated WhatsApp message after 15 mins with a sponsored 10% coupon.<br>
+        <strong>Cycle Reminders:</strong> Automated reminder 25 days after a haircut or facial ("Time for your root touch-up! Enjoy ₹150 off at Luxe Glow").
+      </p>
+    </div>
+    <div class="card-highlight">
+      <div class="card-title">
+        <span>Geo-Fenced Push Notifications</span>
+        <span class="badge badge-blue">Hyper-Local</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        Triggers mobile push alerts when a customer enters a designated salon zone (e.g. within 1km of South Tukoganj): "Passing by Luxe Glow? 2 chairs ready right now — flat 20% off instant booking".
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= PAGE 5: FINANCIAL PROJECTIONS & ROADMAP ================= -->
+<div>
+  <div class="section-header">
+    <div class="section-title">5. Financial Projections &amp; Ad Revenue Potential</div>
+    <div class="section-number">Section 05</div>
+  </div>
+
+  <p>
+    Estimated revenue model based on scaling from <strong>50 active salon partners (Year 1)</strong> to <strong>250 active salon partners (Year 2)</strong> across tier-1 and tier-2 cities.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ad Product &amp; Revenue Stream</th>
+        <th>Pricing Metric</th>
+        <th>Est. Monthly Units (Y1)</th>
+        <th>Y1 Monthly Revenue</th>
+        <th>Y2 Monthly Revenue</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Top Homepage Ad Carousel</strong><br><span style="font-size: 7.5pt; color: #78716c;">4 rotating sponsored brand slides</span></td>
+        <td>₹20,000 / slide / month</td>
+        <td>4 brand slots</td>
+        <td>₹80,000</td>
+        <td>₹2,40,000</td>
+      </tr>
+      <tr>
+        <td><strong>Brand Partner Showcase Hub</strong><br><span style="font-size: 7.5pt; color: #78716c;">6 featured cosmetic brand cards</span></td>
+        <td>₹12,000 / brand / month</td>
+        <td>6 brand partners</td>
+        <td>₹72,000</td>
+        <td>₹1,80,000</td>
+      </tr>
+      <tr>
+        <td><strong>Salon "Boost My Salon" Packages</strong><br><span style="font-size: 7.5pt; color: #78716c;">Self-serve partner listing boosts</span></td>
+        <td>Avg. ₹1,800 / salon / month</td>
+        <td>25 salons boosting</td>
+        <td>₹45,000</td>
+        <td>₹2,70,000</td>
+      </tr>
+      <tr>
+        <td><strong>In-Flow Product Kit Upsell Fees</strong><br><span style="font-size: 7.5pt; color: #78716c;">Paid brand customisation per booking</span></td>
+        <td>₹40 fee / kit chosen</td>
+        <td>1,500 kit bookings</td>
+        <td>₹60,000</td>
+        <td>₹3,20,000</td>
+      </tr>
+      <tr>
+        <td><strong>Mid-Page Campaign &amp; Search CPC</strong><br><span style="font-size: 7.5pt; color: #78716c;">Festive banners &amp; keyword sponsored pins</span></td>
+        <td>₹12 / click / visit</td>
+        <td>3,000 paid clicks</td>
+        <td>₹36,000</td>
+        <td>₹1,50,000</td>
+      </tr>
+      <tr style="background: #fdf2f8; font-weight: bold;">
+        <td colspan="3" style="text-align: right; color: #78233f; font-size: 9pt;">TOTAL ESTIMATED AD REVENUE:</td>
+        <td style="color: #78233f; font-size: 9.5pt;">₹2,93,000 / mo<br><span style="font-size: 7.5pt; color: #78716c;">(₹35.1 Lakhs/yr)</span></td>
+        <td style="color: #78233f; font-size: 9.5pt;">₹11,60,000 / mo<br><span style="font-size: 7.5pt; color: #78716c;">(₹1.39 Crores/yr)</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-header" style="margin-top: 18px;">
+    <div class="section-title">6. Technical Implementation Roadmap</div>
+    <div class="section-number">Section 06</div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">
+        <span>Phase 1 (Completed)</span>
+        <span class="badge badge-green">Live in App</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        • Top Ad Carousel on Homepage<br>
+        • Brand Partner Collaboration Showcase<br>
+        • Mid-Page Native Campaign Banner<br>
+        • 4-Step Booking Flow with Brand Kit Upsell<br>
+        • Interactive Ad Offer Modal with 1-Click Code
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Phase 2 (Month 2–3)</span>
+        <span class="badge badge-primary">Next Sprint</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        • Super-Admin Ad Campaign CMS<br>
+        • Impression, Click &amp; CTR tracking telemetry<br>
+        • Salon Partner "Boost My Salon" toggle<br>
+        • WhatsApp API Cart Recovery webhooks<br>
+        • Sponsored keyword search tags
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span>Phase 3 (Month 4–6)</span>
+        <span class="badge badge-gold">Scale Phase</span>
+      </div>
+      <p style="font-size: 8.5pt;">
+        • Automated CPC bidding auction engine<br>
+        • B2B wholesale marketplace module<br>
+        • Geofenced push notification triggers<br>
+        • Influencer affiliate attribution links<br>
+        • Advertiser self-serve payment gateway
+      </p>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top: 14px;">
+    <strong>Summary &amp; Next Steps for Client:</strong> With the homepage advertising carousels and in-booking brand upsell engine already integrated into the frontend, the platform is immediately primed to onboard FMCG brand sponsors (L'Oréal, O3+, Dyson) and pilot local salon partner boost packages.
+  </div>
+</div>
+
+</body>
+</html>

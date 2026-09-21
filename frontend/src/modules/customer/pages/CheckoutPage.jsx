@@ -17,7 +17,8 @@ import {
   Landmark,
   Wallet,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -28,6 +29,7 @@ export const CheckoutPage = () => {
     cartSummary,
     bookingSlot,
     setBookingSlot,
+    preferredProduct,
     currentLocation,
     appliedCoupon,
     createBooking,
@@ -176,6 +178,20 @@ export const CheckoutPage = () => {
               </p>
             </div>
           </div>
+
+          {preferredProduct && (
+            <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-xs bg-purple-50/70 p-2 rounded-xl border border-purple-200/60">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-brand-maroon" />
+                <span className="text-[10.5px] font-bold text-purple-950">
+                  Preferred Brand / Kit: <span className="text-brand-maroon">{preferredProduct}</span>
+                </span>
+              </div>
+              <span className="text-[9px] bg-white text-brand-maroon font-extrabold px-1.5 py-0.5 rounded shadow-xs">
+                Requested
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Selected Services Summary */}

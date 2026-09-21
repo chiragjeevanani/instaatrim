@@ -6,7 +6,7 @@ import { RateReviewModal } from '../components/RateReviewModal';
 import { RescheduleModal } from '../components/RescheduleModal';
 import { BOOKING_STATUS, STATUS_META, toneClasses, isUpcoming } from '../../../shared/lib/bookingStatus';
 import { formatDateKeyFriendly } from '../../../shared/lib/time';
-import { Calendar, Clock, MapPin, Star, RotateCcw, Check } from 'lucide-react';
+import { Calendar, Clock, MapPin, Star, RotateCcw, Check, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PROGRESSION = [
@@ -143,8 +143,42 @@ export const BookingsPage = () => {
                     ))}
                   </div>
 
+                  {b.preferredProduct && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-purple-900 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200/50">
+                      <Sparkles className="w-3 h-3 text-brand-maroon shrink-0" />
+                      <span className="truncate">Product kit: <strong className="text-brand-maroon">{b.preferredProduct}</strong></span>
+                    </div>
+                  )}
+
                   {/* Live Status Progression — now bound to the real status */}
                   <StatusProgress status={b.status} />
+
+                  {/* Touchpoint 7: Live Booking Status Cross-Sell & Aftercare Voucher Strip */}
+                  <div className="bg-gradient-to-r from-rose-50 via-purple-50 to-amber-50 rounded-xl p-2.5 border border-purple-200/70 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8.5px] font-black text-brand-maroon uppercase tracking-wider">
+                        Live Perks &amp; Aftercare
+                      </span>
+                      <span className="text-[8.5px] font-bold text-stone-500">Sponsored Deals</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-stone-900 truncate">
+                          L'Oréal Revitalift Post-Treatment SPF Fluid
+                        </p>
+                        <p className="text-[9px] text-stone-500 truncate">
+                          25% Off at front desk • Ride discount: INSTAUBER
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/customer/booking-confirmation/${b.id}`)}
+                        className="bg-brand-maroon text-white font-extrabold text-[9px] px-2 py-1 rounded shadow-2xs shrink-0 cursor-pointer"
+                      >
+                        View Voucher
+                      </button>
+                    </div>
+                  </div>
 
                   {/* Actions */}
                   {canModify && (

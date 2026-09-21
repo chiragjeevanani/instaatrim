@@ -13,7 +13,6 @@ import { BookingsPage } from '../pages/BookingsPage';
 import { AccountPage } from '../pages/AccountPage';
 import { SkincarePage } from '../pages/SkincarePage';
 import { TrendsPage } from '../pages/TrendsPage';
-
 export const CustomerRoutes = () => {
   return (
     <Routes>

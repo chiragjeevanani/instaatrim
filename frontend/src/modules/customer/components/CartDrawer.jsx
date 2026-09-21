@@ -13,6 +13,7 @@ export const CartDrawer = () => {
     cartSummary,
     bookingSlot,
     setIsSlotPickerOpen,
+    setIsBookingFlowOpen,
     appliedCoupon,
     applyCoupon,
     removeCoupon
@@ -25,7 +26,7 @@ export const CartDrawer = () => {
 
   const handleCheckout = () => {
     setIsCartOpen(false);
-    navigate('/customer/checkout');
+    setIsBookingFlowOpen(true);
   };
 
   return (

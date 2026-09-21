@@ -60,6 +60,8 @@ export const CustomerProvider = ({ children }) => {
 
   const [isReferModalOpen, setIsReferModalOpen] = useState(false);
   const [isEliteModalOpen, setIsEliteModalOpen] = useState(false);
+  const [isBookingFlowOpen, setIsBookingFlowOpen] = useState(false);
+  const [preferredProduct, setPreferredProduct] = useState(null);
 
   const [toastMessage, setToastMessage] = useState(null);
   const showToast = useCallback((msg) => {
@@ -108,7 +110,10 @@ export const CustomerProvider = ({ children }) => {
     [showToast]
   );
 
-  const clearCart = useCallback(() => setCartItems([]), []);
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+    setPreferredProduct(null);
+  }, []);
 
   const applyCoupon = useCallback(
     async (code) => {
@@ -165,6 +170,7 @@ export const CustomerProvider = ({ children }) => {
         discountAmount: cartSummary.discount,
         finalPaid: cartSummary.finalAmount,
         couponApplied: appliedCoupon ? appliedCoupon.code : null,
+        preferredProduct: preferredProduct || bookingData.preferredProduct || null,
         paymentMethod: bookingData.paymentMethod || 'UPI (Google Pay)',
         paymentStatus: bookingData.paymentStatus || 'Successful',
         transactionId: bookingData.transactionId || null,
@@ -175,7 +181,7 @@ export const CustomerProvider = ({ children }) => {
       clearCart();
       return booking;
     },
-    [user.id, user.name, user.phone, currentLocation, bookingSlot, cartItems, cartSummary, appliedCoupon, clearCart]
+    [user.id, user.name, user.phone, currentLocation, bookingSlot, cartItems, cartSummary, appliedCoupon, preferredProduct, clearCart]
   );
 
   const cancelBooking = useCallback(
@@ -281,6 +287,10 @@ export const CustomerProvider = ({ children }) => {
         setBookingSlot,
         isSlotPickerOpen,
         setIsSlotPickerOpen,
+        isBookingFlowOpen,
+        setIsBookingFlowOpen,
+        preferredProduct,
+        setPreferredProduct,
         isReferModalOpen,
         setIsReferModalOpen,
         isEliteModalOpen,

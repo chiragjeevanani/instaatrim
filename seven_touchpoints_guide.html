@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>InstaaTrim — 7 Consumer Touchpoints Advertisement &amp; Marketing Implementation Guide</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm 12mm 12mm 12mm;
+    @bottom-right {
+      content: "InstaaTrim Consumer Ad Strategy • Page " counter(page);
+      font-size: 7.5pt;
+      color: #a8a29e;
+      font-weight: 600;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1c1917;
+    background-color: #ffffff;
+    line-height: 1.38;
+    font-size: 8.8pt;
+  }
+
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Cover Page */
+  .cover {
+    height: 268mm;
+    max-height: 268mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #240712 0%, #4a1324 40%, #78233f 100%);
+    color: #ffffff;
+    padding: 28px 24px;
+    border-radius: 10px;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .cover-pill {
+    display: inline-block;
+    background: rgba(254, 240, 138, 0.2);
+    border: 1px solid rgba(254, 240, 138, 0.4);
+    color: #fef08a;
+    font-size: 8pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  .cover-title {
+    font-size: 26pt;
+    font-weight: 900;
+    line-height: 1.15;
+    margin-top: 14px;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+  }
+
+  .cover-subtitle {
+    font-size: 11pt;
+    font-weight: 400;
+    color: #fbcfe8;
+    margin-top: 10px;
+    line-height: 1.45;
+    max-width: 92%;
+  }
+
+  .cover-points-preview {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 16px;
+  }
+
+  .cover-points-preview h4 {
+    font-size: 8.5pt;
+    color: #fde047;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .cover-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 16px;
+    font-size: 8.5pt;
+    color: #f5f5f4;
+  }
+
+  .cover-list-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cover-list-item span.num {
+    background: #78233f;
+    color: #fff;
+    font-weight: 800;
+    font-size: 7pt;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    shrink: 0;
+  }
+
+  .cover-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 14px;
+    font-size: 8pt;
+  }
+
+  .cover-footer strong {
+    display: block;
+    color: #fde047;
+    font-size: 7pt;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+  }
+
+  /* Header inside pages */
+  .doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #78233f;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+
+  .doc-title {
+    font-size: 13pt;
+    font-weight: 900;
+    color: #78233f;
+    letter-spacing: -0.3px;
+  }
+
+  .doc-badge {
+    background: #fdf2f8;
+    color: #78233f;
+    font-weight: 800;
+    font-size: 7.5pt;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #fbcfe8;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* Touchpoint Layout */
+  .tp-container {
+    margin-bottom: 10px;
+  }
+
+  .tp-hero-header {
+    background: linear-gradient(to right, #78233f, #9d3255);
+    color: #ffffff;
+    padding: 9px 14px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .tp-name {
+    font-size: 11.5pt;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+  }
+
+  .tp-tag {
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .tp-body {
+    border: 1px solid #e7e5e4;
+    border-top: none;
+    background: #ffffff;
+    border-radius: 0 0 8px 8px;
+    padding: 12px 14px;
+  }
+
+  .tp-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 14px;
+  }
+
+  .spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-top: 4px;
+  }
+
+  .spec-table td {
+    padding: 5px 7px;
+    border-bottom: 1px solid #f5f5f4;
+    vertical-align: top;
+  }
+
+  .spec-table td.label {
+    font-weight: 700;
+    color: #78716c;
+    width: 32%;
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.5px;
+  }
+
+  .spec-table td.value {
+    color: #1c1917;
+    font-weight: 500;
+  }
+
+  /* UI Frame Mockup Simulator */
+  .mobile-mockup {
+    background: #fbf8fc;
+    border: 1.5px solid #d6c7dd;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+
+  .mockup-header {
+    font-size: 7.5pt;
+    font-weight: 800;
+    color: #78233f;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mockup-screen {
+    background: #ffffff;
+    border: 1px solid #e9d5ff;
+    border-radius: 8px;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  /* Mini visual components inside mockups */
+  .ad-card-mini {
+    background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    border: 1px solid #44403c;
+  }
+
+  .ad-card-mini .top-badge {
+    background: #fbbf24;
+    color: #1c1917;
+    font-size: 6pt;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
+  .ad-card-mini .title {
+    font-size: 8pt;
+    font-weight: 800;
+    margin-top: 3px;
+    color: #fff;
+  }
+
+  .ad-card-mini .desc {
+    font-size: 6.5pt;
+    color: #d6d3d1;
+    margin-top: 2px;
+  }
+
+  .ad-card-mini .btn {
+    display: inline-block;
+    background: #78233f;
+    color: #fff;
+    font-size: 6.5pt;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 5px;
+    text-transform: uppercase;
+  }
+
+  .brand-strip-mini {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .brand-pill-mini {
+    background: #fdf4f6;
+    border: 1px solid #fbcfe8;
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 6.5pt;
+    font-weight: 700;
+    color: #78233f;
+    text-align: center;
+    flex: 1;
+  }
+
+  .salon-card-mini {
+    background: #fff;
+    border: 1px solid #f59e0b;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin-bottom: 5px;
+  }
+
+  .salon-card-mini .tag {
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 6pt;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  .salon-card-mini .name {
+    font-size: 8pt;
+    font-weight: 800;
+    color: #1c1917;
+    margin-top: 2px;
+  }
+
+  .kit-card-mini {
+    background: #faf5ff;
+    border: 1px solid #c084fc;
+    border-radius: 6px;
+    padding: 6px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .kit-card-mini .kname {
+    font-size: 7.5pt;
+    font-weight: 800;
+    color: #581c87;
+  }
+
+  .kit-card-mini .tagline {
+    font-size: 6.5pt;
+    color: #6b21a8;
+  }
+
+  .kit-card-mini .check {
+    background: #78233f;
+    color: #fff;
+    font-size: 6pt;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-weight: 800;
+  }
+
+  /* Comparison Matrix Table */
+  table.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-top: 10px;
+  }
+
+  table.matrix-table th {
+    background: #78233f;
+    color: #ffffff;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px;
+    text-align: left;
+    border: 1px solid #78233f;
+  }
+
+  table.matrix-table td {
+    padding: 6px 8px;
+    border: 1px solid #e7e5e4;
+    color: #292524;
+    vertical-align: top;
+  }
+
+  table.matrix-table tr:nth-child(even) {
+    background: #fafaf9;
+  }
+
+  .kpi-chip {
+    display: inline-block;
+    background: #f5f5f4;
+    border: 1px solid #d6d3d1;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 7pt;
+    font-weight: 700;
+    color: #44403c;
+  }
+
+  .kpi-chip.green {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+  }
+
+  .kpi-chip.gold {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+
+  .kpi-chip.purple {
+    background: #faf5ff;
+    border-color: #e9d5ff;
+    color: #6b21a8;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER PAGE ================= -->
+<div class="cover">
+  <div>
+    <span class="cover-pill">Executive Product Architecture</span>
+    <h1 class="cover-title">InstaaTrim<br>Screen-by-Screen Breakdown:<br>7 Consumer Ad Touchpoints</h1>
+    <p class="cover-subtitle">
+      A comprehensive implementation guide detailing placement specifications, user experience triggers, target advertisers, pricing models, and UI wireframes across the customer booking journey.
+    </p>
+
+    <div class="cover-points-preview">
+      <h4>Covered In This Document (7 Touchpoints)</h4>
+      <div class="cover-list">
+        <div class="cover-list-item"><span class="num">1</span> <strong>Homepage Top Ad Carousel</strong> (High-CPM Hero Takeovers)</div>
+        <div class="cover-list-item"><span class="num">2</span> <strong>Brand Partner Showcase</strong> (Official Brand Store Strips)</div>
+        <div class="cover-list-item"><span class="num">3</span> <strong>Mid-Page Native Campaign Banners</strong> (Festival Flash Sales)</div>
+        <div class="cover-list-item"><span class="num">4</span> <strong>Promoted / Sponsored Salons</strong> (Position #1–#2 Badges)</div>
+        <div class="cover-list-item"><span class="num">5</span> <strong>Sponsored Search &amp; Keyword Bidding</strong> (Top Search Pin)</div>
+        <div class="cover-list-item"><span class="num">6</span> <strong>In-Flow Brand Kit Upsell</strong> (Booking Flow Customizer)</div>
+        <div class="cover-list-item"><span class="num">7</span> <strong>Post-Booking Confirmation Screen</strong> (Aftercare Retail)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div>
+      <strong>Target Platform</strong>
+      InstaaTrim Beauty &amp; Wellness App
+    </div>
+    <div>
+      <strong>Deliverable For</strong>
+      Client Leadership &amp; Marketing Team
+    </div>
+    <div>
+      <strong>Status &amp; Version</strong>
+      Ready for Production &amp; Pitch (v2.0)
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= TOUCHPOINTS 1 & 2 ================= -->
+<div class="doc-header">
+  <div class="doc-title">Consumer Ad Touchpoints 1 &amp; 2: Homepage Spotlight</div>
+  <div class="doc-badge">Front-of-Funnel Visibility</div>
+</div>
+
+<!-- TOUCHPOINT 1 -->
+<div class="tp-container avoid-break">
+  <div class="tp-hero-header">
+    <div class="tp-name">Touchpoint 1: Homepage Top Ad Carousel (High-CPM Hero Takeover)</div>
+    <div class="tp-tag">Prime Position #1</div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-grid">
+      <div>
+        <p style="margin-bottom: 6px;">
+          <strong>Overview:</strong> Positioned immediately below the top navigation and search bar. This is the highest-value ad placement in the app, capturing 100% of homepage impressions. It auto-slides through 3–4 premium brand campaigns with an official <em>"Sponsored Spotlight"</em> badge and 1-click offer claiming.
+        </p>
+        <table class="spec-table">
+          <tr>
+            <td class="label">Screen Location</td>
+            <td class="value">Homepage (Top screen, immediately above Category Grid)</td>
+          </tr>
+          <tr>
+            <td class="label">Ad Format &amp; Specs</td>
+            <td class="value">16:9 card (480x172px), auto-carousel (4.8s timer), dots indicator, CTA button</td>
+          </tr>
+          <tr>
+            <td class="label">Target Advertisers</td>
+            <td class="value">Tier-1 Cosmetic &amp; Haircare Brands (L'Oréal Paris, Dyson Pro, O3+, Forest Essentials)</td>
+          </tr>
+          <tr>
+            <td class="label">User Interaction</td>
+            <td class="value">Tap opens Campaign Offer Modal with 1-click coupon apply &amp; direct salon booking link</td>
+          </tr>
+          <tr>
+            <td class="label">Commercial Model</td>
+            <td class="value"><span class="kpi-chip purple">Tenancy</span> ₹20,000–₹35,000/week/slide OR <span class="kpi-chip green">CPM</span> ₹400–₹550</td>
+          </tr>
+        </table>
+      </div>
+      <div class="mobile-mockup">
+        <div class="mockup-header">
+          <span>Wireframe Preview</span>
+          <span style="color: #10b981;">● LIVE IN APP</span>
+        </div>
+        <div class="mockup-screen">
+          <div style="font-size: 6.5pt; font-weight: 800; color: #b45309; margin-bottom: 3px;">✦ SPONSORED SPOTLIGHT • Brand Collaborations</div>
+          <div class="ad-card-mini">
+            <span class="top-badge">L'Oréal Paris • Official Partner</span>
+            <div class="title">Parisian Glow &amp; Hyaluronic Care</div>
+            <div class="desc">Book any facial with verified salons &amp; get complimentary Revitalift serum.</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+              <span class="btn">Claim Deal ›</span>
+              <span style="font-size: 6pt; color: #6ee7b7; font-weight: 800;">FLAT ₹400 OFF</span>
+            </div>
+          </div>
+          <div style="text-align: center; font-size: 6pt; color: #a8a29e;">••• (Auto-rotates to Dyson / O3+)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOUCHPOINT 2 -->
+<div class="tp-container avoid-break" style="margin-top: 14px;">
+  <div class="tp-hero-header" style="background: linear-gradient(to right, #4c1d95, #6d28d9);">
+    <div class="tp-name">Touchpoint 2: Brand Partner Showcase (Official Brand Store Strips)</div>
+    <div class="tp-tag">Brand Hub Collection</div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-grid">
+      <div>
+        <p style="margin-bottom: 6px;">
+          <strong>Overview:</strong> A horizontal curated strip titled <em>"Brand Collaborations &amp; Official Stores"</em>. Features branded tiles with company logo, tagline, and exclusive promotional tag (e.g. "Up to 40% OFF", "Free Scalp Scan"). Users tap a brand to view all partner salons certified in using their authentic products.
+        </p>
+        <table class="spec-table">
+          <tr>
+            <td class="label">Screen Location</td>
+            <td class="value">Homepage (Directly below Top Ad Carousel)</td>
+          </tr>
+          <tr>
+            <td class="label">Ad Format &amp; Specs</td>
+            <td class="value">Horizontal carousel with 114px width brand tiles, logo emoji/SVG, badge pill, offer tag</td>
+          </tr>
+          <tr>
+            <td class="label">Target Advertisers</td>
+            <td class="value">Product brands seeking permanent brand association (Wella, Lakmé, Kama, Schwarzkopf)</td>
+          </tr>
+          <tr>
+            <td class="label">User Interaction</td>
+            <td class="value">Tap triggers filtered salon listings offering this specific product line + coupon code</td>
+          </tr>
+          <tr>
+            <td class="label">Commercial Model</td>
+            <td class="value"><span class="kpi-chip gold">Monthly Retainer</span> ₹12,000–₹18,000/brand/month slot placement fee</td>
+          </tr>
+        </table>
+      </div>
+      <div class="mobile-mockup">
+        <div class="mockup-header">
+          <span>Wireframe Preview</span>
+          <span style="color: #10b981;">● LIVE IN APP</span>
+        </div>
+        <div class="mockup-screen">
+          <div style="font-size: 6.5pt; font-weight: 800; color: #78233f; margin-bottom: 3px;">Brand Collaborations (Featured)</div>
+          <div class="brand-strip-mini">
+            <div class="brand-pill-mini">
+              <div>💎 L'Oréal</div>
+              <div style="color: #b91c1c; font-size: 5.5pt; margin-top: 1px;">40% OFF</div>
+            </div>
+            <div class="brand-pill-mini">
+              <div>✨ Dyson</div>
+              <div style="color: #4338ca; font-size: 5.5pt; margin-top: 1px;">Free Scan</div>
+            </div>
+            <div class="brand-pill-mini">
+              <div>🌟 O3+ Pro</div>
+              <div style="color: #d97706; font-size: 5.5pt; margin-top: 1px;">30% OFF</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= TOUCHPOINTS 3 & 4 ================= -->
+<div class="doc-header">
+  <div class="doc-title">Consumer Ad Touchpoints 3 &amp; 4: Feed &amp; Salon Discovery</div>
+  <div class="doc-badge">Discovery &amp; Intent Phase</div>
+</div>
+
+<!-- TOUCHPOINT 3 -->
+<div class="tp-container avoid-break">
+  <div class="tp-hero-header" style="background: linear-gradient(to right, #b45309, #d97706);">
+    <div class="tp-name">Touchpoint 3: Mid-Page Native Campaign Banners (Festival Flash Sales)</div>
+    <div class="tp-tag">High CTR Mid-Feed</div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-grid">
+      <div>
+        <p style="margin-bottom: 6px;">
+          <strong>Overview:</strong> Positioned in the middle of the homepage feed between Core Categories and Trending Services. Acts as an editorial native advertisement for festive campaigns (e.g. <em>"InstaaTrim Gold Glow Carnival • Co-sponsored by Lakmé"</em>) with an interactive 1-click coupon copy button (`CARNIVAL50`).
+        </p>
+        <table class="spec-table">
+          <tr>
+            <td class="label">Screen Location</td>
+            <td class="value">Homepage (Mid-feed, between Category Grid &amp; Trending Services)</td>
+          </tr>
+          <tr>
+            <td class="label">Ad Format &amp; Specs</td>
+            <td class="value">Full-width dark gradient card, campaign badge, interactive copy coupon button</td>
+          </tr>
+          <tr>
+            <td class="label">Target Advertisers</td>
+            <td class="value">Seasonal festival sponsors, multi-brand salon partnerships, event co-sponsors</td>
+          </tr>
+          <tr>
+            <td class="label">User Interaction</td>
+            <td class="value">1-click copies promo code and automatically applies discount directly to user cart</td>
+          </tr>
+          <tr>
+            <td class="label">Commercial Model</td>
+            <td class="value"><span class="kpi-chip green">CPC</span> ₹10–₹15 per click OR <span class="kpi-chip purple">Flat Campaign</span> ₹25,000 / 10-day carnival</td>
+          </tr>
+        </table>
+      </div>
+      <div class="mobile-mockup">
+        <div class="mockup-header">
+          <span>Wireframe Preview</span>
+          <span style="color: #10b981;">● LIVE IN APP</span>
+        </div>
+        <div class="mockup-screen">
+          <div style="background: #1c1917; border-radius: 6px; padding: 7px; color: white;">
+            <span style="background: #f59e0b; color: #000; font-size: 5.5pt; font-weight: 800; padding: 1px 4px; border-radius: 3px;">SPONSORED CAMPAIGN</span>
+            <div style="font-size: 7.5pt; font-weight: 800; margin-top: 2px;">InstaaTrim Gold Glow Carnival</div>
+            <div style="font-size: 6pt; color: #a8a29e;">Co-sponsored by Lakmé &amp; O3+ Pro</div>
+            <div style="background: rgba(255,255,255,0.15); border-radius: 4px; padding: 3px 5px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 6pt;">Book 2 Services • Get Free De-Tan</span>
+              <span style="background: #fff; color: #000; font-size: 5.5pt; font-weight: 800; padding: 1px 4px; border-radius: 3px;">CODE: CARNIVAL50</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOUCHPOINT 4 -->
+<div class="tp-container avoid-break" style="margin-top: 14px;">
+  <div class="tp-hero-header" style="background: linear-gradient(to right, #047857, #059669);">
+    <div class="tp-name">Touchpoint 4: Promoted / Sponsored Salons (Position #1–#2 Badges)</div>
+    <div class="tp-tag">Salon Partner B2B Boost</div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-grid">
+      <div>
+        <p style="margin-bottom: 6px;">
+          <strong>Overview:</strong> Enables salon partners to pay for promoted placement on the Homepage and the Salon Listing Directory. Boosted salons appear in Position #1 and #2 with a gold border, an <em>"Ad • Promoted"</em> badge, and special perk chips (e.g. "Free Welcome Head Massage"), driving immediate bookings.
+        </p>
+        <table class="spec-table">
+          <tr>
+            <td class="label">Screen Location</td>
+            <td class="value">Homepage Featured Strip + Salon Listing Page (Positions #1 and #2)</td>
+          </tr>
+          <tr>
+            <td class="label">Ad Format &amp; Specs</td>
+            <td class="value">Enhanced Salon Listing Card, gold accent border, "Sponsored / Ad" verified badge</td>
+          </tr>
+          <tr>
+            <td class="label">Target Advertisers</td>
+            <td class="value">Local salon partners wanting to fill off-peak chairs or promote newly launched outlets</td>
+          </tr>
+          <tr>
+            <td class="label">User Interaction</td>
+            <td class="value">Directly opens boosted salon menu; boosts salon booking conversions by ~45%</td>
+          </tr>
+          <tr>
+            <td class="label">Commercial Model</td>
+            <td class="value"><span class="kpi-chip gold">Weekly Package</span> Tier 1: ₹799 (Weekend) | Tier 2: ₹1,799 (Weekly Top Spot)</td>
+          </tr>
+        </table>
+      </div>
+      <div class="mobile-mockup">
+        <div class="mockup-header">
+          <span>Wireframe Preview</span>
+          <span style="color: #2563eb;">● LISTING SCREEN</span>
+        </div>
+        <div class="mockup-screen">
+          <div class="salon-card-mini">
+            <span class="tag">SPONSORED • TOP PICK</span>
+            <div class="name">Luxe Glow Salon &amp; Spa ★ 4.8</div>
+            <div style="font-size: 6pt; color: #78716c;">South Tukoganj • 0.8 km • Open Now</div>
+            <div style="font-size: 6pt; color: #059669; font-weight: 700; margin-top: 2px;">⚡ Seat Ready in 15 mins • 20% OFF</div>
+          </div>
+          <div style="border: 1px solid #e7e5e4; border-radius: 6px; padding: 5px; opacity: 0.7;">
+            <div style="font-size: 7.5pt; font-weight: 700; color: #78716c;">Organic Salon (Unsponsored)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= TOUCHPOINTS 5 & 6 ================= -->
+<div class="doc-header">
+  <div class="doc-title">Consumer Ad Touchpoints 5 &amp; 6: Search &amp; Booking Funnel</div>
+  <div class="doc-badge">High Conversion Intent</div>
+</div>
+
+<!-- TOUCHPOINT 5 -->
+<div class="tp-container avoid-break">
+  <div class="tp-hero-header" style="background: linear-gradient(to right, #0284c7, #0369a1);">
+    <div class="tp-name">Touchpoint 5: Sponsored Search &amp; Keyword Bidding (Top Search Pin)</div>
+    <div class="tp-tag">Intent-Driven PPC</div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-grid">
+      <div>
+        <p style="margin-bottom: 6px;">
+          <strong>Overview:</strong> When a user searches for specific high-value services (e.g. <em>"Bridal Makeup"</em>, <em>"Hydra Facial"</em>, <em>"Keratin Treatment"</em>), the top result is a sponsored salon or brand package pinned above organic results, marked with an <em>"Ad"</em> micro-label.
+        </p>
+        <table class="spec-table">
+          <tr>
+            <td class="label">Screen Location</td>
+            <td class="value">Search Screen &amp; Category Results Screen (Top position above organic list)</td>
+          </tr>
+          <tr>
+            <td class="label">Ad Format &amp; Specs</td>
+            <td class="value">Pinned service/salon card with keyword highlight, "Sponsored" tag, instant book CTA</td>
+          </tr>
+          <tr>
+            <td class="label">Target Advertisers</td>
+            <td class="value">Salons specializing in high-ticket treatments (Hair smoothening, Bridal studio)</td>
+          </tr>
+          <tr>
+            <td class="label">User Interaction</td>
+            <td class="value">Immediate service add-to-cart or instant slot booking without scrolling</td>
+          </tr>
+          <tr>
+            <td class="label">Commercial Model</td>
+            <td class="value"><span class="kpi-chip green">Keyword Bidding CPC</span> ₹12–₹28 per click based on keyword competition</td>
+          </tr>
+        </table>
+      </div>
+      <div class="mobile-mockup">
+        <div class="mockup-header">
+          <span>Wireframe Preview</span>
+          <span style="color: #0284c7;">● SEARCH SCREEN</span>
+        </div>
+        <div class="mockup-screen">
+          <div style="background: #f3f4f6; border-radius: 4px; padding: 3px 6px; font-size: 6.5pt; color: #374151; margin-bottom: 5px;">
+            🔍 Search: "Hydra Facial"
+          </div>
+          <div style="background: #f0f9ff; border: 1px solid #7dd3fc; border-radius: 5px; padding: 5px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: 5.5pt; background: #0284c7; color: white; padding: 1px 3px; border-radius: 2px; font-weight: 800;">AD • TOP RESULT</span>
+              <span style="font-size: 6pt; font-weight: 800; color: #0369a1;">₹1,499</span>
+            </div>
+            <div style="font-size: 7pt; font-weight: 800; color: #0c4a6e; margin-top: 1px;">7-Step Korean HydraGlo Facial</div>
+            <div style="font-size: 5.5pt; color: #0284c7;">Enrich Glamour Studio • 4.9 ★</div>
+          </div>
+          <div style="font-size: 6pt; color: #9ca3af; margin-top: 4px;">Organic Results below...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOUCHPOINT 6 -->
+<div class="tp-container avoid-break" style="margin-top: 14px;">
+  <div class="tp-hero-header" style="background: linear-gradient(to right, #701a75, #86198f);">
+    <div class="tp-name">Touchpoint 6: In-Flow Brand Kit Upsell (Booking Flow Customizer)</div>
+    <div class="tp-tag">Most Lucrative In-Funnel Ad</div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-grid">
+      <div>
+        <p style="margin-bottom: 6px;">
+          <strong>Overview:</strong> Integrated directly into Step 3 of the new <strong>BookingFlowModal</strong>. When customers book a treatment like a Facial, Hair Spa, or Body Polish, the app displays suggested brand formulations (e.g. <em>L'Oréal Revitalift</em> vs. <em>Pond's Age Miracle</em> vs. <em>Biotique Botanical</em>). Brands pay for placement to ensure salon staff use their product kit.
+        </p>
+        <table class="spec-table">
+          <tr>
+            <td class="label">Screen Location</td>
+            <td class="value">Booking Flow (Step 3: Product &amp; Brand Kit Customisation)</td>
+          </tr>
+          <tr>
+            <td class="label">Ad Format &amp; Specs</td>
+            <td class="value">Interactive brand cards with benefit tags ("Bestseller", "100% Ayurvedic"), select toggle</td>
+          </tr>
+          <tr>
+            <td class="label">Target Advertisers</td>
+            <td class="value">Skincare, haircare, and spa product manufacturers seeking brand loyalty</td>
+          </tr>
+          <tr>
+            <td class="label">User Interaction</td>
+            <td class="value">Customer selects preferred brand kit; salon prepares treatment accordingly</td>
+          </tr>
+          <tr>
+            <td class="label">Commercial Model</td>
+            <td class="value"><span class="kpi-chip green">Pay-Per-Selection (CPA)</span> ₹40–₹80 per customer kit selection + brand listing fee</td>
+          </tr>
+        </table>
+      </div>
+      <div class="mobile-mockup">
+        <div class="mockup-header">
+          <span>Wireframe Preview</span>
+          <span style="color: #10b981;">● LIVE IN APP</span>
+        </div>
+        <div class="mockup-screen">
+          <div style="font-size: 6.5pt; font-weight: 800; color: #701a75; margin-bottom: 3px;">Step 3: Customise Facial Kit</div>
+          <div class="kit-card-mini">
+            <div>
+              <div class="kname">L'Oréal Paris Revitalift</div>
+              <div class="tagline">Hyaluronic Acid Glow Infusion</div>
+            </div>
+            <div class="check">✓ SELECTED</div>
+          </div>
+          <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 5px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 7pt; font-weight: 700; color: #374151;">Pond's Gold Radiance</div>
+              <div style="font-size: 5.5pt; color: #9ca3af;">Age Miracle Cell Renewal</div>
+            </div>
+            <div style="font-size: 6pt; color: #78233f; font-weight: 700;">+ Select</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ================= TOUCHPOINT 7 & SUMMARY MATRIX ================= -->
+<div class="doc-header">
+  <div class="doc-title">Consumer Ad Touchpoint 7 &amp; Commercial Summary</div>
+  <div class="doc-badge">Post-Purchase &amp; Matrix</div>
+</div>
+
+<!-- TOUCHPOINT 7 -->
+<div class="tp-container avoid-break">
+  <div class="tp-hero-header" style="background: linear-gradient(to right, #1f2937, #374151);">
+    <div class="tp-name">Touchpoint 7: Post-Booking Confirmation &amp; Appointment Tracker Screen</div>
+    <div class="tp-tag">Post-Purchase Cross-Sell</div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-grid">
+      <div>
+        <p style="margin-bottom: 6px;">
+          <strong>Overview:</strong> Displayed on the <strong>BookingConfirmationPage</strong> and live appointment status screen. Customers spend 15–45 minutes tracking their appointment or traveling to the salon. This screen monetizes downstream consumer intent via aftercare skincare retail, nearby dining/coffee vouchers, and ride-hailing discounts.
+        </p>
+        <table class="spec-table">
+          <tr>
+            <td class="label">Screen Location</td>
+            <td class="value">Booking Confirmation Page + Live Booking Status Progress Card</td>
+          </tr>
+          <tr>
+            <td class="label">Ad Format &amp; Specs</td>
+            <td class="value">Native Aftercare Recommendation Banner, partner coupon chip, affiliate link</td>
+          </tr>
+          <tr>
+            <td class="label">Target Advertisers</td>
+            <td class="value">D2C post-treatment skincare brands, ride-hailing (Uber/Ola), cafes near salon</td>
+          </tr>
+          <tr>
+            <td class="label">User Interaction</td>
+            <td class="value">Tap orders aftercare serum or claims a ride discount to reach the salon</td>
+          </tr>
+          <tr>
+            <td class="label">Commercial Model</td>
+            <td class="value"><span class="kpi-chip green">Affiliate Revenue Share</span> 15%–20% on retail orders OR ₹15/click</td>
+          </tr>
+        </table>
+      </div>
+      <div class="mobile-mockup">
+        <div class="mockup-header">
+          <span>Wireframe Preview</span>
+          <span style="color: #10b981;">● LIVE IN APP</span>
+        </div>
+        <div class="mockup-screen">
+          <div style="background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 5px; padding: 5px; margin-bottom: 4px; font-size: 6.5pt; font-weight: 800; color: #065f46;">
+            ✓ Booking Confirmed! ID: #BK-8492
+          </div>
+          <div style="background: #fff; border: 1px dashed #78233f; border-radius: 5px; padding: 6px;">
+            <div style="font-size: 6pt; color: #78233f; font-weight: 800; text-transform: uppercase;">RECOMMENDED AFTERCARE</div>
+            <div style="font-size: 7pt; font-weight: 800; color: #1c1917; margin-top: 1px;">L'Oréal Revitalift Post-Facial Sunscreen</div>
+            <div style="font-size: 5.5pt; color: #6b7280;">Get 25% Off at partner salon reception desk</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARATIVE SUMMARY MATRIX -->
+<div class="avoid-break" style="margin-top: 14px;">
+  <div class="doc-title" style="font-size: 11pt; margin-bottom: 6px;">Comparative Strategic Matrix: All 7 Consumer Touchpoints</div>
+  <table class="matrix-table">
+    <thead>
+      <tr>
+        <th>Touchpoint</th>
+        <th>Primary Goal</th>
+        <th>User Intent Level</th>
+        <th>Expected CTR</th>
+        <th>Best Pricing Model</th>
+        <th>Avg. Monthly Yield (Est.)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Top Ad Carousel</strong></td>
+        <td>Brand awareness &amp; hero launches</td>
+        <td>Medium (Browsing)</td>
+        <td>3.5% – 4.8%</td>
+        <td>Tenancy / Fixed Weekly</td>
+        <td>₹80,000 – ₹1,20,000</td>
+      </tr>
+      <tr>
+        <td><strong>2. Brand Partner Strip</strong></td>
+        <td>Catalog exploration &amp; authority</td>
+        <td>Medium-High</td>
+        <td>2.8% – 3.9%</td>
+        <td>Monthly Retainer</td>
+        <td>₹60,000 – ₹90,000</td>
+      </tr>
+      <tr>
+        <td><strong>3. Mid-Page Campaign</strong></td>
+        <td>Impulse action &amp; festive deals</td>
+        <td>High (Evaluating)</td>
+        <td>5.2% – 6.7%</td>
+        <td>Hybrid CPC / Tenancy</td>
+        <td>₹40,000 – ₹75,000</td>
+      </tr>
+      <tr>
+        <td><strong>4. Promoted Salons</strong></td>
+        <td>Chair occupancy for local salons</td>
+        <td>High (Ready to book)</td>
+        <td>7.5% – 11.2%</td>
+        <td>Weekly Boost Package</td>
+        <td>₹50,000 – ₹1,10,000</td>
+      </tr>
+      <tr>
+        <td><strong>5. Sponsored Search Pin</strong></td>
+        <td>Immediate conversion on keyword</td>
+        <td>Very High (Specific need)</td>
+        <td>9.0% – 14.5%</td>
+        <td>Keyword CPC Bidding</td>
+        <td>₹35,000 – ₹70,000</td>
+      </tr>
+      <tr>
+        <td><strong>6. In-Flow Brand Kit Upsell</strong></td>
+        <td>Product sampling &amp; kit customization</td>
+        <td>Extreme (Checkout funnel)</td>
+        <td>18.0% – 26.0%</td>
+        <td>CPA (Pay-per-selection)</td>
+        <td>₹60,000 – ₹1,40,000</td>
+      </tr>
+      <tr>
+        <td><strong>7. Post-Booking Confirmation</strong></td>
+        <td>Aftercare retail &amp; cross-selling</td>
+        <td>High Post-Purchase</td>
+        <td>4.0% – 6.2%</td>
+        <td>Affiliate Commission</td>
+        <td>₹25,000 – ₹45,000</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background: #fdf2f8; border-left: 4px solid #78233f; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-top: 10px; font-size: 8.5pt;">
+    <strong>Executive Takeaway for Client:</strong> Combining all 7 touchpoints creates a complete, non-intrusive monetization ecosystem. By monetizing front-of-funnel browsing (Touchpoints 1–3), high-intent search &amp; discovery (Touchpoints 4–5), in-funnel customization (Touchpoint 6), and post-booking cross-sells (Touchpoint 7), InstaaTrim unlocks multiple diversified revenue streams while maintaining an ultra-luxurious, verified user experience.
+  </div>
+</div>
+
+</body>
+</html>

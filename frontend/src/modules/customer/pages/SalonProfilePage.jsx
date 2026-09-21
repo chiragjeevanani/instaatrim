@@ -4,6 +4,7 @@ import { useAppData } from '../../../shared/store/AppDataProvider';
 import { useCustomer } from '../context/CustomerContext';
 import { CartDrawer } from '../components/CartDrawer';
 import { SlotPickerModal } from '../components/SlotPickerModal';
+import { BookingFlowModal } from '../components/BookingFlowModal';
 import { reviewSummary } from '../../../shared/store/selectors';
 import { parseHoursRange, nowMinutesOfDay } from '../../../shared/lib/time';
 import {
@@ -35,6 +36,7 @@ export const SalonProfilePage = () => {
     cartSummary,
     setIsCartOpen,
     setIsSlotPickerOpen,
+    setIsBookingFlowOpen,
     bookingSlot
   } = useCustomer();
 
@@ -340,7 +342,7 @@ export const SalonProfilePage = () => {
               <p className="text-sm font-black text-stone-900 leading-tight">₹{cartSummary.finalAmount}</p>
             </div>
             <button
-              onClick={() => setIsCartOpen(true)}
+              onClick={() => setIsBookingFlowOpen(true)}
               className="py-2.5 px-5 bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
@@ -350,8 +352,9 @@ export const SalonProfilePage = () => {
         </div>
       )}
 
-      {/* Cart Drawer & Slot Picker */}
+      {/* Cart Drawer, Booking Flow & Slot Picker */}
       <CartDrawer />
+      <BookingFlowModal salonId={salon.id} />
       <SlotPickerModal salonId={salon.id} />
     </motion.div>
   );

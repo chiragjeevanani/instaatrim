@@ -129,9 +129,20 @@ export const BRAND_PARTNERS = [
     couponCode: 'WELLAPRO',
     tagline: 'Color Motion+',
     offer: 'Free Gloss Kit',
-    logo: '💇‍♀️',
-    accent: 'bg-purple-50 text-purple-800 border-purple-200',
+    logo: '💇',
+    accent: 'bg-stone-100 text-stone-900 border-stone-300',
     description: 'SP LuxeOil and Color Motion+ hair restoration by certified senior stylists.'
+  },
+  {
+    id: 'bp-beardo',
+    name: 'Beardo',
+    fullName: 'Beardo Barbershop Pro',
+    couponCode: 'BEARDO50',
+    tagline: 'Precision Beard Care',
+    offer: 'Flat ₹150 OFF',
+    logo: '🧔',
+    accent: 'bg-amber-50 text-amber-900 border-amber-300',
+    description: 'Certified barbershops utilizing Godfather hemp & argan beard sculpting kits.'
   }
 ];
 

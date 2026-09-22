@@ -10,15 +10,10 @@ export const BrandPartnerShowcase = ({ onSelectBrand }) => {
   if (!brandPartners || brandPartners.length === 0) return null;
 
   return (
-    <section className="mt-4 px-4 w-full max-w-full min-w-0 box-border" data-purpose="brand-partners-showcase">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <h2 className="text-[12.5px] font-bold text-stone-900 tracking-tight">Brand Collaborations</h2>
-          <span className="text-[9px] font-extrabold bg-rose-100 text-brand-maroon px-1.5 py-0.2 rounded-full">
-            Featured
-          </span>
-        </div>
-        <span className="text-[9.5px] font-semibold text-stone-500">Sponsored Offers</span>
+    <section className="mt-5 px-4 w-full max-w-full min-w-0 box-border" data-purpose="brand-partners-showcase">
+      <div className="flex items-center justify-between mb-2.5">
+        <h2 className="text-[14px] font-bold text-stone-900 tracking-tight">Brand Partners</h2>
+        <span className="text-[11px] font-semibold text-stone-500">Curated</span>
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 w-full max-w-full">
@@ -37,12 +32,9 @@ export const BrandPartnerShowcase = ({ onSelectBrand }) => {
                   Partner
                 </span>
               </div>
-              <h4 className="text-[11px] font-bold text-stone-900 mt-1.5 leading-tight truncate">
+              <h4 className="text-[11.5px] font-bold text-stone-900 mt-2 leading-tight truncate">
                 {bp.name}
               </h4>
-              <p className="text-[8.5px] text-stone-500 truncate mt-0.5">
-                {bp.tagline}
-              </p>
             </div>
 
             <div className="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between">

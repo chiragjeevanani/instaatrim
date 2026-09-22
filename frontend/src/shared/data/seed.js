@@ -25,49 +25,49 @@ export const CATEGORIES = [
     name: 'Hair Studio',
     shortName: 'Hair Studio',
     serviceCategories: ['Hair Studio'],
+    gender: 'unisex',
     colSpan: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDBoqbLjq4rb7MBo0QJOM2nWGaIG8-WULmZSJywOZJ0UD-KMmvvJjqwsfC0JXYRu-usK4H7NLBRVlrcSxELjy7-LTY9Ctbc3-QVwbTQ4lDWLzF1y6IrMmHEWexa48BipMWrsSRtolj4yyCpr0vqG4he9QtdEIn0WtToVSDCAfKY8mwONlm2qXBrIgEyJQ0bv11pDjFoRW10aIPvXsDXPmlIfRMvj-xgM895AUHbuA0b6IBD5njVx5v0cg'
+    image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'cat-facial',
     slug: 'facial',
-    name: 'Facials',
+    name: 'Facials & Skin',
     shortName: 'Facials',
     serviceCategories: ['Facial'],
+    gender: 'unisex',
     colSpan: 2,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBKOZvsFacJMzTEx78j1kJJGV9xWdwRp3-fNcdJELVxA84BL49qmSzZQFwfF_DwDPSujw7BeLRcD36407W6shCprJc3SSww_wPfLk-c9i22zEkrsXoLx12PYtglXJKNFcLoUe4fTw5sx5jls1407Q8MD3OFTg_bFRv_-WLEWbUHkDje49n770wAyt2dzq-gAFGTR9XgwR3mBKrdOwU3d91eojLJ6B5YQGtJnz0tQ8gtpjEm672xqwnp-w'
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'cat-spa',
     slug: 'spa',
-    name: 'Spa',
+    name: 'Spa & Wellness',
     shortName: 'Spa',
     serviceCategories: ['Spa'],
+    gender: 'unisex',
     colSpan: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCI1eXwjP7Q3TbNQwdRp5_XXuFTWcdTW-WZ6OkgsDHGazFAJAGPRuJl_ovbxK3IbzoF0fEbYyuZ_RF0DTJTbX8jRKlJDmIPJFNJprZS1TNyuBjeshScz6lsao4So_cuWvyS292wBNtldqs5q1e6bv-SgQcT5cH3ojThS7lx53dZ1Jz3WOLyx3xgtVnMgs40TwubWvVuU2fnqWo5EzUsM7FKUBZmRjzthtn-RktNjNrH3hJW5V8OSPZ6_Q'
+    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'cat-waxing',
     slug: 'waxing',
-    name: 'Waxing',
+    name: 'Waxing & RICA',
     shortName: 'Waxing',
     serviceCategories: ['Waxing'],
+    gender: 'women',
     colSpan: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBp6PK-p1dyMbLLlNQLlarY9zUDv7-kTOJTj-aTqpmLvDWt-A9ZYH7bR3YxLhitUIA87WOzr2s69EuGhE5OEZ0KTGM0zU6AyuUIJfhoPsKZxVCEKRrm1ufxAWbSfJ6MHW8LAB9k4zbJ3BAQFO8oprh7LsoC1PljbGy-wmDI5VAkquaIeME4uAEtVy-_vFB4Hv-Rykg8HveKy6RSW6H_E8-eOKLgjzZye48Ag2UYy8r37b8P5WdCxWz5MQ'
+    image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'cat-body-polishing',
     slug: 'body-polishing',
     name: 'Body Polishing',
-    shortName: 'Body Polishing',
+    shortName: 'Body Polish',
     serviceCategories: ['Body Polishing'],
+    gender: 'unisex',
     colSpan: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD6HjSkc--JAKOcfTB_QyGjdvbv4FG6SjRgvQi_2wEj-QwvmTzKPvH18YmqhrGH8yPQAbonOnrlHM_jmU1TLfteAvZdHWVJTK6UXNV7Da7tm6T7teG5AgDkD3vSLT6M-TKdDkn0oO_F_pEHf40a_OTNximS_zBpLwTp8tds3zV94LsgyvsPcQpcPyy4Lo_cgP5D2H-AX1wreiVIolj_oI3NBSuqaB3PuwJim3duENKn7_1yBhdl2nOgnA'
+    image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'cat-makeup',
@@ -75,9 +75,9 @@ export const CATEGORIES = [
     name: 'Makeup & Styling',
     shortName: 'Makeup & Styling',
     serviceCategories: ['Makeup'],
+    gender: 'women',
     colSpan: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBllYJ7Ctl9y3Thu_dB-UWkbgHHqj0i3zG8_WJmR0qolBctW3DzyFBG0Hok8Zl2BgDtXwKiI2GGGZ9J979FyEwiwaRbmD_Z1TWN6FfMeiIzmGk1OjQbhW25Ago1rCCVwp-kPvPfprJrtc3Su4EgHeAyY17SPMtXRF9LUc5SHgmnPz7x-4JqfNIu9_YiOHQRLcVhp65Pc6C2JSpE9jrBascyRyIXvyPUIQwRLcEYc7Gldamp8jrxO0KiWg'
+    image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'cat-manipedi',
@@ -85,9 +85,9 @@ export const CATEGORIES = [
     name: 'Mani-Pedi',
     shortName: 'Mani-Pedi',
     serviceCategories: ['Mani-Pedi'],
+    gender: 'unisex',
     colSpan: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDfMK9naozyIj48N91MtrPUpqgBGrpXDKMUQKJmYVlCbDpjifHwUuZC2YE62fmqKLUk6mCyYfVk2natSfNKpyIt8pJ-_KzBh5Mezas8H_zI4z4LoQBe9WUwJRzb-ZP-4GnjQCNiKOyNC7LM0CEPvVuI7uCttqRMUTYncCPbH-C2MObHO_w3x_WgCYooAYnwegoOUSt5eTFNQtV_lK6csFdp_-QZSUdrlwZebAiaomCnWpKHJSCkl1XRKA'
+    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=400&q=80'
   },
   {
     id: 'cat-mehandi',
@@ -95,22 +95,17 @@ export const CATEGORIES = [
     name: 'Mehandi Art',
     shortName: 'Mehandi Art',
     serviceCategories: ['Mehandi'],
+    gender: 'women',
     colSpan: 1,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBGB09T7yYSPz5m59qdMGcUYGYQVykYtorxa7jd6IqL3pgchl6qF2VO0YGkH6Qe09SZwdC5B4B_GFx7BB4aWbj4QK3MiGc4NA8pBTUksF7qRW3NYwaaFKzshP5rtuAkn_b46G5_FazHzgZ4GSuBdC60c-an6LChHDZaafiezSOlS0IPnh0iR7xTTZ4Er43ZrK1nO4IqJJfBPlPPwCvPJjDPfYMHkz8HLFOeCxHDZZUfto0qhwcTXyg4BQ'
+    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80'
   },
-  // Beard & Grooming — the app previously carried only categories that
-  // read as women-only (Waxing, Mani-Pedi, Makeup, Mehandi) with no
-  // men's-grooming equivalent anywhere, despite the source SRS
-  // describing a general marketplace with Beard and Grooming as
-  // first-class categories (§6.3). Added here with real services and
-  // staff below so they're not empty categories.
   {
     id: 'cat-beard',
     slug: 'beard',
     name: 'Beard Grooming',
     shortName: 'Beard Grooming',
     serviceCategories: ['Beard'],
+    gender: 'men',
     colSpan: 1,
     image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80'
   },
@@ -120,6 +115,7 @@ export const CATEGORIES = [
     name: 'Men\'s Grooming',
     shortName: 'Men\'s Grooming',
     serviceCategories: ['Grooming'],
+    gender: 'men',
     colSpan: 1,
     image: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=400&q=80'
   }
@@ -133,10 +129,21 @@ export const findCategoryBySlug = (slug) => CATEGORIES.find((c) => c.slug === sl
 // ---------------------------------------------------------------------------
 export const BANNERS = [
   {
+    id: 'b-beard',
+    subtitle: 'Precision Beard & Hair Craft',
+    title: 'Executive Beard\n& Fade Sculpting',
+    desc: 'Hot towel steam prep, straight-razor detailing & beard oil seal',
+    ctaText: 'Book Chair',
+    tag: 'Men\'s Grooming',
+    image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80',
+    serviceId: 'srv-beard-1',
+    salonId: 'sal-1'
+  },
+  {
     id: 'b-1',
     subtitle: 'Smoothness You Can Feel',
-    title: 'Korean\nBody Polishing',
-    desc: 'Inspired by the iconic Italy Towel exfoliation ritual',
+    title: 'Korean Rice Towel\nBody Polishing',
+    desc: 'Inspired by traditional bathhouse exfoliation rituals',
     ctaText: 'Book Now',
     tag: 'Trending Ritual',
     image:
@@ -147,7 +154,7 @@ export const BANNERS = [
   {
     id: 'b-2',
     subtitle: 'Glass Skin Radiance',
-    title: 'HydraGlo\nFacial Infusion',
+    title: 'HydraGlo Deep\nFacial Infusion',
     desc: 'Deep 7-step pore extraction & botanical antioxidant boost',
     ctaText: 'Explore',
     tag: 'Elite Exclusive',
@@ -159,7 +166,7 @@ export const BANNERS = [
   {
     id: 'b-3',
     subtitle: 'Luxury Aromatherapy',
-    title: 'Pure Bliss\nRelaxation Spa',
+    title: 'Pure Restorative\nRelaxation Spa',
     desc: 'Full body restorative massage with warm essential oils',
     ctaText: 'View Offers',
     tag: '40% Flat OFF',
@@ -449,76 +456,70 @@ export const SERVICES = [
   svc({
     id: 'srv-1',
     salonId: 'sal-1',
-    name: 'Full Arms + Full Legs + Underarms Korean Wax',
+    name: 'Full Arms + Legs + Underarms Waxing',
     category: 'Waxing',
-    description: 'Painless exfoliation and wax using premium Korean rice formulation.',
+    description: 'Painless hair removal using soothing Italian RICA formulation.',
     duration: '1 hr 15 mins',
     price: 899,
     originalPrice: 1699,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBZBlBxKt0xyzhEhUPfe5XA9QUMAyD4Kc5Z8Ac20UXPiLYNDfmMbu3kutGCqFeJ1MezdsjhrVxQ6l10j15ESWWlylwGZ5qWRX81L7bhnWztaKhZSONBPdpRHi7ut9nG71DdHnZ864mt-HIGHJuRivm0ol0bSfuiipj5J3hhzoUSR6D0PruAUZq2ktBi6pv4RKeP5TLP1s_A-ns4ph8rNysuvnojzdWTeYemd7GfvL6Mwn0hbvuNmtFcUg'
+    image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=400&q=80'
   }),
   svc({
     id: 'srv-2',
     salonId: 'sal-1',
-    name: 'Full Arms, Underarms & Full Legs - Rica Tin Wax',
+    name: 'Full Body Gentle Exfoliation & RICA Wax',
     category: 'Waxing',
     description: 'Colophony-free Italian Rica wax enriched with soothing aloe vera.',
     duration: '1 hr 5 mins',
     price: 949,
     originalPrice: 1599,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDT2-qmkDPyTCRCPqQ1oFZDagJ24-4JioCelc6lnduoDA_nuoEFMw4sOp7WshO1GkGOpeC-YFPssVcIXqwkmjk-PK-a4WrYKtnqMW-MbWmXQrcbeP7AmADilWdhKH2lEJ1Pzmz_EVkMw08bC2DQC20QtlXeapo-6d_XlYWoJetpl8nPEZnoEDs2902KXuGGAPvzFNbyi5_rPUW2AaTR71Boh7kRypaMujfm1lOxzA5cL_2EQbsq-CTwWw'
+    image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=400&q=80'
   }),
   svc({
     id: 'srv-4',
     salonId: 'sal-1',
-    name: 'HydraGlo Pore Extraction & Vitamin C Facial',
+    name: 'HydraGlo Pore Extraction & Glow Facial',
     category: 'Facial',
     description: 'Vacuum extraction of impurities followed by deep hyaluronic acid infusion.',
     duration: '1 hr 20 mins',
     price: 1299,
     originalPrice: 2200,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBKOZvsFacJMzTEx78j1kJJGV9xWdwRp3-fNcdJELVxA84BL49qmSzZQFwfF_DwDPSujw7BeLRcD36407W6shCprJc3SSww_wPfLk-c9i22zEkrsXoLx12PYtglXJKNFcLoUe4fTw5sx5jls1407Q8MD3OFTg_bFRv_-WLEWbUHkDje49n770wAyt2dzq-gAFGTR9XgwR3mBKrdOwU3d91eojLJ6B5YQGtJnz0tQ8gtpjEm672xqwnp-w'
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=400&q=80'
   }),
   svc({
     id: 'srv-7',
     salonId: 'sal-1',
-    name: 'Organic Body Glow Polish with Italy Towel',
+    name: 'Korean Rice Towel Body Glow Polish',
     category: 'Body Polishing',
     description: 'Complete body gentle scrub, dead skin renewal, and cocoa butter nourish.',
     duration: '1 hr 30 mins',
     price: 1599,
     originalPrice: 2799,
     isInstantEligible: false,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBuvH0PSye-kqWkkDkxUI2vr7mAEKKImPzyUF4pvQrb433vt7IFo3hgvC3j9VVX_GHfIV2OVm2S9kGt8x4YsLR4ip5cPVnYY_DkHuCd0sXtZT7slRgiWw6KnWAsweqcZ_JbxTSFuFpUK8GzUlaYc-qC9TwfmewDG0V81T9O43GL8Qkp4ywpeFwTYHyYScmKyKoDdD69hcQQB1tiV7LJcj-2Y13QiUFiqIYF2uAJk5u5PhqywjM_PbeUjQ'
+    image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=400&q=80'
   }),
 
   svc({
     id: 'srv-3',
     salonId: 'sal-2',
-    name: 'Full Arms + Full Legs + Underarms Honey Wax',
+    name: 'Full Arms + Legs Honey Waxing',
     category: 'Waxing',
     description: 'Classic soothing honey wax suitable for sensitive and dry skin.',
     duration: '1 hr 5 mins',
     price: 569,
     originalPrice: 899,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD8i-5l4607dt9YHknVtZFx3--k_pIGRweTR8EErGws5ocFuLJawJcYr_2ImI_x5DPsntVSvU0XCv_57UPG38ePT651owLPZ-y8Vq8NR_ge2qe3WzFOWCZ4Rn4CjCdwNZQdkYaArR39wJaMGlXjiCEg_BqqO9949aPGyjkSy8XGQOlKJxYJa9bqArh08ZF-nfdJrPKsoJhchHF36k1o9gE6d-z2A_JBcdQu4p5q_yvel_W7O0Hi-L_Dew'
+    image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=400&q=80'
   }),
   svc({
     id: 'srv-6',
     salonId: 'sal-2',
-    name: 'Deluxe Rose Infusion Manicure & Herbal Pedicure',
+    name: 'Deluxe Rose Infusion Manicure & Pedicure',
     category: 'Mani-Pedi',
     description: 'Rose petal foot soak, exfoliating salt rub, cuticle care, and massage.',
     duration: '1 hr 10 mins',
     price: 799,
     originalPrice: 1299,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDfMK9naozyIj48N91MtrPUpqgBGrpXDKMUQKJmYVlCbDpjifHwUuZC2YE62fmqKLUk6mCyYfVk2natSfNKpyIt8pJ-_KzBh5Mezas8H_zI4z4LoQBe9WUwJRzb-ZP-4GnjQCNiKOyNC7LM0CEPvVuI7uCttqRMUTYncCPbH-C2MObHO_w3x_WgCYooAYnwegoOUSt5eTFNQtV_lK6csFdp_-QZSUdrlwZebAiaomCnWpKHJSCkl1XRKA'
+    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=400&q=80'
   }),
   svc({
     id: 'srv-8',
@@ -529,39 +530,36 @@ export const SERVICES = [
     duration: '1 hr',
     price: 899,
     originalPrice: 1499,
-    image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=400&q=80'
+    image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80'
   }),
 
   svc({
     id: 'srv-5',
     salonId: 'sal-3',
-    name: 'Full Body Aromatherapy Spa & Deep Scalp Massage',
+    name: 'Aromatherapy Relaxing Spa & Head Massage',
     category: 'Spa',
     description: 'Lavender and bergamot essential oils with Swedish therapy strokes.',
     duration: '1 hr 30 mins',
     price: 1499,
     originalPrice: 2499,
     isInstantEligible: false,
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCI1eXwjP7Q3TbNQwdRp5_XXuFTWcdTW-WZ6OkgsDHGazFAJAGPRuJl_ovbxK3IbzoF0fEbYyuZ_RF0DTJTbX8jRKlJDmIPJFNJprZS1TNyuBjeshScz6lsao4So_cuWvyS292wBNtldqs5q1e6bv-SgQcT5cH3ojThS7lx53dZ1Jz3WOLyx3xgtVnMgs40TwubWvVuU2fnqWo5EzUsM7FKUBZmRjzthtn-RktNjNrH3hJW5V8OSPZ6_Q'
+    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80'
   }),
 
   svc({
     id: 'srv-9',
     salonId: 'sal-4',
-    name: 'O3+ Instant Brightening & D-Tan Glow Pack',
+    name: 'O3+ Instant Brightening & D-Tan Facial',
     category: 'Facial',
     description: 'Removes stubborn sun tan with botanical lactic acid & milk enzymes.',
     duration: '45 mins',
     price: 649,
     originalPrice: 1099,
     isInstantEligible: false,
-    image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=400&q=80'
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=400&q=80'
   }),
 
-  // Men's grooming — real content behind the Beard/Grooming categories
-  // rather than empty tiles, and the reason every salon carries at
-  // least one service that has nothing to do with a women-only catalogue.
+  // Men's Specific Services
   svc({
     id: 'srv-10',
     salonId: 'sal-1',
@@ -571,12 +569,12 @@ export const SERVICES = [
     duration: '35 mins',
     price: 349,
     originalPrice: 549,
-    image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=400&q=80'
+    image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80'
   }),
   svc({
     id: 'srv-11',
     salonId: 'sal-2',
-    name: 'Men\'s Signature Haircut & Beard Styling',
+    name: "Men's Fade Haircut & Beard Sculpting",
     category: 'Grooming',
     description: 'Scissor-and-clipper haircut paired with beard line-up and finishing balm.',
     duration: '50 mins',
@@ -587,13 +585,35 @@ export const SERVICES = [
   svc({
     id: 'srv-12',
     salonId: 'sal-4',
-    name: 'Men\'s Grooming Facial & Beard Detox',
+    name: "Men's Charcoal Detox & Skin Cleanup",
     category: 'Grooming',
     description: 'Deep-cleanse facial formulated for coarser skin, paired with a beard detox scrub.',
     duration: '40 mins',
     price: 449,
     originalPrice: 749,
     image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=400&q=80'
+  }),
+  svc({
+    id: 'srv-13',
+    salonId: 'sal-1',
+    name: "Men's Executive Haircut & Styling",
+    category: 'Hair Studio',
+    description: 'Precision scissor cut, neck taper, and styling with premium matte clay.',
+    duration: '45 mins',
+    price: 399,
+    originalPrice: 650,
+    image: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=400&q=80'
+  }),
+  svc({
+    id: 'srv-14',
+    salonId: 'sal-3',
+    name: "Men's Deep Tissue Stress Relief Spa",
+    category: 'Spa',
+    description: 'Therapeutic acupressure back, neck and shoulder decompression.',
+    duration: '60 mins',
+    price: 1199,
+    originalPrice: 1899,
+    image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=400&q=80'
   })
 ];
 

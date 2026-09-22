@@ -22,12 +22,12 @@ export const InfoSheet = ({ isOpen, onClose, icon, title, children }) => {
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 40, opacity: 0 }}
-          className="relative w-full max-w-[420px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 z-10 space-y-3 border-t sm:border border-purple-200/80"
+          className="relative w-full max-w-[420px] bg-[#faf9f6] rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 z-10 space-y-3 border-t sm:border border-stone-300/80"
         >
-          <div className="flex items-start justify-between gap-3 border-b border-purple-200/60 pb-2.5">
+          <div className="flex items-start justify-between gap-3 border-b border-stone-200/80 pb-2.5">
             <div className="flex items-center gap-2.5">
               {icon && (
-                <div className="w-8 h-8 rounded-xl bg-white text-brand-maroon flex items-center justify-center shrink-0 shadow-xs border border-purple-100">
+                <div className="w-8 h-8 rounded-xl bg-white text-stone-900 flex items-center justify-center shrink-0 shadow-xs border border-stone-200">
                   {icon}
                 </div>
               )}

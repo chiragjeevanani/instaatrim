@@ -253,10 +253,10 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 27, stiffness: 300 }}
-          className="relative w-full max-w-[480px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col z-10 overflow-hidden border-t border-x border-purple-200/80"
+          className="relative w-full max-w-[480px] bg-[#faf9f6] rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col z-10 overflow-hidden border-t border-x border-stone-300/80"
         >
           {/* Header */}
-          <div className="px-4 pt-3 pb-2.5 bg-white/95 border-b border-purple-100 backdrop-blur-xs shrink-0">
+          <div className="px-4 pt-3 pb-2.5 bg-white/95 border-b border-stone-200/80 backdrop-blur-xs shrink-0">
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-2">
                 {currentStep > 1 && (
@@ -268,7 +268,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                         setCurrentStep((prev) => Math.max(1, prev - 1));
                       }
                     }}
-                    className="p-1 rounded-full text-stone-600 hover:bg-stone-100 active:scale-95 transition-all"
+                    className="p-1 rounded-full text-stone-600 hover:bg-stone-100 active:scale-95 transition-all cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -276,7 +276,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                 <div>
                   <h3 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
                     <span>Service Booking Flow</span>
-                    <span className="text-[10px] bg-purple-100 text-brand-maroon font-extrabold px-1.5 py-0.2 rounded-full">
+                    <span className="text-[10px] bg-[#1e2329] text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
                       Step {currentStep === 4 && !hasUpsell ? 3 : currentStep} of {hasUpsell ? 4 : 3}
                     </span>
                   </h3>
@@ -285,7 +285,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
               </div>
               <button
                 onClick={handleClose}
-                className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 active:scale-95"
+                className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 active:scale-95 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

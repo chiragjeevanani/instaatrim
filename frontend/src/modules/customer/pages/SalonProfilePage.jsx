@@ -5,6 +5,7 @@ import { useCustomer } from '../context/CustomerContext';
 import { CartDrawer } from '../components/CartDrawer';
 import { SlotPickerModal } from '../components/SlotPickerModal';
 import { BookingFlowModal } from '../components/BookingFlowModal';
+import { ServiceDetailModal } from '../components/ServiceDetailModal';
 import { reviewSummary } from '../../../shared/store/selectors';
 import { parseHoursRange, nowMinutesOfDay } from '../../../shared/lib/time';
 import {
@@ -37,7 +38,8 @@ export const SalonProfilePage = () => {
     setIsCartOpen,
     setIsSlotPickerOpen,
     setIsBookingFlowOpen,
-    bookingSlot
+    bookingSlot,
+    openServiceDetail
   } = useCustomer();
 
   const salon = state.salons.find((s) => s.id === salonId) || state.salons[0];
@@ -73,7 +75,7 @@ export const SalonProfilePage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 relative overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-24 mx-auto border-x border-stone-200/80 relative overflow-x-hidden box-border shadow-md"
     >
       {/* Hero Header with Cover Image */}
       <div className="relative h-52 w-full bg-stone-900">
@@ -212,10 +214,10 @@ export const SalonProfilePage = () => {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-all ${
+              className={`px-3 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-all cursor-pointer ${
                 activeCategory === cat
-                  ? 'bg-brand-maroon text-white shadow-xs'
-                  : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
+                  ? 'bg-[#1e2329] text-white shadow-2xs'
+                  : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
               }`}
             >
               {cat}
@@ -232,7 +234,11 @@ export const SalonProfilePage = () => {
             const isInCart = cartItems.some((item) => item.id === service.id);
 
             return (
-              <article key={service.id} className="p-3.5 flex items-start justify-between gap-3">
+              <article
+                key={service.id}
+                onClick={() => openServiceDetail && openServiceDetail({ ...service, salonId: salon.id, salonName: salon.name })}
+                className="p-3.5 flex items-start justify-between gap-3 cursor-pointer hover:bg-stone-50/80 transition-colors"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-xs font-bold text-stone-900 leading-snug">{service.name}</h3>
@@ -257,16 +263,22 @@ export const SalonProfilePage = () => {
                 <div className="shrink-0">
                   {isInCart ? (
                     <button
-                      onClick={() => setIsCartOpen(true)}
-                      className="px-2.5 py-1 rounded-lg border border-emerald-600 bg-emerald-50 text-emerald-700 font-bold text-[10.5px] flex items-center gap-1 active:scale-95 shadow-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsCartOpen(true);
+                      }}
+                      className="px-2.5 py-1 rounded-lg border border-emerald-600 bg-emerald-50 text-emerald-700 font-bold text-[10.5px] flex items-center gap-1 active:scale-95 shadow-xs cursor-pointer"
                     >
                       <Check className="w-3 h-3 stroke-[2.5]" />
                       <span>Added</span>
                     </button>
                   ) : (
                     <button
-                      onClick={() => addToCart(service, salon)}
-                      className="px-3 py-1 rounded-lg border border-brand-maroon bg-rose-50/60 text-brand-maroon hover:bg-rose-100 font-bold text-[10.5px] flex items-center gap-1 active:scale-95 shadow-xs transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(service, salon);
+                      }}
+                      className="px-3 py-1 rounded-lg border border-brand-maroon bg-rose-50/60 text-brand-maroon hover:bg-rose-100 font-bold text-[10.5px] flex items-center gap-1 active:scale-95 shadow-xs transition-colors cursor-pointer"
                     >
                       <Plus className="w-3 h-3 stroke-[2.5]" />
                       <span>Add</span>
@@ -356,6 +368,7 @@ export const SalonProfilePage = () => {
       <CartDrawer />
       <BookingFlowModal salonId={salon.id} />
       <SlotPickerModal salonId={salon.id} />
+      <ServiceDetailModal />
     </motion.div>
   );
 };

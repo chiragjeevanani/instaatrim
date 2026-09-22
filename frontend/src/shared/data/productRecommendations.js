@@ -94,6 +94,46 @@ export const PRODUCT_RECOMMENDATIONS = {
       accentColor: 'from-teal-500 to-emerald-700',
       description: 'Optimizes moisture balance for chemically treated or color-styled hair'
     }
+  ],
+  Beard: [
+    {
+      id: 'pr-beardo-gold',
+      brand: 'Beardo Godfather',
+      tagline: 'Golden Hemp Seed Beard Oil & Hot Steam Balm',
+      category: 'Beard',
+      badge: 'Pro Barbers',
+      accentColor: 'from-amber-600 to-stone-900',
+      description: 'Ultra-nourishing cold-pressed almond and argan blend for deep follicle softness'
+    },
+    {
+      id: 'pr-man-company',
+      brand: 'The Man Company',
+      tagline: 'Almond & Thyme Beard Growth & Softener Elixir',
+      category: 'Beard',
+      badge: 'Bestseller',
+      accentColor: 'from-emerald-700 to-stone-900',
+      description: '100% natural essential oils for anti-frizz beard sculpting and skin hydration'
+    }
+  ],
+  Grooming: [
+    {
+      id: 'pr-loreal-men-expert',
+      brand: "L'Oréal Men Expert",
+      tagline: 'Hydra Energetic Anti-Fatigue Skin Detox Gel',
+      category: 'Grooming',
+      badge: 'Derm Approved',
+      accentColor: 'from-orange-600 to-stone-900',
+      description: 'Infused with Vitamin C and guarana for intense skin revival and irritation defense'
+    },
+    {
+      id: 'pr-bombay-shaving',
+      brand: 'Bombay Shaving Co',
+      tagline: 'Tea Tree & Charcoal Post-Shave Soothing Balm',
+      category: 'Grooming',
+      badge: 'Sensitive Skin',
+      accentColor: 'from-sky-700 to-stone-900',
+      description: 'Alcohol-free restorative lotion with witch hazel to calm irritation and razor burn'
+    }
   ]
 };
 
@@ -113,13 +153,13 @@ export const getRecommendationsForCategories = (categories = []) => {
     }
   }
 
-  // If no category matched directly, provide the top brand partner kits so it is always demonstratable
+  // If no category matched directly, provide balanced brand partner kits so it is always demonstratable
   if (matched.length === 0) {
     return [
-      PRODUCT_RECOMMENDATIONS.Facial[0],
-      PRODUCT_RECOMMENDATIONS.Spa[0],
       PRODUCT_RECOMMENDATIONS['Hair Studio'][0],
-      PRODUCT_RECOMMENDATIONS.Facial[2]
+      PRODUCT_RECOMMENDATIONS.Beard[0],
+      PRODUCT_RECOMMENDATIONS.Facial[0],
+      PRODUCT_RECOMMENDATIONS.Grooming[0]
     ];
   }
 

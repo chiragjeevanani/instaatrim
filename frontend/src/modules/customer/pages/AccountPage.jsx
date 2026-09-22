@@ -48,12 +48,12 @@ export const AccountPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-20 mx-auto border-x border-stone-200/80 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
     >
       {/* Compact Header Profile Summary */}
       <header className="bg-stone-900 text-white px-4 pt-4 pb-3.5 rounded-b-2xl shadow-sm relative overflow-hidden">
         {/* Subtle decorative glow */}
-        <div className="absolute top-0 right-0 w-28 h-28 bg-brand-maroon/25 rounded-full blur-xl pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
 
         <div className="relative z-10 flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-200 text-stone-950 flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
@@ -137,21 +137,21 @@ export const AccountPage = () => {
           {/* Salon Partner Portal */}
           <div
             onClick={() => navigate('/salon')}
-            className="p-3 flex items-center justify-between cursor-pointer bg-purple-50/70 hover:bg-purple-100/70 transition-colors"
+            className="p-3 flex items-center justify-between cursor-pointer bg-stone-100/90 hover:bg-stone-200/70 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <Store className="w-3.5 h-3.5 text-brand-maroon" />
+              <Store className="w-3.5 h-3.5 text-stone-800" />
               <div>
                 <div className="flex items-center gap-1.5">
                   <p className="font-bold text-stone-900 text-xs">Salon Partner App</p>
-                  <span className="text-[8px] bg-brand-maroon text-white font-extrabold px-1.5 py-0.2 rounded-full uppercase">
+                  <span className="text-[8px] bg-[#1e2329] text-white font-extrabold px-1.5 py-0.2 rounded-full uppercase">
                     Partner
                   </span>
                 </div>
-                <p className="text-[10px] text-stone-500">Manage Luxe Glow bookings, menu &amp; instant seats</p>
+                <p className="text-[10px] text-stone-500">Manage bookings, service catalog &amp; instant seats</p>
               </div>
             </div>
-            <ChevronRight className="w-3.5 h-3.5 text-purple-700" />
+            <ChevronRight className="w-3.5 h-3.5 text-stone-600" />
           </div>
 
           {/* Saved Addresses */}

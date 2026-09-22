@@ -48,24 +48,17 @@ export const SponsoredDealBanner = () => {
         )}
 
         {/* Content */}
-        <div className="relative z-10 space-y-1.5">
+        <div className="relative z-10 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-[8.5px] font-extrabold uppercase tracking-wider bg-amber-400 text-stone-950 px-2 py-0.5 rounded-full shadow-2xs">
-              <Sparkles className="w-2.5 h-2.5 fill-current" />
-              {campaign.badge || 'Sponsored Campaign'}
+            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-300">
+              {campaign.badge || 'Exclusive Partner Offer'}
             </span>
-            <span className="text-[9px] text-stone-300 font-medium">Limited Seats</span>
+            <span className="text-[9.5px] text-stone-300 font-medium">Limited</span>
           </div>
 
-          <h3 className="text-[14px] font-bold text-white leading-tight">
+          <h3 className="text-[15px] font-bold text-white leading-tight">
             {campaign.title}
           </h3>
-
-          {campaign.subtitle && (
-            <p className="text-[10px] text-stone-300">
-              {campaign.subtitle}
-            </p>
-          )}
 
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 mt-2 border border-white/15 flex items-center justify-between gap-2">
             <div className="min-w-0">

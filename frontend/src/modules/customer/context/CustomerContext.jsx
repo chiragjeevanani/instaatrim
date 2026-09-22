@@ -63,6 +63,22 @@ export const CustomerProvider = ({ children }) => {
   const [isBookingFlowOpen, setIsBookingFlowOpen] = useState(false);
   const [preferredProduct, setPreferredProduct] = useState(null);
 
+  // ---------------- Service Detail Modal-to-Fullscreen State ----------------
+  const [activeDetailService, setActiveDetailService] = useState(null);
+  const [serviceModalStage, setServiceModalStage] = useState('closed'); // 'closed' | 'modal' | 'fullscreen'
+
+  const openServiceDetail = useCallback((service, initialStage = 'modal') => {
+    setActiveDetailService(service);
+    setServiceModalStage(initialStage);
+  }, []);
+
+  const closeServiceDetail = useCallback(() => {
+    setServiceModalStage('closed');
+    setTimeout(() => {
+      setActiveDetailService(null);
+    }, 280);
+  }, []);
+
   const [toastMessage, setToastMessage] = useState(null);
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
@@ -295,6 +311,11 @@ export const CustomerProvider = ({ children }) => {
         setIsReferModalOpen,
         isEliteModalOpen,
         setIsEliteModalOpen,
+        activeDetailService,
+        serviceModalStage,
+        setServiceModalStage,
+        openServiceDetail,
+        closeServiceDetail,
         bookings,
         createBooking,
         cancelBooking,

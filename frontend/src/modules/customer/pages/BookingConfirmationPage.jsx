@@ -30,7 +30,7 @@ export const BookingConfirmationPage = () => {
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-12 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-12 mx-auto border-x border-stone-200/80 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
     >
       <main className="p-4 text-center space-y-3.5">
         {/* Animated Success Check Icon - Compact */}

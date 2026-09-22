@@ -22,8 +22,8 @@ export const HeroCarousel = () => {
   };
 
   return (
-    <section className="relative px-4 pt-2.5 pb-1 w-full max-w-full min-w-0 overflow-hidden box-border" data-purpose="hero-promotions">
-      <div className="relative overflow-hidden rounded-2xl bg-[#cb9b87] shadow-xs min-h-[178px] w-full">
+    <section className="relative px-4 pt-1.5 pb-1 w-full max-w-full min-w-0 overflow-hidden box-border" data-purpose="hero-promotions">
+      <div className="relative overflow-hidden rounded-2xl bg-stone-900 shadow-xs min-h-[174px] w-full border border-stone-200/80">
         <AnimatePresence mode="wait">
           <motion.div
             key={banner.id}
@@ -31,7 +31,7 @@ export const HeroCarousel = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0.85 }}
             transition={{ duration: 0.25 }}
-            className="relative min-h-[178px] flex items-stretch cursor-pointer"
+            className="relative min-h-[174px] flex items-stretch cursor-pointer"
             onClick={() => navigate(`/customer/salons/${banner.salonId}`)}
           >
             {/* Banner Background & Image Stack */}
@@ -41,35 +41,20 @@ export const HeroCarousel = () => {
               src={banner.image}
             />
 
-            {/* Left warm aesthetic gradient wash */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#d9b09a] via-[#e2bead]/92 to-transparent w-[72%]"></div>
+            {/* Left dark luxury gradient wash */}
+            <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-900/80 to-transparent w-[74%]"></div>
 
-            {/* Banner Content - Compact and elegant */}
-            <div className="relative z-10 p-3.5 max-w-[62%] flex flex-col justify-center text-left">
-              <span className="text-[9.5px] font-semibold text-stone-800 tracking-wide leading-none">
-                {banner.subtitle}
-              </span>
-              
-              {/* Decorative small divider */}
-              <div className="flex items-center gap-1 my-1">
-                <span className="w-4 h-[1px] bg-stone-500/60"></span>
-                <span className="text-[8px] text-stone-600 leading-none">✻</span>
-                <span className="w-4 h-[1px] bg-stone-500/60"></span>
-              </div>
-
-              <h1 className="text-[20px] font-serif font-black text-stone-900 leading-tight tracking-tight mt-0.5 whitespace-pre-line">
+            {/* Banner Content - Subtle classic typography */}
+            <div className="relative z-10 p-4 max-w-[62%] flex flex-col justify-center text-left">
+              <h1 className="text-[18px] font-bold text-white leading-tight tracking-tight whitespace-pre-line">
                 {banner.title}
               </h1>
-              
-              <p className="text-[9px] text-stone-700 italic mt-0.5 font-medium leading-snug">
-                {banner.desc}
-              </p>
 
-              <div className="mt-2">
+              <div className="mt-3">
                 <motion.button
                   whileTap={{ scale: 0.94 }}
                   onClick={handleBookNow}
-                  className="bg-[#78233f] text-white text-[9.5px] font-bold tracking-wider px-3.5 py-1 rounded-full uppercase shadow-xs hover:bg-brand-maroon transition-all"
+                  className="bg-white hover:bg-stone-100 text-stone-900 text-[10px] font-bold tracking-wide px-3.5 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer"
                 >
                   {banner.ctaText}
                 </motion.button>

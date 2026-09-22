@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { TopBar } from '../components/TopBar';
+import { AudienceToggle } from '../components/AudienceToggle';
 import { TopAdCarousel } from '../components/TopAdCarousel';
-import { HeroCarousel } from '../components/HeroCarousel';
-import { BrandPartnerShowcase } from '../components/BrandPartnerShowcase';
-import { EliteStrip } from '../components/EliteStrip';
 import { CategoryGrid } from '../components/CategoryGrid';
-import { SponsoredDealBanner } from '../components/SponsoredDealBanner';
 import { TrendingServices } from '../components/TrendingServices';
+import { BrandPartnerShowcase } from '../components/BrandPartnerShowcase';
+import { PromotedSalonsStrip } from '../components/PromotedSalonsStrip';
+import { HeroCarousel } from '../components/HeroCarousel';
+import { EliteStrip } from '../components/EliteStrip';
+import { SponsoredDealBanner } from '../components/SponsoredDealBanner';
 import { SubCategoryGrid } from '../components/SubCategoryGrid';
 import { BottomNav } from '../components/BottomNav';
 import { CartDrawer } from '../components/CartDrawer';
@@ -15,14 +17,15 @@ import { BookingFlowModal } from '../components/BookingFlowModal';
 import { ReferEarnModal } from '../components/ReferEarnModal';
 import { EliteModal } from '../components/EliteModal';
 import { AdOfferModal } from '../components/AdOfferModal';
-import { PromotedSalonsStrip } from '../components/PromotedSalonsStrip';
+import { ServiceDetailModal } from '../components/ServiceDetailModal';
 import { useCustomer } from '../context/CustomerContext';
-import { TOP_ADVERTISEMENTS } from '../../../shared/data/advertisements';
 import { useNavigate } from 'react-router-dom';
 
 export const HomePage = () => {
   const [selectedAd, setSelectedAd] = useState(null);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
+  const [genderFilter, setGenderFilter] = useState('all'); // 'all' | 'women' | 'men'
+
   const navigate = useNavigate();
   const { applyCoupon, showToast } = useCustomer();
 
@@ -41,37 +44,38 @@ export const HomePage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] font-sans text-brand-textDark antialiased min-h-screen pb-28 mx-auto border-x border-purple-200/50 relative selection:bg-brand-lightPink flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto border-x border-stone-200/80 relative selection:bg-stone-200 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
     >
+      {/* 1. Header with Location, Search & Cart */}
       <TopBar />
 
-      <main className="flex-1 w-full min-w-0 overflow-x-hidden">
-        {/* Touchpoint 1: Top Carousel for Advertisements & Sponsored Brands */}
+      {/* 2. Audience Segment Switcher: All Services | Women | Men */}
+      <AudienceToggle selected={genderFilter} onChange={setGenderFilter} />
+
+      <main className="flex-1 w-full min-w-0 overflow-x-hidden space-y-4 pt-1">
+        {/* 3. Top Sponsored Spotlight Carousel */}
         <TopAdCarousel onSelectAd={handleOpenAd} />
 
-        {/* Touchpoint 2: Brand Partner Carousel & Collaborations */}
-        <BrandPartnerShowcase onSelectBrand={handleSelectBrand} />
+        {/* 4. Core Categories (Immediate 1-tap entry point, filtered by active audience) */}
+        <CategoryGrid genderFilter={genderFilter} />
 
-        {/* Hero Curated Services Carousel */}
-        <HeroCarousel />
+        {/* 5. Trending Services Near You (Scoped by gender & category tabs) */}
+        <TrendingServices genderFilter={genderFilter} />
 
-        {/* Elite Membership Strip */}
-        <EliteStrip />
-
-        {/* Core Categories */}
-        <CategoryGrid />
-
-        {/* Touchpoint 3: Mid-Page Native Ad / Campaign Banner */}
-        <SponsoredDealBanner />
-
-        {/* Trending Services Near You */}
-        <TrendingServices />
-
-        {/* Touchpoint 4: Promoted / Sponsored Salons Homepage Featured Strip */}
+        {/* 6. Verified & Promoted Salons Strip */}
         <PromotedSalonsStrip />
 
-        {/* Sub-Categories / Popular Services */}
-        <SubCategoryGrid />
+        {/* 7. Brand Partners Showcase */}
+        <BrandPartnerShowcase onSelectBrand={handleSelectBrand} />
+
+        {/* 8. Curated Package Banners */}
+        <HeroCarousel />
+
+        {/* 9. Elite Membership Pass Strip */}
+        <EliteStrip />
+
+        {/* 10. Mid-Page Native Ad / Campaign Banner */}
+        <SponsoredDealBanner />
       </main>
 
       <BottomNav />
@@ -87,6 +91,7 @@ export const HomePage = () => {
         isOpen={isAdModalOpen}
         onClose={() => setIsAdModalOpen(false)}
       />
+      <ServiceDetailModal />
     </div>
   );
 };

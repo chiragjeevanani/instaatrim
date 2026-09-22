@@ -37,9 +37,9 @@ export const TrendsPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-20 mx-auto border-x border-stone-200/80 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
     >
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-purple-100 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-stone-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95">
             <ArrowLeft className="w-4 h-4 stroke-[2]" />

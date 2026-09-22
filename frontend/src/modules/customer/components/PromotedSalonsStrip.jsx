@@ -17,20 +17,14 @@ export const PromotedSalonsStrip = () => {
 
   return (
     <section className="mt-5 px-4 w-full max-w-full min-w-0 box-border" data-purpose="promoted-salons-homepage-strip">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <h2 className="text-[12.5px] font-bold text-stone-900 tracking-tight">Promoted Salons</h2>
-          <span className="text-[8.5px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300/80 px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
-            <Sparkles className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
-            Top Picks
-          </span>
-        </div>
+      <div className="flex items-center justify-between mb-2.5">
+        <h2 className="text-[14px] font-bold text-stone-900 tracking-tight">Top Salons</h2>
         <button
           onClick={() => navigate('/customer/salons')}
-          className="text-[9.5px] font-bold text-brand-maroon hover:underline flex items-center gap-0.5"
+          className="text-[11px] font-semibold text-stone-500 hover:text-stone-900 flex items-center gap-0.5 cursor-pointer transition-colors"
         >
           <span>View All</span>
-          <ChevronRight className="w-3 h-3 stroke-[2.5]" />
+          <ChevronRight className="w-3.5 h-3.5 stroke-[2]" />
         </button>
       </div>
 
@@ -89,28 +83,13 @@ export const PromotedSalonsStrip = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-2 text-[10px] text-stone-600">
+                <div className="flex items-center gap-2 mt-2 text-[10.5px] text-stone-500 font-medium">
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
+                    <MapPin className="w-3 h-3 text-stone-500 shrink-0" />
                     {salon.area}
                   </span>
                   <span>•</span>
-                  <span className="text-emerald-700 font-bold">Open Now</span>
-                  <span>•</span>
-                  <span>Starts at <strong className="text-stone-900">₹{salon.startingPrice}</strong></span>
-                </div>
-
-                {/* Sponsored Boost Perk Banner */}
-                <div className="mt-2.5 pt-2 border-t border-amber-200/80 bg-amber-50/90 -mx-3 -mb-3 p-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Sparkles className="w-3 h-3 text-amber-700 shrink-0" />
-                    <span className="text-[9.5px] font-extrabold text-amber-950 truncate">
-                      Sponsored Perk: Free Welcome Head Massage & Beverage
-                    </span>
-                  </div>
-                  <span className="text-[8.5px] bg-brand-maroon text-white font-extrabold px-2 py-0.5 rounded shadow-2xs shrink-0">
-                    Book Now
-                  </span>
+                  <span>Starts at <strong className="text-stone-900 font-bold">₹{salon.startingPrice}</strong></span>
                 </div>
               </div>
             </motion.article>

@@ -47,19 +47,19 @@ export const CartDrawer = () => {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-          className="relative w-full max-w-[480px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl shadow-2xl max-h-[88vh] flex flex-col z-10 overflow-hidden border-t border-x border-purple-200/80"
+          className="relative w-full max-w-[480px] bg-[#faf9f6] rounded-t-2xl shadow-2xl max-h-[88vh] flex flex-col z-10 overflow-hidden border-t border-x border-stone-300/80"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-purple-200/60 bg-white/90 backdrop-blur-xs">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200/80 bg-white/95 backdrop-blur-xs">
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-stone-900 text-sm">Your Cart</h3>
-              <span className="text-[10.5px] bg-purple-100 text-brand-maroon font-bold px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-[#1e2329] text-white font-bold px-2 py-0.5 rounded-full shadow-2xs">
                 {cartItems.length} {cartItems.length === 1 ? 'service' : 'services'}
               </span>
             </div>
             <button
               onClick={() => setIsCartOpen(false)}
-              className="p-1 rounded-full text-stone-500 hover:bg-stone-100 active:scale-95"
+              className="p-1 rounded-full text-stone-500 hover:bg-stone-100 active:scale-95 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -69,7 +69,7 @@ export const CartDrawer = () => {
           <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-2.5">
             {cartItems.length === 0 ? (
               <div className="text-center py-8">
-                <div className="w-12 h-12 bg-purple-100 text-brand-maroon rounded-full flex items-center justify-center mx-auto mb-2">
+                <div className="w-12 h-12 bg-stone-200 text-stone-700 rounded-full flex items-center justify-center mx-auto mb-2">
                   <Tag className="w-5 h-5" />
                 </div>
                 <p className="font-bold text-stone-800 text-xs">Your cart is empty</p>
@@ -191,16 +191,16 @@ export const CartDrawer = () => {
                   {/* Quick coupon suggestion chips */}
                   {!appliedCoupon && (
                     <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-stone-100">
-                      <span className="text-[9.5px] text-stone-400 font-medium">Try:</span>
+                      <span className="text-[9.5px] text-stone-500 font-medium">Try:</span>
                       <button
                         onClick={() => applyCoupon('ELITE10')}
-                        className="text-[9.5px] font-bold bg-purple-50 text-brand-maroon px-1.5 py-0.5 rounded border border-purple-200"
+                        className="text-[9.5px] font-bold bg-stone-100 text-stone-800 hover:bg-stone-200 px-1.5 py-0.5 rounded border border-stone-200 transition-colors cursor-pointer"
                       >
                         ELITE10 (10% OFF)
                       </button>
                       <button
                         onClick={() => applyCoupon('INSTA50')}
-                        className="text-[9.5px] font-bold bg-purple-50 text-brand-maroon px-1.5 py-0.5 rounded border border-purple-200"
+                        className="text-[9.5px] font-bold bg-stone-100 text-stone-800 hover:bg-stone-200 px-1.5 py-0.5 rounded border border-stone-200 transition-colors cursor-pointer"
                       >
                         INSTA50 (₹50 OFF)
                       </button>

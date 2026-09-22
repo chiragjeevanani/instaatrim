@@ -77,9 +77,9 @@ export const AuthPage = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="w-full min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none overflow-x-hidden"
+      className="w-full min-h-screen bg-[#faf9f6] text-stone-900 flex justify-center antialiased select-none overflow-x-hidden"
     >
-      <main className="w-full max-w-[480px] min-w-0 min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col justify-between px-5 pt-3 pb-6 relative border-x border-purple-200/50 box-border">
+      <main className="w-full max-w-[480px] min-w-0 min-h-screen bg-[#faf9f6] flex flex-col justify-between px-5 pt-3 pb-6 relative border-x border-stone-200/80 box-border shadow-md">
         {/* Top Navigation */}
         <header className="w-full flex items-center justify-between min-h-[36px]">
           {isOtpScreen ? (

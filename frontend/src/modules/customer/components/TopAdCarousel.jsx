@@ -43,20 +43,8 @@ export const TopAdCarousel = ({ onSelectAd }) => {
   };
 
   return (
-    <section className="px-4 pt-1.5 pb-2 w-full max-w-full min-w-0 overflow-hidden box-border" data-purpose="sponsored-top-carousel">
-      {/* Top micro-header */}
-      <div className="flex items-center justify-between mb-1.5 px-0.5">
-        <div className="flex items-center gap-1.5">
-          <span className="flex items-center gap-1 bg-amber-100/90 text-amber-900 border border-amber-300/70 text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
-            <Sparkles className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
-            Sponsored Spotlight
-          </span>
-          <span className="text-[10px] text-stone-500 font-medium">Brand Collaborations</span>
-        </div>
-        <span className="text-[9px] font-bold text-stone-400">Ad • Verified</span>
-      </div>
-
-      <div className="relative overflow-hidden rounded-2xl bg-stone-900 shadow-md min-h-[172px] w-full border border-purple-200/50">
+    <section className="px-4 pt-1 w-full max-w-full min-w-0 overflow-hidden box-border" data-purpose="sponsored-top-carousel">
+      <div className="relative overflow-hidden rounded-2xl bg-stone-900 shadow-sm min-h-[164px] w-full border border-stone-200/60">
         <AnimatePresence mode="wait">
           <motion.div
             key={ad.id}

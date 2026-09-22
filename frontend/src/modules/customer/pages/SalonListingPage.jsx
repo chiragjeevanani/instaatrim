@@ -115,10 +115,10 @@ export const SalonListingPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-20 mx-auto border-x border-stone-200/80 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
     >
       {/* Top Bar with Search */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 pt-2 pb-2 border-b border-purple-100">
+      <header className="sticky top-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md px-3.5 pt-2 pb-2 border-b border-stone-200/80">
         <div className="flex items-center gap-2 mb-2">
           <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95 cursor-pointer">
             <ArrowLeft className="w-4 h-4 stroke-[2]" />
@@ -132,7 +132,7 @@ export const SalonListingPage = () => {
                 : 'Discover Salons & Spas'}
             </h1>
             <p className="text-[10px] text-stone-500 truncate flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
+              <MapPin className="w-3 h-3 text-stone-700 shrink-0" />
               {currentLocation?.area || 'South Tukoganj'}
             </p>
           </div>
@@ -143,10 +143,10 @@ export const SalonListingPage = () => {
           <Search className="w-3.5 h-3.5 text-stone-500 absolute left-3 top-2.5 pointer-events-none stroke-[1.8]" />
           <input
             type="text"
-            placeholder="Search salon, waxing, facial, nails..."
+            placeholder="Search salon, haircut, beard, facial, spa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-[#eaddf3] rounded-xl text-xs text-stone-800 placeholder-stone-500 border border-purple-200/60 focus:outline-none focus:ring-1 focus:ring-brand-maroon"
+            className="w-full pl-8 pr-3 py-1.5 bg-stone-200/70 rounded-xl text-xs text-stone-800 placeholder-stone-500 border border-stone-300/60 focus:outline-none focus:ring-1 focus:ring-stone-400"
           />
         </div>
 
@@ -154,7 +154,7 @@ export const SalonListingPage = () => {
         {(activeCategory || activeBrand) && (
           <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar">
             {activeCategory && (
-              <span className="inline-flex items-center gap-1 bg-brand-maroon/10 text-brand-maroon text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0">
+              <span className="inline-flex items-center gap-1 bg-[#1e2329] text-white text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0 shadow-2xs">
                 {activeCategory.name}
                 <button onClick={clearCategory} className="active:opacity-60 cursor-pointer">
                   <X className="w-3 h-3" />
@@ -162,7 +162,7 @@ export const SalonListingPage = () => {
               </span>
             )}
             {activeBrand && (
-              <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-900 border border-purple-300 text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0">
+              <span className="inline-flex items-center gap-1 bg-stone-200 text-stone-900 border border-stone-300 text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0 shadow-2xs">
                 <span>{activeBrand.logo}</span>
                 <span>{activeBrand.name} Partner Salons</span>
                 <button onClick={clearBrand} className="active:opacity-60 cursor-pointer">
@@ -177,10 +177,10 @@ export const SalonListingPage = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 pb-0.5 text-xs">
           <button
             onClick={() => setInstantOnly(!instantOnly)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-colors cursor-pointer ${
               instantOnly
-                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
+                ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs'
+                : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
             }`}
           >
             <Zap className="w-3 h-3 fill-amber-500 text-amber-500" />
@@ -191,10 +191,10 @@ export const SalonListingPage = () => {
             <button
               key={g}
               onClick={() => setSelectedGender(g)}
-              className={`px-2.5 py-1 rounded-full text-[10.5px] font-semibold shrink-0 transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-colors cursor-pointer ${
                 selectedGender === g
-                  ? 'bg-brand-maroon text-white shadow-xs'
-                  : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
+                  ? 'bg-[#1e2329] text-white shadow-2xs'
+                  : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
               }`}
             >
               {g}
@@ -204,7 +204,7 @@ export const SalonListingPage = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-[#eaddf3] text-purple-950 text-[10.5px] px-2 py-1 rounded-full border border-purple-200/60 outline-none shrink-0"
+            className="bg-stone-200/80 text-stone-800 text-[10.5px] font-bold px-2 py-1 rounded-full border border-stone-300/70 outline-none shrink-0 cursor-pointer"
           >
             <option value="Recommended">Recommended</option>
             <option value="Nearest">Nearest</option>

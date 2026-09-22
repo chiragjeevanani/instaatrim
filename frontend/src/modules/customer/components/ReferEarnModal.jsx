@@ -36,12 +36,12 @@ export const ReferEarnModal = () => {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-[360px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-2xl shadow-2xl p-4 z-10 text-center space-y-3 overflow-hidden border border-purple-200/80"
+          className="relative w-full max-w-[360px] bg-[#faf9f6] rounded-2xl shadow-2xl p-4 z-10 text-center space-y-3 overflow-hidden border border-stone-300/80"
         >
           {/* Close button */}
           <button
             onClick={() => setIsReferModalOpen(false)}
-            className="absolute top-3 right-3 p-1 rounded-full text-stone-500 hover:text-stone-800"
+            className="absolute top-3 right-3 p-1 rounded-full text-stone-500 hover:text-stone-800 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

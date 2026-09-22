@@ -1,9 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BRAND_PARTNERS } from '../../../shared/data/advertisements';
+import { useAppData } from '../../../shared/store/AppDataProvider';
 import { Sparkles, ArrowUpRight } from 'lucide-react';
 
 export const BrandPartnerShowcase = ({ onSelectBrand }) => {
+  const { state } = useAppData();
+  const brandPartners = (state.brandPartners || []).filter((bp) => bp.isActive !== false);
+
+  if (!brandPartners || brandPartners.length === 0) return null;
+
   return (
     <section className="mt-4 px-4 w-full max-w-full min-w-0 box-border" data-purpose="brand-partners-showcase">
       <div className="flex items-center justify-between mb-2">
@@ -17,7 +22,7 @@ export const BrandPartnerShowcase = ({ onSelectBrand }) => {
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 w-full max-w-full">
-        {BRAND_PARTNERS.map((bp) => (
+        {brandPartners.map((bp) => (
           <motion.div
             key={bp.id}
             whileHover={{ y: -2 }}

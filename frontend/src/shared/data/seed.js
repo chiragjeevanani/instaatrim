@@ -340,6 +340,49 @@ export const SALONS = [
     occupiedChairs: 0,
     partnerLoginId: 'glambar@instaatrim.com',
     partnerPassword: 'demo1234'
+  },
+  {
+    id: 'sal-5',
+    name: 'Bella Rose Aesthetic Lounge',
+    ownerName: 'Kavita Deshmukh',
+    mobile: '+91 98260 11223',
+    email: 'kavita@bellarose.in',
+    tagline: 'Organic Facials, Nail Couture & Botanical Spa',
+    category: 'Women Only',
+    rating: 5.0,
+    reviewsCount: 0,
+    lat: 22.7301,
+    lng: 75.8904,
+    distanceKm: 1.8,
+    area: 'Old Palasia',
+    locationCity: 'Indore',
+    startingPrice: 349,
+    coverImage: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'],
+    offer: '10% Welcome Partner Offer',
+    hasInstantBooking: true,
+    isInstantBookingEnabled: true,
+    instantWaitMinutes: 15,
+    isVerified: false,
+    verificationStatus: 'Pending',
+    isStoreOpen: false,
+    openHoursLegacy: '10:00 AM - 08:30 PM',
+    weeklyHours: defaultWeeklyHours('10:00 AM', '08:30 PM'),
+    breaks: [],
+    holidays: [],
+    address: 'Shop 12, Velocity III, Old Palasia, Indore',
+    phone: '+91 98260 11223',
+    amenities: ['AC & Ambient Music', 'Sanitized Tools', 'Card / UPI Accepted'],
+    totalChairs: 3,
+    occupiedChairs: 0,
+    gstin: '23AABCU9603R1ZM',
+    shopActLicense: 'IND-MP-2026-9041',
+    bankName: 'HDFC Bank',
+    accountNumber: '••••9124',
+    ifscCode: 'HDFC0001032',
+    commissionRate: '12% Flat',
+    partnerLoginId: 'bellarose@instaatrim.com',
+    partnerPassword: 'demo1234'
   }
 ];
 
@@ -969,3 +1012,12 @@ export const DEFAULT_CUSTOMER = {
   notificationPrefs: { push: true, sms: true, email: true, whatsapp: false, marketing: false },
   authProvider: 'otp'
 };
+
+// Super-admin credentials for the admin dashboard panel
+export const ADMIN_CREDENTIALS = {
+  email: 'admin@instaatrim.com',
+  password: 'admin2025',
+  name: 'InstaaTrim Super Admin',
+  role: 'super_admin'
+};
+

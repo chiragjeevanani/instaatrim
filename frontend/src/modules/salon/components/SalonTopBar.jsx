@@ -4,6 +4,7 @@ import { useSalon } from '../context/SalonContext';
 import {
   Zap,
   ShieldCheck,
+  ShieldAlert,
   ChevronDown,
   User,
   Store,
@@ -30,6 +31,8 @@ export const SalonTopBar = () => {
     showToast
   } = useSalon();
 
+  const isApproved = Boolean(salonProfile?.isVerified && salonProfile?.verificationStatus === 'Live');
+
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -49,6 +52,10 @@ export const SalonTopBar = () => {
   }, [isProfileMenuOpen]);
 
   const toggleInstant = () => {
+    if (!isApproved) {
+      showToast('Admin approval required to toggle Instant booking', 'error');
+      return;
+    }
     const nextState = !isInstantBookingEnabled;
     setIsInstantBookingEnabled(nextState);
     showToast(
@@ -81,7 +88,11 @@ export const SalonTopBar = () => {
             <h1 className="font-bold text-[13px] text-stone-900 tracking-tight leading-none truncate group-hover:text-rose-900 transition-colors">
               {salonProfile.name}
             </h1>
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-[2]" />
+            {isApproved ? (
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-[2]" />
+            ) : (
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0 stroke-[2]" />
+            )}
             <ChevronDown
               className={`w-3 h-3 text-stone-400 transition-transform duration-200 ${
                 isProfileMenuOpen ? 'rotate-180 text-rose-900' : ''
@@ -91,25 +102,39 @@ export const SalonTopBar = () => {
         </button>
 
         {/* Quick Open/Closed Toggle on right */}
-        <button
-          type="button"
-          onClick={() => {
-            setIsStoreOpen(!isStoreOpen);
-            showToast(isStoreOpen ? 'Salon marked Closed' : 'Salon marked Open');
-          }}
-          className={`inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-all border shrink-0 ${
-            isStoreOpen
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-              : 'bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200'
-          }`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'
+        {isApproved ? (
+          <button
+            type="button"
+            onClick={() => {
+              setIsStoreOpen(!isStoreOpen);
+              showToast(isStoreOpen ? 'Salon marked Closed' : 'Salon marked Open');
+            }}
+            className={`inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-all border shrink-0 ${
+              isStoreOpen
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                : 'bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200'
             }`}
-          />
-          {isStoreOpen ? 'Open' : 'Closed'}
-        </button>
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'
+              }`}
+            />
+            {isStoreOpen ? 'Open' : 'Closed'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              showToast('Salon is pending admin approval. You can open once approved.', 'info');
+              navigate('/salon/onboarding');
+            }}
+            className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800 shrink-0 cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            Pending Approval
+          </button>
+        )}
 
         {/* Standard Profile Dropdown Menu */}
         <AnimatePresence>

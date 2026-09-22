@@ -18,7 +18,11 @@ export const TrendingServices = () => {
 
   const trendingServices = useMemo(() => {
     return state.services
-      .filter((s) => s.isActive)
+      .filter((s) => {
+        if (!s.isActive) return false;
+        const salon = state.salons.find((sal) => sal.id === s.salonId);
+        return Boolean(salon?.isVerified && salon?.verificationStatus === 'Live');
+      })
       .map((s) => {
         const salon = state.salons.find((sal) => sal.id === s.salonId);
         const discountPct = s.originalPrice ? Math.round((1 - s.price / s.originalPrice) * 100) : 0;

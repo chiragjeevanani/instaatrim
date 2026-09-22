@@ -8,8 +8,10 @@ export const PromotedSalonsStrip = () => {
   const navigate = useNavigate();
   const { state } = useAppData();
 
-  // Positions #1 and #2 boosted salons
-  const promotedSalons = state.salons.slice(0, 2);
+  // Positions #1 and #2 boosted verified salons
+  const promotedSalons = state.salons
+    .filter((s) => s.isVerified && s.verificationStatus === 'Live')
+    .slice(0, 2);
 
   if (promotedSalons.length === 0) return null;
 

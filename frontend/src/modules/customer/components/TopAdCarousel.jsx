@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { TOP_ADVERTISEMENTS } from '../../../shared/data/advertisements';
+import { useAppData } from '../../../shared/store/AppDataProvider';
 import { useCustomer } from '../context/CustomerContext';
 import { Sparkles, ChevronRight, Tag, ShieldCheck } from 'lucide-react';
 
 export const TopAdCarousel = ({ onSelectAd }) => {
+  const { state } = useAppData();
+  const ads = (state.advertisements || []).filter((a) => a.isActive !== false);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();
   const { applyCoupon, showToast } = useCustomer();
 
   useEffect(() => {
+    if (ads.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % TOP_ADVERTISEMENTS.length);
+      setCurrentIndex((prev) => (prev + 1) % ads.length);
     }, 4800);
     return () => clearInterval(timer);
-  }, []);
+  }, [ads.length]);
 
-  const ad = TOP_ADVERTISEMENTS[currentIndex];
+  if (!ads || ads.length === 0) return null;
+
+  const validIndex = currentIndex >= ads.length ? 0 : currentIndex;
+  const ad = ads[validIndex];
 
   const handleAction = (e) => {
     e.stopPropagation();
@@ -27,7 +34,11 @@ export const TopAdCarousel = ({ onSelectAd }) => {
       if (ad.couponCode) {
         applyCoupon(ad.couponCode);
       }
-      navigate(`/customer/salons/${ad.salonId}`);
+      if (ad.salonId) {
+        navigate(`/customer/salons/${ad.salonId}`);
+      } else {
+        navigate('/customer/salons');
+      }
     }
   };
 
@@ -118,7 +129,7 @@ export const TopAdCarousel = ({ onSelectAd }) => {
 
         {/* Indicators */}
         <div className="absolute bottom-2 right-3 flex items-center gap-1 z-10">
-          {TOP_ADVERTISEMENTS.map((_, idx) => (
+          {ads.map((_, idx) => (
             <button
               key={idx}
               onClick={(e) => {
@@ -126,7 +137,7 @@ export const TopAdCarousel = ({ onSelectAd }) => {
                 setCurrentIndex(idx);
               }}
               className={`transition-all duration-300 rounded-full ${
-                idx === currentIndex ? 'w-4 h-1 bg-amber-400 shadow-xs' : 'w-1 h-1 bg-white/50'
+                idx === validIndex ? 'w-4 h-1 bg-amber-400 shadow-xs' : 'w-1 h-1 bg-white/50'
               }`}
             />
           ))}

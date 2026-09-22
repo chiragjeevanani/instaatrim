@@ -20,6 +20,8 @@ export const newReviewId = () => next('REV');
 export const newTicketId = () => next('TKT');
 export const newNotificationId = () => next('NTF');
 export const newAddressId = () => next('LOC');
+export const newAdId = () => next('AD');
+export const newPartnerId = () => next('BP');
 export const newHoldId = () => `HOLD-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 export const newSessionId = () => {
   const existing = typeof window !== 'undefined' ? window.sessionStorage?.getItem('it_session_id') : null;

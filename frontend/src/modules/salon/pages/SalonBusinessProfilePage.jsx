@@ -77,9 +77,17 @@ export const SalonBusinessProfilePage = () => {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
             <div className="absolute top-2.5 right-2.5">
-              <span className="bg-emerald-600 text-white text-[9.5px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs border border-emerald-400/40">
+              <span
+                className={`text-[9.5px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs border ${
+                  salonProfile.verificationStatus === 'Live'
+                    ? 'bg-emerald-600 text-white border-emerald-400/40'
+                    : salonProfile.verificationStatus === 'Rejected'
+                    ? 'bg-red-600 text-white border-red-400/40'
+                    : 'bg-amber-500 text-stone-950 border-amber-300 font-extrabold'
+                }`}
+              >
                 <ShieldCheck className="w-3 h-3 stroke-[2.5]" />
-                {salonProfile.verificationStatus}
+                {salonProfile.verificationStatus || 'Pending'}
               </span>
             </div>
           </div>

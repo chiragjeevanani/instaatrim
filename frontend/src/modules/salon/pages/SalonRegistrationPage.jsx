@@ -785,8 +785,8 @@ export const SalonRegistrationPage = () => {
                         <span className="text-xs font-bold text-stone-900 truncate">
                           {formData.name || 'Aura Salon'}
                         </span>
-                        <span className="text-[8.5px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full shrink-0">
-                          VERIFIED
+                        <span className="text-[8.5px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full shrink-0 border border-amber-300/60">
+                          PENDING APPROVAL
                         </span>
                       </div>
                       <p className="text-[10.5px] text-stone-500 mt-0.5 truncate">
@@ -819,12 +819,12 @@ export const SalonRegistrationPage = () => {
                 <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 space-y-1.5 text-stone-800">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-brand-maroon">
                     <BadgePercent className="w-4 h-4" />
-                    <span>Transparent Partner Commercials</span>
+                    <span>Onboarding &amp; Admin Approval Process</span>
                   </div>
                   <ul className="text-[10.5px] text-stone-600 space-y-1 leading-snug pl-4 list-disc">
-                    <li>Zero upfront registration or setup fees.</li>
-                    <li>Flat 12% commission per completed online &amp; instant booking.</li>
-                    <li>Daily automated settlement to your {formData.bankName} account.</li>
+                    <li>Upon submission, your salon application is reviewed by the InstaaTrim Admin team.</li>
+                    <li>First approval from the admin is required before your salon can list treatments.</li>
+                    <li>Flat 12% commission per completed appointment with daily automated payouts.</li>
                   </ul>
                 </div>
 

@@ -10,13 +10,19 @@ import {
   Clock,
   Sparkles,
   Layers,
-  ChevronDown
+  ChevronDown,
+  Lock,
+  ShieldAlert,
+  AlertCircle
 } from 'lucide-react';
 
 export const AddServicePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addService, updateService, services } = useSalon();
+  const { addService, updateService, services, salonProfile, showToast } = useSalon();
+
+  const isApproved = Boolean(salonProfile?.isVerified && salonProfile?.verificationStatus === 'Live');
+  const isRejected = salonProfile?.verificationStatus === 'Rejected';
 
   const editingServiceId = location.state?.serviceId;
   const existingService = services.find((s) => s.id === editingServiceId);
@@ -73,6 +79,10 @@ export const AddServicePage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!isApproved) {
+      showToast('Admin approval required before listing services', 'error');
+      return;
+    }
     if (!name.trim() || !price) return;
 
     const servicePayload = {
@@ -95,6 +105,88 @@ export const AddServicePage = () => {
     }
     navigate('/salon/services');
   };
+
+  if (!isApproved) {
+    return (
+      <div className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen flex flex-col justify-between mx-auto box-border">
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-4 py-2.5 border-b border-purple-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/salon/services')}
+              className="w-8 h-8 rounded-full bg-white hover:bg-stone-50 active:scale-95 text-stone-700 border border-purple-200/60 flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 stroke-[2.2]" />
+            </button>
+            <div>
+              <h1 className="text-[14px] font-bold text-stone-900 tracking-tight leading-none">
+                Add New Service
+              </h1>
+              <p className="text-[10px] text-stone-500 font-normal mt-0.5">
+                Service Catalog Access
+              </p>
+            </div>
+          </div>
+          <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+            <Lock className="w-3.5 h-3.5 stroke-[2.2]" />
+          </div>
+        </header>
+
+        <main className="p-4 flex-1 flex flex-col items-center justify-center text-center">
+          <div className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm max-w-[360px] space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-2xs">
+              <ShieldAlert className="w-7 h-7 stroke-[2]" />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="inline-block bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full mb-1">
+                {salonProfile?.verificationStatus || 'Pending Approval'}
+              </div>
+              <h2 className="text-base font-bold text-stone-900 tracking-tight">
+                Admin Approval Required
+              </h2>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                For salon owner, after onboarding, first approval from the admin is needed and only after that salon can list their services.
+              </p>
+            </div>
+
+            <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/70 text-left space-y-2 text-[11px]">
+              <div className="flex items-center gap-2 text-stone-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span>Onboarding Profile Submitted</span>
+              </div>
+              <div className="flex items-center gap-2 font-semibold text-amber-800">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                <span>Admin Review &amp; KYC Verification in Progress</span>
+              </div>
+              <div className="flex items-center gap-2 text-stone-400">
+                <span className="w-2 h-2 rounded-full bg-stone-300 shrink-0" />
+                <span>Service Catalogue &amp; Booking Live</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/salon/onboarding')}
+                className="w-full py-2.5 bg-rose-900 hover:bg-rose-950 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                View Verification Dossier
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/salon/services')}
+                className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-700 font-semibold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Back to Services
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen flex flex-col justify-between mx-auto box-border">

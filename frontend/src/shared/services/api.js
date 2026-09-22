@@ -13,9 +13,10 @@
 
 import { getState, dispatch } from '../store/bridge';
 import { withLatency, ApiError } from './latency';
-import { newBookingId, newReviewId, newAddressId, newServiceId, newOfferId, newTicketId, newNotificationId, newStaffId, newStationId } from '../lib/ids';
+import { newBookingId, newReviewId, newAddressId, newServiceId, newOfferId, newTicketId, newNotificationId, newStaffId, newStationId, newAdId, newPartnerId } from '../lib/ids';
 import { BOOKING_STATUS, canTransition } from '../lib/bookingStatus';
 import { dateKey } from '../lib/time';
+import { ADMIN_CREDENTIALS } from '../data/seed';
 
 const clone = (v) => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
 
@@ -128,9 +129,9 @@ const salons = {
         hasInstantBooking: true,
         isInstantBookingEnabled: true,
         instantWaitMinutes: 15,
-        isVerified: true,
-        verificationStatus: 'Live',
-        isStoreOpen: true,
+        isVerified: false,
+        verificationStatus: 'Pending',
+        isStoreOpen: false,
         openHoursLegacy: `${openTime} - ${closeTime}`,
         weeklyHours: defaultHours,
         breaks: [],
@@ -161,7 +162,41 @@ const salons = {
       return true;
     }),
 
-  currentSession: () => clone(getState().partnerSession)
+  currentSession: () => clone(getState().partnerSession),
+
+  // Admin extensions
+  verify: (salonId, verificationStatus = 'Live') =>
+    withLatency(() => {
+      const isVerified = verificationStatus === 'Live';
+      dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: { verificationStatus, isVerified } } });
+      const updated = getState().salons.find((s) => s.id === salonId);
+      return clone(updated);
+    }),
+
+  reject: (salonId, reason = 'Application rejected by administrator') =>
+    withLatency(() => {
+      dispatch({
+        type: 'PATCH_SALON',
+        payload: { salonId, patch: { verificationStatus: 'Rejected', isVerified: false, rejectionReason: reason } }
+      });
+      const updated = getState().salons.find((s) => s.id === salonId);
+      return clone(updated);
+    }),
+
+  setCommission: (salonId, commissionRate) =>
+    withLatency(() => {
+      dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: { commissionRate } } });
+      const updated = getState().salons.find((s) => s.id === salonId);
+      return clone(updated);
+    }),
+
+  toggleActive: (salonId) =>
+    withLatency(() => {
+      const salon = getState().salons.find((s) => s.id === salonId);
+      const isStoreOpen = !(salon?.isStoreOpen ?? true);
+      dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: { isStoreOpen } } });
+      return isStoreOpen;
+    })
 };
 
 // =============================================================================
@@ -175,6 +210,13 @@ const services = {
 
   add: (salonId, data) =>
     withLatency(() => {
+      const salon = getState().salons.find((s) => s.id === salonId);
+      if (salon && (!salon.isVerified || salon.verificationStatus !== 'Live')) {
+        throw new ApiError(
+          'Your salon application is pending admin approval. You can only list services after approval from the admin.',
+          'APPROVAL_REQUIRED'
+        );
+      }
       const newService = {
         id: newServiceId(),
         salonId,
@@ -345,10 +387,18 @@ const offers = {
       return clone(offer);
     }),
 
-  update: (offerId, patch) =>
+  listAll: () => withLatency(() => clone(getState().offers)),
+
+  approve: (offerId) =>
     withLatency(() => {
-      dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch } });
-      return clone({ ...getState().offers.find((o) => o.id === offerId), ...patch });
+      dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'approved', isActive: true } } });
+      return clone(getState().offers.find((o) => o.id === offerId));
+    }),
+
+  reject: (offerId, reason = 'Rejected by administrator') =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'rejected', isActive: false, rejectionReason: reason } } });
+      return clone(getState().offers.find((o) => o.id === offerId));
     })
 };
 
@@ -359,6 +409,39 @@ const coupons = {
     withLatency(() => {
       const found = getState().coupons.find((c) => c.code.toLowerCase() === String(code).trim().toLowerCase());
       return found ? clone(found) : null;
+    }),
+
+  create: (data) =>
+    withLatency(() => {
+      const coupon = {
+        id: `cpn-${Date.now()}`,
+        code: String(data.code || '').toUpperCase().trim(),
+        description: data.description || '',
+        scope: data.scope || 'platform',
+        discountPercent: data.discountPercent ? Number(data.discountPercent) : null,
+        flatDiscount: data.flatDiscount ? Number(data.flatDiscount) : null,
+        maxDiscount: data.maxDiscount ? Number(data.maxDiscount) : null,
+        minOrder: Number(data.minOrder) || 0,
+        firstBookingOnly: Boolean(data.firstBookingOnly),
+        isActive: data.isActive ?? true,
+        expiryDate: data.expiryDate || null,
+        usageCount: 0,
+        ...data
+      };
+      dispatch({ type: 'ADD_COUPON', payload: coupon });
+      return clone(coupon);
+    }),
+
+  update: (couponId, patch) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_COUPON', payload: { couponId, patch } });
+      return clone(getState().coupons.find((c) => c.id === couponId || c.code === couponId));
+    }),
+
+  remove: (couponId) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_COUPON', payload: { couponId } });
+      return true;
     })
 };
 
@@ -367,6 +450,8 @@ const coupons = {
 // =============================================================================
 const reviews = {
   listBySalon: (salonId) => withLatency(() => clone(getState().reviews.filter((r) => r.salonId === salonId))),
+
+  listAll: () => withLatency(() => clone(getState().reviews)),
 
   add: (salonId, data) =>
     withLatency(() => {
@@ -378,6 +463,24 @@ const reviews = {
   reply: (reviewId, replyText) =>
     withLatency(() => {
       dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { reply: replyText } } });
+      return true;
+    }),
+
+  flag: (reviewId, reason = 'Flagged for content review') =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: true, flagReason: reason } } });
+      return true;
+    }),
+
+  unflag: (reviewId) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: false, flagReason: null } } });
+      return true;
+    }),
+
+  remove: (reviewId) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_REVIEW', payload: { reviewId } });
       return true;
     })
 };
@@ -470,7 +573,9 @@ const notifications = {
     withLatency(() => {
       dispatch({ type: 'MARK_ALL_NOTIFICATIONS_READ', payload: { audience, audienceId } });
       return true;
-    })
+    }),
+
+  listAll: () => withLatency(() => clone(getState().notifications))
 };
 
 // =============================================================================
@@ -478,6 +583,8 @@ const notifications = {
 // =============================================================================
 const tickets = {
   listByUser: (userId) => withLatency(() => clone(getState().tickets.filter((t) => t.userId === userId))),
+
+  listAll: () => withLatency(() => clone(getState().tickets)),
 
   create: (data) =>
     withLatency(() => {
@@ -509,6 +616,8 @@ const tickets = {
 // Customers / Auth
 // =============================================================================
 const customers = {
+  list: () => withLatency(() => clone(getState().customers)),
+
   current: () =>
     withLatency(() => {
       const state = getState();
@@ -562,6 +671,118 @@ const customers = {
     })
 };
 
+// =============================================================================
+// Admin Auth & Operations
+// =============================================================================
+const admin = {
+  login: (email, password) =>
+    withLatency(() => {
+      const trimmedEmail = String(email || '').trim().toLowerCase();
+      if (trimmedEmail !== ADMIN_CREDENTIALS.email.toLowerCase() || password !== ADMIN_CREDENTIALS.password) {
+        throw new ApiError('Invalid admin email or password.', 'ADMIN_AUTH_FAILED');
+      }
+      const session = {
+        email: ADMIN_CREDENTIALS.email,
+        name: ADMIN_CREDENTIALS.name,
+        role: ADMIN_CREDENTIALS.role,
+        loggedInAt: new Date().toISOString()
+      };
+      dispatch({ type: 'SET_ADMIN_SESSION', payload: session });
+      return clone(session);
+    }),
+
+  logout: () =>
+    withLatency(() => {
+      dispatch({ type: 'SET_ADMIN_SESSION', payload: null });
+      return true;
+    }),
+
+  currentSession: () => clone(getState().adminSession)
+};
+
+// =============================================================================
+// Advertisements & Banners
+// =============================================================================
+const ads = {
+  getAll: () =>
+    withLatency(() => {
+      const s = getState();
+      return {
+        advertisements: clone(s.advertisements || []),
+        brandPartners: clone(s.brandPartners || []),
+        midPageCampaign: clone(s.midPageCampaign || {})
+      };
+    }),
+
+  createAd: (data) =>
+    withLatency(() => {
+      const item = {
+        id: newAdId(),
+        isActive: true,
+        ...data
+      };
+      dispatch({ type: 'ADS_CREATE', payload: item });
+      return clone(item);
+    }),
+
+  updateAd: (id, patch) =>
+    withLatency(() => {
+      dispatch({ type: 'ADS_UPDATE', payload: { id, patch } });
+      const updated = getState().advertisements.find((a) => a.id === id);
+      return clone(updated);
+    }),
+
+  deleteAd: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'ADS_DELETE', payload: id });
+      return true;
+    }),
+
+  toggleAdActive: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'ADS_TOGGLE_ACTIVE', payload: id });
+      const updated = getState().advertisements.find((a) => a.id === id);
+      return clone(updated);
+    }),
+
+  createBrandPartner: (data) =>
+    withLatency(() => {
+      const item = {
+        id: newPartnerId(),
+        isActive: true,
+        ...data
+      };
+      dispatch({ type: 'BRAND_PARTNER_CREATE', payload: item });
+      return clone(item);
+    }),
+
+  updateBrandPartner: (id, patch) =>
+    withLatency(() => {
+      dispatch({ type: 'BRAND_PARTNER_UPDATE', payload: { id, patch } });
+      const updated = getState().brandPartners.find((bp) => bp.id === id);
+      return clone(updated);
+    }),
+
+  deleteBrandPartner: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'BRAND_PARTNER_DELETE', payload: id });
+      return true;
+    }),
+
+  toggleBrandPartnerActive: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'TOGGLE_BRAND_PARTNER_ACTIVE', payload: id });
+      const updated = getState().brandPartners.find((bp) => bp.id === id);
+      return clone(updated);
+    }),
+
+  updateMidCampaign: (patch) =>
+    withLatency(() => {
+      dispatch({ type: 'MID_CAMPAIGN_UPDATE', payload: patch });
+      return clone(getState().midPageCampaign);
+    })
+};
+
 export const api = {
   salons,
   services,
@@ -575,8 +796,11 @@ export const api = {
   holds,
   notifications,
   tickets,
-  customers
+  customers,
+  admin,
+  ads
 };
 
 export { ApiError };
 export default api;
+

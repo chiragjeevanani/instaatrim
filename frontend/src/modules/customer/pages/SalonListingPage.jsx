@@ -45,6 +45,9 @@ export const SalonListingPage = () => {
   const filteredSalons = useMemo(() => {
     return salonsWithServices
       .filter((salon) => {
+        const isLive = salon.isVerified && salon.verificationStatus === 'Live';
+        if (!isLive) return false;
+
         const matchesCategory =
           !activeCategory || salon.services.some((s) => activeCategory.serviceCategories.includes(s.category));
 

@@ -5,6 +5,7 @@
 // read at a glance.
 
 import { SALONS, SERVICES, STAFF, STATIONS, BOOKINGS, OFFERS, COUPONS, REVIEWS, LOCATIONS, DEFAULT_CUSTOMER } from '../data/seed';
+import { TOP_ADVERTISEMENTS, BRAND_PARTNERS, MID_PAGE_CAMPAIGN } from '../data/advertisements';
 import { canTransition } from '../lib/bookingStatus';
 import { dateKey } from '../lib/time';
 
@@ -26,12 +27,16 @@ export const buildInitialState = () => ({
   coupons: COUPONS,
   reviews: REVIEWS,
   locations: LOCATIONS,
+  advertisements: TOP_ADVERTISEMENTS.map((ad) => ({ ...ad, isActive: ad.isActive !== false })),
+  brandPartners: BRAND_PARTNERS.map((bp) => ({ ...bp, isActive: bp.isActive !== false })),
+  midPageCampaign: { ...MID_PAGE_CAMPAIGN, isActive: MID_PAGE_CAMPAIGN.isActive !== false },
   holds: [],
   notifications: [],
   tickets: [],
   customers: [{ ...DEFAULT_CUSTOMER }],
   currentCustomerId: 'cust-1',
-  partnerSession: null // { salonId } once a partner logs in
+  partnerSession: null, // { salonId } once a partner logs in
+  adminSession: null // { email, name, role } once an admin logs in
 });
 
 export function appReducer(state, action) {
@@ -142,6 +147,21 @@ export function appReducer(state, action) {
       const { reviewId, patch } = action.payload;
       return { ...state, reviews: state.reviews.map((r) => (r.id === reviewId ? { ...r, ...patch } : r)) };
     }
+    case 'DELETE_REVIEW': {
+      return { ...state, reviews: state.reviews.filter((r) => r.id !== action.payload.reviewId) };
+    }
+
+    // ---------------- Coupons ----------------
+    case 'ADD_COUPON': {
+      return { ...state, coupons: [action.payload, ...state.coupons] };
+    }
+    case 'UPDATE_COUPON': {
+      const { couponId, patch } = action.payload;
+      return { ...state, coupons: state.coupons.map((c) => (c.id === couponId ? { ...c, ...patch } : c)) };
+    }
+    case 'DELETE_COUPON': {
+      return { ...state, coupons: state.coupons.filter((c) => c.id !== action.payload.couponId) };
+    }
 
     // ---------------- Locations ----------------
     case 'ADD_LOCATION': {
@@ -158,6 +178,80 @@ export function appReducer(state, action) {
       return {
         ...state,
         locations: state.locations.map((l) => ({ ...l, isCurrent: l.id === action.payload.locationId }))
+      };
+    }
+
+    // ---------------- Advertisements & Banners ----------------
+    case 'ADD_ADVERTISEMENT':
+    case 'ADS_CREATE': {
+      return { ...state, advertisements: [action.payload, ...state.advertisements] };
+    }
+    case 'UPDATE_ADVERTISEMENT':
+    case 'ADS_UPDATE': {
+      const targetId = action.payload.adId || action.payload.id;
+      const patch = action.payload.patch || action.payload;
+      return {
+        ...state,
+        advertisements: state.advertisements.map((ad) => (ad.id === targetId ? { ...ad, ...patch } : ad))
+      };
+    }
+    case 'DELETE_ADVERTISEMENT':
+    case 'ADS_DELETE': {
+      const targetId = action.payload.adId || action.payload.id || action.payload;
+      return {
+        ...state,
+        advertisements: state.advertisements.filter((ad) => ad.id !== targetId)
+      };
+    }
+    case 'TOGGLE_ADVERTISEMENT_ACTIVE':
+    case 'ADS_TOGGLE_ACTIVE': {
+      const targetId = action.payload.adId || action.payload.id || action.payload;
+      return {
+        ...state,
+        advertisements: state.advertisements.map((ad) =>
+          ad.id === targetId ? { ...ad, isActive: !ad.isActive } : ad
+        )
+      };
+    }
+
+    // ---------------- Brand Partners ----------------
+    case 'ADD_BRAND_PARTNER':
+    case 'BRAND_PARTNER_CREATE': {
+      return { ...state, brandPartners: [action.payload, ...state.brandPartners] };
+    }
+    case 'UPDATE_BRAND_PARTNER':
+    case 'BRAND_PARTNER_UPDATE': {
+      const targetId = action.payload.partnerId || action.payload.id;
+      const patch = action.payload.patch || action.payload;
+      return {
+        ...state,
+        brandPartners: state.brandPartners.map((bp) => (bp.id === targetId ? { ...bp, ...patch } : bp))
+      };
+    }
+    case 'DELETE_BRAND_PARTNER':
+    case 'BRAND_PARTNER_DELETE': {
+      const targetId = action.payload.partnerId || action.payload.id || action.payload;
+      return {
+        ...state,
+        brandPartners: state.brandPartners.filter((bp) => bp.id !== targetId)
+      };
+    }
+    case 'TOGGLE_BRAND_PARTNER_ACTIVE': {
+      const targetId = action.payload.partnerId || action.payload.id || action.payload;
+      return {
+        ...state,
+        brandPartners: state.brandPartners.map((bp) =>
+          bp.id === targetId ? { ...bp, isActive: !bp.isActive } : bp
+        )
+      };
+    }
+
+    // ---------------- Mid-Page Campaign Banner ----------------
+    case 'UPDATE_MID_CAMPAIGN':
+    case 'MID_CAMPAIGN_UPDATE': {
+      return {
+        ...state,
+        midPageCampaign: { ...state.midPageCampaign, ...action.payload }
       };
     }
 
@@ -235,6 +329,9 @@ export function appReducer(state, action) {
     }
     case 'SET_PARTNER_SESSION': {
       return { ...state, partnerSession: action.payload };
+    }
+    case 'SET_ADMIN_SESSION': {
+      return { ...state, adminSession: action.payload };
     }
 
     default:

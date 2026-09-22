@@ -1,0 +1,44 @@
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AdminLayout } from '../components/AdminLayout';
+import { AdminLoginPage } from '../pages/AdminLoginPage';
+import { AdminDashboardPage } from '../pages/AdminDashboardPage';
+import { AdminSalonsPage } from '../pages/AdminSalonsPage';
+import { AdminSalonDetailPage } from '../pages/AdminSalonDetailPage';
+import { AdminOffersPage } from '../pages/AdminOffersPage';
+import { AdminBookingsPage } from '../pages/AdminBookingsPage';
+import { AdminCustomersPage } from '../pages/AdminCustomersPage';
+import { AdminCouponsPage } from '../pages/AdminCouponsPage';
+import { AdminAdsPage } from '../pages/AdminAdsPage';
+import { AdminReviewsPage } from '../pages/AdminReviewsPage';
+import { AdminTicketsPage } from '../pages/AdminTicketsPage';
+import { AdminNotificationsPage } from '../pages/AdminNotificationsPage';
+import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
+
+export const AdminRoutes = () => {
+  return (
+    <Routes>
+      {/* Public Login */}
+      <Route path="login" element={<AdminLoginPage />} />
+
+      {/* Protected Admin Shell */}
+      <Route element={<AdminLayout />}>
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="salons" element={<AdminSalonsPage />} />
+        <Route path="salons/:id" element={<AdminSalonDetailPage />} />
+        <Route path="offers" element={<AdminOffersPage />} />
+        <Route path="bookings" element={<AdminBookingsPage />} />
+        <Route path="customers" element={<AdminCustomersPage />} />
+        <Route path="coupons" element={<AdminCouponsPage />} />
+        <Route path="ads" element={<AdminAdsPage />} />
+        <Route path="reviews" element={<AdminReviewsPage />} />
+        <Route path="tickets" element={<AdminTicketsPage />} />
+        <Route path="notifications" element={<AdminNotificationsPage />} />
+        <Route path="analytics" element={<AdminAnalyticsPage />} />
+      </Route>
+
+      {/* Fallback to admin root */}
+      <Route path="*" element={<Navigate to="/admin" replace />} />
+    </Routes>
+  );
+};

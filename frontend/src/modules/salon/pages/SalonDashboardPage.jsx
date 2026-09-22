@@ -17,7 +17,10 @@ import {
   Check,
   AlertTriangle,
   Flame,
-  ArrowUpRight
+  ArrowUpRight,
+  ShieldAlert,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { NewBookingModal } from '../components/NewBookingModal';
 import { BookingDetailModal } from '../components/BookingDetailModal';
@@ -50,11 +53,68 @@ export const SalonDashboardPage = () => {
     (b) => b.status === 'Service Started' || b.status === 'Checked-In' || b.status === 'Confirmed'
   );
 
+  const isApproved = Boolean(salonProfile?.isVerified && salonProfile?.verificationStatus === 'Live');
+  const isRejected = salonProfile?.verificationStatus === 'Rejected';
+
   return (
     <div
       className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto box-border"
     >
       <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
+        {/* Verification Status Hero Alert when pending or rejected */}
+        {!isApproved && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-2xl p-4 border shadow-sm ${
+              isRejected
+                ? 'bg-red-50/90 border-red-200 text-red-950'
+                : 'bg-gradient-to-r from-amber-50 to-orange-50/70 border-amber-200 text-amber-950'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
+                  isRejected ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'
+                }`}
+              >
+                {isRejected ? <AlertTriangle className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5 stroke-[2.2]" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-bold tracking-tight">
+                    {isRejected ? 'Application Needs Revision' : 'Awaiting Super Admin Approval'}
+                  </span>
+                  <span
+                    className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      isRejected ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-900 border border-amber-300'
+                    }`}
+                  >
+                    {salonProfile?.verificationStatus || 'Pending Review'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-700 leading-relaxed mt-1 font-normal">
+                  {isRejected
+                    ? salonProfile.rejectionReason || 'Your application was rejected. Please review submitted documents.'
+                    : 'Your onboarding registration has been received! Before you can list services and accept customer bookings, the platform administrator must verify and approve your salon.'}
+                </p>
+
+                <div className="mt-2.5 pt-2 border-t border-amber-200/80 flex items-center justify-between">
+                  <span className="text-[10px] text-stone-500 font-medium">Service Catalogue: Locked</span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/salon/onboarding')}
+                    className="text-[10.5px] font-bold text-rose-900 hover:text-rose-950 flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>View Dossier Status</span>
+                    <ArrowRight className="w-3 h-3 stroke-[2.5]" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Metric Cards - Clean, Spacious, Ultra-Readable Hero Cards */}
         <div className="grid grid-cols-2 gap-3" data-purpose="kpi-summary">
           {/* Today's Sales */}

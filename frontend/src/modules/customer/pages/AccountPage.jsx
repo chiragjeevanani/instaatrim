@@ -5,6 +5,7 @@ import { BottomNav } from '../components/BottomNav';
 import { ReferEarnModal } from '../components/ReferEarnModal';
 import { EliteModal } from '../components/EliteModal';
 import { InfoSheet } from '../../../shared/components/InfoSheet';
+import { CustomerSupportModal } from '../components/CustomerSupportModal';
 import {
   User,
   Crown,
@@ -17,10 +18,11 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
-  Store,
   Phone,
   Mail,
-  MessageCircle
+  MessageCircle,
+  LifeBuoy,
+  Edit3
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -37,6 +39,7 @@ export const AccountPage = () => {
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isSafetyOpen, setIsSafetyOpen] = useState(false);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
   const handleLogoutOrLogin = () => {
     if (user.isLoggedIn) {
@@ -55,26 +58,38 @@ export const AccountPage = () => {
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-0 w-28 h-28 bg-brand-maroon/25 rounded-full blur-xl pointer-events-none"></div>
 
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-200 text-stone-950 flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-            {user.name ? user.name.charAt(0) : 'U'}
+        <div className="relative z-10 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-200 text-stone-950 flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+              {user.name ? user.name.charAt(0) : 'U'}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-sm font-bold tracking-tight truncate">
+                  {user.name || 'InstaaTrim Guest'}
+                </h1>
+                {user.isElite && (
+                  <span className="bg-amber-400 text-stone-950 font-black text-[8.5px] px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
+                    <Crown className="w-2.5 h-2.5 fill-stone-950" />
+                    Elite
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-stone-400 leading-tight mt-0.5">{user.phone ? `+91 ${user.phone}` : 'Sign in to access perks'}</p>
+              <p className="text-[10px] text-stone-400 truncate leading-tight">{user.email || 'guest@instatrim.com'}</p>
+            </div>
           </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-sm font-bold tracking-tight truncate">
-                {user.name || 'InstaaTrim Guest'}
-              </h1>
-              {user.isElite && (
-                <span className="bg-amber-400 text-stone-950 font-black text-[8.5px] px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
-                  <Crown className="w-2.5 h-2.5 fill-stone-950" />
-                  Elite
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-stone-400 leading-tight mt-0.5">{user.phone ? `+91 ${user.phone}` : 'Sign in to access perks'}</p>
-            <p className="text-[10px] text-stone-400 truncate leading-tight">{user.email || 'guest@instatrim.com'}</p>
-          </div>
+          {/* Quick Edit Profile Button */}
+          <button
+            type="button"
+            onClick={() => navigate('/customer/profile')}
+            className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-stone-200 text-[11px] font-semibold border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-amber-300" />
+            <span>Edit</span>
+          </button>
         </div>
 
         {/* Elite VIP Banner in Account - Compact */}
@@ -134,24 +149,21 @@ export const AccountPage = () => {
 
         {/* Detailed Options Group - Compact */}
         <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs divide-y divide-stone-100 overflow-hidden text-xs">
-          {/* Salon Partner Portal */}
+          {/* Edit Profile */}
           <div
-            onClick={() => navigate('/salon')}
-            className="p-3 flex items-center justify-between cursor-pointer bg-purple-50/70 hover:bg-purple-100/70 transition-colors"
+            onClick={() => navigate('/customer/profile')}
+            className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <Store className="w-3.5 h-3.5 text-brand-maroon" />
+              <div className="w-7 h-7 rounded-lg bg-purple-50 text-brand-maroon flex items-center justify-center">
+                <User className="w-3.5 h-3.5" />
+              </div>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <p className="font-bold text-stone-900 text-xs">Salon Partner App</p>
-                  <span className="text-[8px] bg-brand-maroon text-white font-extrabold px-1.5 py-0.2 rounded-full uppercase">
-                    Partner
-                  </span>
-                </div>
-                <p className="text-[10px] text-stone-500">Manage bookings, service catalog &amp; instant seats</p>
+                <p className="font-bold text-stone-900 text-xs">Edit Personal Profile</p>
+                <p className="text-[10px] text-stone-500">Name, mobile, email, gender &amp; birthday</p>
               </div>
             </div>
-            <ChevronRight className="w-3.5 h-3.5 text-purple-700" />
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
           </div>
 
           {/* Saved Addresses */}
@@ -160,7 +172,9 @@ export const AccountPage = () => {
             className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <MapPin className="w-3.5 h-3.5 text-brand-maroon" />
+              <div className="w-7 h-7 rounded-lg bg-pink-50 text-brand-maroon flex items-center justify-center">
+                <MapPin className="w-3.5 h-3.5" />
+              </div>
               <div>
                 <p className="font-bold text-stone-900 text-xs">Salon Visit Location</p>
                 <p className="text-[10px] text-stone-500">{currentLocation?.area || 'South Tukoganj'}</p>
@@ -169,16 +183,35 @@ export const AccountPage = () => {
             <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
           </div>
 
-          {/* Customer Support */}
+          {/* Raise Support Ticket */}
+          <div
+            onClick={() => setIsTicketModalOpen(true)}
+            className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                <LifeBuoy className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <p className="font-bold text-stone-900 text-xs">Raise Support Ticket</p>
+                <p className="text-[10px] text-stone-500">Fast dispute resolution &amp; refund assistance</p>
+              </div>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+          </div>
+
+          {/* Customer Support FAQs */}
           <div
             onClick={() => setIsSupportOpen(true)}
             className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <HelpCircle className="w-3.5 h-3.5 text-brand-maroon" />
+              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                <HelpCircle className="w-3.5 h-3.5" />
+              </div>
               <div>
-                <p className="font-bold text-stone-900 text-xs">Customer Support &amp; FAQs</p>
-                <p className="text-[10px] text-stone-500">Instant chat &amp; booking support</p>
+                <p className="font-bold text-stone-900 text-xs">Customer Helpline &amp; FAQs</p>
+                <p className="text-[10px] text-stone-500">Contact details &amp; operating hours</p>
               </div>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
@@ -190,7 +223,9 @@ export const AccountPage = () => {
             className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <Shield className="w-3.5 h-3.5 text-brand-maroon" />
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                <Shield className="w-3.5 h-3.5" />
+              </div>
               <div>
                 <p className="font-bold text-stone-900 text-xs">Safety &amp; Privacy Policy</p>
                 <p className="text-[10px] text-stone-500">Hygiene guidelines &amp; data security</p>
@@ -213,6 +248,10 @@ export const AccountPage = () => {
       <BottomNav />
       <ReferEarnModal />
       <EliteModal />
+      <CustomerSupportModal
+        isOpen={isTicketModalOpen}
+        onClose={() => setIsTicketModalOpen(false)}
+      />
 
       <InfoSheet
         isOpen={isSupportOpen}

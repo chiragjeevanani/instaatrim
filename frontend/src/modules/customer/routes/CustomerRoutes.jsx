@@ -11,6 +11,7 @@ import { CheckoutPage } from '../pages/CheckoutPage';
 import { BookingConfirmationPage } from '../pages/BookingConfirmationPage';
 import { BookingsPage } from '../pages/BookingsPage';
 import { AccountPage } from '../pages/AccountPage';
+import { EditProfilePage } from '../pages/EditProfilePage';
 import { SkincarePage } from '../pages/SkincarePage';
 import { TrendsPage } from '../pages/TrendsPage';
 export const CustomerRoutes = () => {
@@ -25,6 +26,8 @@ export const CustomerRoutes = () => {
       <Route path="/booking-confirmation/:bookingId" element={<BookingConfirmationPage />} />
       <Route path="/bookings" element={<BookingsPage />} />
       <Route path="/account" element={<AccountPage />} />
+      <Route path="/profile" element={<EditProfilePage />} />
+      <Route path="/edit-profile" element={<EditProfilePage />} />
       <Route path="/skincare" element={<SkincarePage />} />
       <Route path="/trends" element={<TrendsPage />} />
       {/* Fallback to Customer Home */}

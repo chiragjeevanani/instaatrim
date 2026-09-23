@@ -1,0 +1,1125 @@
+================================================================================
+ INSTAATRIM - MULTI-PANEL SALON & GROOMING MARKETPLACE PLATFORM
+ BACKEND ARCHITECTURE, SYSTEM FLOWS & API SPECIFICATION SPEC (flow.txt)
+================================================================================
+Generated for: Backend Development & Engineering Team
+Scope: Complete 3-Panel Synchronization (Customer App, Salon Partner Portal, Super Admin Console)
+Document Version: 2.0.0 (Production Blueprint)
+Language: English
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. EXECUTIVE PLATFORM ARCHITECTURE
+   1.1 Ecosystem Overview & The 3 Actor Panels
+   1.2 Architectural Paradigms & Tech Stack Expectations
+   1.3 Real-Time State Synchronization Model
+
+2. ACTOR ROLES, AUTHENTICATION & RBAC PERMISSIONS
+   2.1 Actor 1: Customer (Client User)
+   2.2 Actor 2: Salon Partner (Merchant / Branch Manager)
+   2.3 Actor 3: Super Admin (Platform Operator)
+   2.4 Session Tokens, JWT Architecture & Auth Headers
+
+3. COMPLETE DATABASE SCHEMA SPECIFICATIONS (DATA MODELS)
+   3.1 User & Customer Models (Customer, Address)
+   3.2 Salon & Operational Models (Salon, Station/Chair, Staff/Stylist)
+   3.3 Taxonomy & Catalog Models (Category, SubCategory, Service)
+   3.4 Concurrency & Booking Models (SlotHold, Booking)
+   3.5 Financial & Commercial Models (PayoutSettlement, PlatformSettings, ElitePlan)
+   3.6 Marketing & CMS Models (Coupon, SalonOffer, AdCampaign, EditorialItem)
+   3.7 Interaction Models (Review, SupportTicket, Notification)
+
+4. END-TO-END BUSINESS LOGIC & OPERATIONAL FLOWS
+   FLOW 01: Customer Auth & Onboarding Flow
+   FLOW 02: Geolocation, Search & Salon Discovery Flow
+   FLOW 03: Service Catalog & Cart Management Flow (Single-Salon Scoping)
+   FLOW 04: Concurrency Slot-Hold Engine (8-Minute Temporary Lock)
+   FLOW 05: Instant Seat Booking vs Scheduled Timeslot Booking Flow
+   FLOW 06: Checkout, Coupons, Elite VIP Pricing & Payment Processing Flow
+   FLOW 07: Real-Time Booking State Machine (Canonical 8-State Engine)
+   FLOW 08: Booking Rescheduling & Cancellation / Refund Flow
+   FLOW 09: Rating, Review & Salon Inline Reply Synchronization Flow
+   FLOW 10: Salon Partner Onboarding, Verification & KYC Approval Flow
+   FLOW 11: Salon Daily Floor Management (Live Chairs, Staff Roster, Walk-ins)
+   FLOW 12: Salon Payout & Wallet Settlement Flow (GMV, Commission, UTR Clearance)
+   FLOW 13: Super Admin Governance & Global Control Flow
+   FLOW 14: 7 Consumer Ad Touchpoints & Marketing Attribution Engine
+   FLOW 15: Omnichannel Notification & Alert Dispatch Flow
+
+5. COMPLETE RESTful API ENDPOINT CONTRACTS (REQUEST / RESPONSE SPEC)
+   5.1 Authentication Endpoints (/api/auth)
+   5.2 Customer Endpoints (/api/customers & /api/locations)
+   5.3 Salon & Partner Endpoints (/api/salons, /api/staff, /api/stations)
+   5.4 Service Catalog & Taxonomy Endpoints (/api/categories, /api/services)
+   5.5 Concurrency Slot-Hold Endpoints (/api/holds)
+   5.6 Booking Engine Endpoints (/api/bookings)
+   5.7 Commercial, Offers & Coupons Endpoints (/api/coupons, /api/offers)
+   5.8 Financial Settlements & Payouts Endpoints (/api/payouts, /api/settings)
+   5.9 Elite Membership Endpoints (/api/elite)
+   5.10 Marketing, Ads & Editorial CMS Endpoints (/api/ads, /api/promotions, /api/editorial)
+   5.11 Reviews & Feedback Endpoints (/api/reviews)
+   5.12 Support Help Desk Endpoints (/api/tickets)
+   5.13 System Notifications Endpoints (/api/notifications)
+   5.14 Analytics & Reporting Endpoints (/api/analytics)
+
+6. REAL-TIME WEBSOCKETS, SSE & BACKGROUND WORKERS SPECIFICATION
+   6.1 WebSocket Rooms & Event Channels
+   6.2 Scheduled Background Crons (Workers)
+   6.3 Third-Party Webhook Handlers (Payment & WhatsApp Gateways)
+
+7. BUSINESS CONSTRAINTS & AUDIT CHECKLIST FOR BACKEND IMPLEMENTATION
+
+================================================================================
+1. EXECUTIVE PLATFORM ARCHITECTURE
+================================================================================
+
+1.1 Ecosystem Overview & The 3 Actor Panels
+InstaaTrim is an on-demand and scheduled salon & grooming marketplace platform 
+operating across three synchronized surfaces:
+
+1. CUSTOMER PROGRESSIVE APP (`/customer/*`):
+   - Mobile-first web/PWA interface for discovering nearby verified salons, 
+     browsing services by gender/category, locking instant or scheduled slots, 
+     purchasing Elite VIP passes, managing bookings, and submitting reviews.
+
+2. SALON PARTNER PORTAL (`/salon/*`):
+   - Tablet/Mobile/Desktop operations portal for salon owners and desk managers.
+   - Manages live floor capacity (chairs/workstations), stylist attendance and 
+     skill assignments, instant walk-ins, online booking lifecycle (Check-in, 
+     Start Service, Complete), salon offers, customer review replies, and payout 
+     withdrawal requests.
+
+3. SUPER ADMIN CONSOLE (`/admin/*`):
+   - Central command center for platform operators.
+   - Manages salon verification & KYC approvals, commission splits, platform 
+     taxes & convenience fees, financial payout clearance with Bank UTR reference 
+     tracking, marketing/ad campaigns across 7 consumer touchpoints, editorial CMS, 
+     global promo coupons, and customer dispute resolution tickets.
+
+1.2 Architectural Paradigms & Tech Stack Expectations
+- Standard RESTful JSON APIs communicating over HTTPS.
+- Stateless token-based authentication (JWT with Access & Refresh tokens).
+- Concurrency-safe slot reservation system using TTL-based cache or Redis locks.
+- Real-time updates delivered via WebSockets or Server-Sent Events (SSE).
+- Relational (PostgreSQL / MySQL) or Document (MongoDB) database supporting ACID 
+  transactions for financial ledgers, booking status transitions, and wallet updates.
+
+1.3 Real-Time State Synchronization Model
+When an event occurs on any one panel, the other panels must reflect the update 
+immediately:
+- Customer creates booking -> Salon portal plays notification chime, increments 
+  upcoming booking badge, and recalculates available chairs.
+- Salon clicks "Check-In" / "Service Started" -> Customer booking screen updates 
+  live step indicator; Chair is marked "Occupied" on both salon & public counters.
+- Salon requests Payout -> Admin Sidebar displays pending settlement badge; 
+  Admin ledger shows withdrawal request.
+- Admin approves Payout with Bank UTR -> Salon Payouts ledger immediately shifts 
+  status from "Pending" to "Transferred".
+- Customer submits Star Rating & Review -> Appears on Salon Reviews page for 
+  partner reply and Admin Reviews page for moderation.
+
+================================================================================
+2. ACTOR ROLES, AUTHENTICATION & RBAC PERMISSIONS
+================================================================================
+
+2.1 Actor 1: Customer (Client User)
+- Identifier: Mobile Phone Number (10-digit Indian standard)
+- Auth Mechanism: OTP Verification (Mock code `123456` or SMS Gateway API).
+- Optional Social Login: Google / Apple OAuth (delivers verified email & profile).
+- Data Scope: Can only read/write their own bookings, addresses, profile, and tickets.
+- Default Customer in Seed: Ananya Sharma (`cust-1`, Phone: `7000792773`).
+
+2.2 Actor 2: Salon Partner (Merchant / Branch Manager)
+- Identifier: Partner Login ID (e.g. `partner-luxe`, `partner-jawed`), registered 
+  Mobile number, or registered Business Email.
+- Auth Mechanism: Password authentication OR Mobile OTP.
+- Data Scope: Scoped strictly to their own `salonId`. Cannot access another 
+  salon's financial data, bookings, staff, or settings.
+- Default Partners in Seed:
+  * Luxe Glow Salon & Spa (`sal-1` / Login: `partner-luxe` / Pass: `luxe123`)
+  * Jawed Habib Hair Lounge (`sal-2` / Login: `partner-jawed` / Pass: `jawed123`)
+  * Naturals Beauty Care (`sal-3` / Login: `partner-naturals` / Pass: `naturals123`)
+
+2.3 Actor 3: Super Admin (Platform Operator)
+- Identifier: Admin Email (`admin@instaatrim.com`)
+- Auth Mechanism: Secure Password (`admin2025`) with optional 2FA.
+- Data Scope: Global unrestricted access across all tenants, financial ledgers, 
+  user accounts, and platform configurations.
+
+2.4 Session Tokens, JWT Architecture & Auth Headers
+All authenticated API requests from frontend panels include the standard HTTP header:
+`Authorization: Bearer <JWT_TOKEN>`
+
+JWT Payload Specifications:
+- Customer Token: `{ sub: "cust-1", role: "customer", phone: "7000792773", exp: <timestamp> }`
+- Partner Token:  `{ sub: "sal-1", role: "partner", salonId: "sal-1", exp: <timestamp> }`
+- Admin Token:    `{ sub: "admin-1", role: "super_admin", email: "admin@instaatrim.com", exp: <timestamp> }`
+
+================================================================================
+3. COMPLETE DATABASE SCHEMA SPECIFICATIONS (DATA MODELS)
+================================================================================
+
+3.1 User & Customer Models
+
+TABLE: customers
+- id: VARCHAR(36) PRIMARY KEY
+- name: VARCHAR(100) NOT NULL
+- phone: VARCHAR(15) UNIQUE NOT NULL
+- email: VARCHAR(120) NULLABLE
+- gender: ENUM('female', 'male', 'other') DEFAULT 'female'
+- dob: DATE NULLABLE
+- is_elite: BOOLEAN DEFAULT FALSE
+- elite_valid_until: TIMESTAMP NULLABLE
+- referral_code: VARCHAR(20) UNIQUE NOT NULL
+- referred_by_code: VARCHAR(20) NULLABLE
+- favorite_salon_ids: JSONB / TEXT[] DEFAULT '[]'
+- notification_prefs: JSONB DEFAULT '{"push": true, "sms": true, "whatsapp": true}'
+- auth_provider: VARCHAR(20) DEFAULT 'otp'
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updated_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+TABLE: customer_addresses
+- id: VARCHAR(36) PRIMARY KEY
+- customer_id: VARCHAR(36) REFERENCES customers(id) ON DELETE CASCADE
+- area: VARCHAR(100) NOT NULL
+- address: TEXT NOT NULL
+- landmark: VARCHAR(150) NULLABLE
+- city: VARCHAR(60) DEFAULT 'Indore'
+- pincode: VARCHAR(10) NOT NULL
+- lat: DECIMAL(10, 7) NOT NULL
+- lng: DECIMAL(10, 7) NOT NULL
+- is_current: BOOLEAN DEFAULT FALSE
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+3.2 Salon & Operational Models
+
+TABLE: salons
+- id: VARCHAR(36) PRIMARY KEY
+- name: VARCHAR(150) NOT NULL
+- slug: VARCHAR(150) UNIQUE NOT NULL
+- category: ENUM('women', 'men', 'unisex') DEFAULT 'unisex'
+- partner_login_id: VARCHAR(50) UNIQUE NOT NULL
+- partner_password: VARCHAR(255) NOT NULL (Bcrypt hashed)
+- mobile: VARCHAR(15) NOT NULL
+- email: VARCHAR(120) NOT NULL
+- status: ENUM('pending', 'active', 'suspended') DEFAULT 'active'
+- is_verified: BOOLEAN DEFAULT TRUE
+- rating: DECIMAL(2, 1) DEFAULT 4.5
+- review_count: INTEGER DEFAULT 0
+- open_time: VARCHAR(10) DEFAULT '09:30 AM'
+- close_time: VARCHAR(10) DEFAULT '08:30 PM'
+- operating_hours: JSONB NOT NULL -- Full 7-day schedule { Sunday: { open, close, closed: false }, ... }
+- address: TEXT NOT NULL
+- area: VARCHAR(100) NOT NULL
+- city: VARCHAR(60) DEFAULT 'Indore'
+- pincode: VARCHAR(10) NOT NULL
+- lat: DECIMAL(10, 7) NOT NULL
+- lng: DECIMAL(10, 7) NOT NULL
+- image: TEXT NOT NULL
+- gallery: JSONB DEFAULT '[]'
+- amenities: JSONB DEFAULT '["AC & Ambient Music", "Sanitized Kits", "Card/UPI Accepted", "Beverage Service"]'
+- total_chairs: INTEGER DEFAULT 4
+- occupied_chairs: INTEGER DEFAULT 0
+- gstin: VARCHAR(20) NULLABLE
+- shop_act_license: VARCHAR(50) NULLABLE
+- bank_name: VARCHAR(100) NOT NULL
+- account_number: VARCHAR(30) NOT NULL
+- ifsc_code: VARCHAR(20) NOT NULL
+- commission_rate_percent: DECIMAL(5, 2) DEFAULT 12.00
+- sponsored_rank: INTEGER DEFAULT 0 -- For paid placement in listing
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updated_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+TABLE: stations (Chairs / Workstations)
+- id: VARCHAR(36) PRIMARY KEY
+- salon_id: VARCHAR(36) REFERENCES salons(id) ON DELETE CASCADE
+- name: VARCHAR(60) NOT NULL -- e.g. "Hair Styling Chair 1", "Facial Suite"
+- chair_type: ENUM('Hair', 'Facial', 'Spa', 'Nails', 'General') DEFAULT 'Hair'
+- is_occupied: BOOLEAN DEFAULT FALSE
+- assigned_staff_id: VARCHAR(36) NULLABLE
+- is_active: BOOLEAN DEFAULT TRUE
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+TABLE: staff (Stylists / Therapists)
+- id: VARCHAR(36) PRIMARY KEY
+- salon_id: VARCHAR(36) REFERENCES salons(id) ON DELETE CASCADE
+- name: VARCHAR(100) NOT NULL
+- role: VARCHAR(60) NOT NULL -- e.g. "Senior Hair Stylist", "Skin Specialist"
+- phone: VARCHAR(15) NULLABLE
+- avatar: TEXT NULLABLE
+- rating: DECIMAL(2, 1) DEFAULT 4.8
+- experience_years: INTEGER DEFAULT 3
+- specializations: JSONB DEFAULT '[]' -- Array of category names e.g. ["Hair", "Facial"]
+- is_active: BOOLEAN DEFAULT TRUE
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+3.3 Taxonomy & Catalog Models
+
+TABLE: categories
+- id: VARCHAR(36) PRIMARY KEY
+- slug: VARCHAR(60) UNIQUE NOT NULL
+- name: VARCHAR(100) NOT NULL
+- short_name: VARCHAR(50) NOT NULL
+- service_categories: JSONB NOT NULL -- e.g. ["Haircut", "Hair Color"]
+- gender: ENUM('women', 'men', 'unisex') DEFAULT 'unisex'
+- image: TEXT NOT NULL
+- col_span: INTEGER DEFAULT 1
+- display_order: INTEGER DEFAULT 0
+- is_active: BOOLEAN DEFAULT TRUE
+
+TABLE: services
+- id: VARCHAR(36) PRIMARY KEY
+- salon_id: VARCHAR(36) REFERENCES salons(id) ON DELETE CASCADE
+- name: VARCHAR(150) NOT NULL
+- category: VARCHAR(60) NOT NULL -- Links to category name
+- duration_minutes: INTEGER NOT NULL DEFAULT 30
+- price: DECIMAL(10, 2) NOT NULL
+- original_price: DECIMAL(10, 2) NOT NULL
+- discount: VARCHAR(20) NULLABLE -- e.g. "20% OFF"
+- gender: ENUM('women', 'men', 'unisex') DEFAULT 'women'
+- rating: DECIMAL(2, 1) DEFAULT 4.7
+- image: TEXT NOT NULL
+- description: TEXT NOT NULL
+- is_popular: BOOLEAN DEFAULT FALSE
+- is_active: BOOLEAN DEFAULT TRUE
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+3.4 Concurrency & Booking Models
+
+TABLE: slot_holds (Temporary Concurrency Reservation Locks)
+- id: VARCHAR(36) PRIMARY KEY
+- salon_id: VARCHAR(36) REFERENCES salons(id) ON DELETE CASCADE
+- service_id: VARCHAR(36) NULLABLE
+- staff_id: VARCHAR(36) NULLABLE
+- station_id: VARCHAR(36) NULLABLE
+- booking_type: ENUM('Instant', 'Scheduled') DEFAULT 'Scheduled'
+- date: DATE NOT NULL
+- start_min: INTEGER NOT NULL -- Minutes from midnight (e.g. 660 for 11:00 AM)
+- end_min: INTEGER NOT NULL
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- expires_at: TIMESTAMP NOT NULL -- Typically NOW() + 8 to 10 minutes
+- status: ENUM('active', 'expired', 'released', 'confirmed') DEFAULT 'active'
+
+TABLE: bookings
+- id: VARCHAR(36) PRIMARY KEY
+- customer_id: VARCHAR(36) REFERENCES customers(id)
+- customer_name: VARCHAR(100) NOT NULL
+- customer_phone: VARCHAR(15) NOT NULL
+- salon_id: VARCHAR(36) REFERENCES salons(id)
+- salon_name: VARCHAR(150) NOT NULL
+- address: TEXT NOT NULL
+- booking_mode: ENUM('Instant', 'Scheduled') NOT NULL
+- date_key: VARCHAR(12) NOT NULL -- YYYY-MM-DD
+- time: VARCHAR(30) NOT NULL -- e.g. "11:00 AM" or "Within 15 mins"
+- duration_minutes: INTEGER DEFAULT 30
+- services: JSONB NOT NULL -- [{ id, name, price, durationMinutes }]
+- total_amount: DECIMAL(10, 2) NOT NULL -- Gross sum of services
+- discount_amount: DECIMAL(10, 2) DEFAULT 0.00 -- Coupon or Elite pass savings
+- convenience_fee: DECIMAL(10, 2) DEFAULT 15.00
+- tax_amount: DECIMAL(10, 2) DEFAULT 0.00
+- final_paid: DECIMAL(10, 2) NOT NULL -- Net payable amount
+- coupon_applied: VARCHAR(30) NULLABLE
+- preferred_product: VARCHAR(100) NULLABLE -- Upsell brand selected by user
+- payment_method: VARCHAR(50) NOT NULL -- "UPI", "Card", "Net Banking", "Pay at Salon"
+- payment_status: ENUM('Pending', 'Successful', 'Failed', 'Refunded') DEFAULT 'Pending'
+- transaction_id: VARCHAR(100) NULLABLE
+- hold_id: VARCHAR(36) NULLABLE
+- station_id: VARCHAR(36) NULLABLE
+- staff_id: VARCHAR(36) NULLABLE
+- status: ENUM(
+    'Pending',
+    'Confirmed',
+    'Checked-In',
+    'Service Started',
+    'Completed',
+    'Cancelled',
+    'No Show',
+    'Refunded'
+  ) DEFAULT 'Confirmed'
+- cancel_reason: TEXT NULLABLE
+- rating: INTEGER NULLABLE -- 1 to 5
+- review: TEXT NULLABLE
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updated_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+3.5 Financial & Commercial Models
+
+TABLE: payouts (Settlement Requests & Transfers)
+- id: VARCHAR(36) PRIMARY KEY
+- salon_id: VARCHAR(36) REFERENCES salons(id)
+- salon_name: VARCHAR(150) NOT NULL
+- amount: DECIMAL(10, 2) NOT NULL -- Requested settlement amount
+- gmv: DECIMAL(10, 2) NOT NULL -- Gross booking value base
+- commission_deducted: DECIMAL(10, 2) NOT NULL -- Platform cut (e.g. 12%)
+- status: ENUM('Pending', 'Processing', 'Transferred', 'Rejected') DEFAULT 'Pending'
+- utr_number: VARCHAR(50) NULLABLE -- Bank transaction clearance reference
+- bank_name: VARCHAR(100) NOT NULL
+- account_number: VARCHAR(30) NOT NULL
+- ifsc_code: VARCHAR(20) NOT NULL
+- request_date: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- clearance_date: TIMESTAMP NULLABLE
+- notes: TEXT NULLABLE
+
+TABLE: platform_settings
+- id: INTEGER PRIMARY KEY DEFAULT 1
+- convenience_fee: DECIMAL(10, 2) DEFAULT 15.00
+- tax_rate_percent: DECIMAL(5, 2) DEFAULT 5.00
+- default_commission_rate_percent: DECIMAL(5, 2) DEFAULT 12.00
+- referral_bonus_customer: DECIMAL(10, 2) DEFAULT 50.00
+- referral_bonus_referee: DECIMAL(10, 2) DEFAULT 100.00
+- min_payout_threshold: DECIMAL(10, 2) DEFAULT 1000.00
+- cancellation_free_hours: INTEGER DEFAULT 1
+- support_phone: VARCHAR(30) DEFAULT '1800-200-8811'
+- support_email: VARCHAR(120) DEFAULT 'support@instaatrim.com'
+- updated_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+TABLE: elite_plans (VIP Membership Pass Configuration)
+- id: VARCHAR(36) PRIMARY KEY
+- name: VARCHAR(100) DEFAULT 'InstaaTrim Elite Club'
+- tagline: VARCHAR(150) DEFAULT 'VIP Membership & Priority Beauty Access'
+- price: DECIMAL(10, 2) DEFAULT 299.00
+- original_price: DECIMAL(10, 2) DEFAULT 999.00
+- validity_days: INTEGER DEFAULT 90
+- discount_percent: DECIMAL(5, 2) DEFAULT 10.00
+- perks: JSONB NOT NULL
+- is_active: BOOLEAN DEFAULT TRUE
+
+3.6 Marketing & CMS Models
+
+TABLE: coupons
+- id: VARCHAR(36) PRIMARY KEY
+- code: VARCHAR(30) UNIQUE NOT NULL
+- description: VARCHAR(200) NOT NULL
+- discount_percent: DECIMAL(5, 2) NULLABLE
+- flat_discount: DECIMAL(10, 2) NULLABLE
+- max_discount: DECIMAL(10, 2) NULLABLE
+- min_order: DECIMAL(10, 2) DEFAULT 0.00
+- first_booking_only: BOOLEAN DEFAULT FALSE
+- valid_till: VARCHAR(50) NOT NULL
+- usage_count: INTEGER DEFAULT 0
+- is_active: BOOLEAN DEFAULT TRUE
+
+TABLE: salon_offers
+- id: VARCHAR(36) PRIMARY KEY
+- salon_id: VARCHAR(36) REFERENCES salons(id) ON DELETE CASCADE
+- title: VARCHAR(100) NOT NULL
+- code: VARCHAR(30) NOT NULL
+- discount_percent: DECIMAL(5, 2) NOT NULL
+- min_amount: DECIMAL(10, 2) DEFAULT 0.00
+- valid_till: VARCHAR(50) NOT NULL
+- description: TEXT NOT NULL
+- is_active: BOOLEAN DEFAULT TRUE
+
+TABLE: ad_campaigns (Brand Advertising across 7 Touchpoints)
+- id: VARCHAR(36) PRIMARY KEY
+- brand: VARCHAR(100) NOT NULL
+- sponsor_badge: VARCHAR(60) NOT NULL
+- title: VARCHAR(150) NOT NULL
+- subtitle: VARCHAR(150) NULLABLE
+- description: TEXT NOT NULL
+- discount_badge: VARCHAR(50) NULLABLE
+- coupon_code: VARCHAR(30) NULLABLE
+- image: TEXT NOT NULL
+- accent_color: VARCHAR(100) NOT NULL
+- cta_text: VARCHAR(40) DEFAULT 'Claim Deal'
+- salon_id: VARCHAR(36) NULLABLE
+- category: VARCHAR(60) NULLABLE
+- campaign_type: ENUM('top_carousel', 'hero_banner', 'mid_page', 'sponsored_deal', 'brand_showcase')
+- impressions: INTEGER DEFAULT 0
+- clicks: INTEGER DEFAULT 0
+- budget: DECIMAL(10, 2) DEFAULT 5000.00
+- is_active: BOOLEAN DEFAULT TRUE
+
+TABLE: editorial_skincare & editorial_trends
+- id: VARCHAR(36) PRIMARY KEY
+- title: VARCHAR(150) NOT NULL
+- subtitle / steps / ritual: TEXT NOT NULL
+- target_skin / celebrity_ref: VARCHAR(100) NULLABLE
+- image: TEXT NOT NULL
+- is_active: BOOLEAN DEFAULT TRUE
+
+3.7 Interaction Models
+
+TABLE: reviews
+- id: VARCHAR(36) PRIMARY KEY
+- salon_id: VARCHAR(36) REFERENCES salons(id) ON DELETE CASCADE
+- booking_id: VARCHAR(36) NULLABLE
+- customer_name: VARCHAR(100) NOT NULL
+- rating: INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5)
+- comment: TEXT NOT NULL
+- service: VARCHAR(100) NOT NULL
+- date: VARCHAR(30) NOT NULL
+- reply: JSONB NULLABLE -- { text: "...", repliedAt: "..." }
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+TABLE: support_tickets
+- id: VARCHAR(36) PRIMARY KEY
+- user_id: VARCHAR(36) NOT NULL
+- user_name: VARCHAR(100) NOT NULL
+- user_role: ENUM('customer', 'salon', 'partner') NOT NULL
+- user_contact: VARCHAR(100) NOT NULL
+- salon_id: VARCHAR(36) NULLABLE
+- salon_name: VARCHAR(150) NULLABLE
+- category: VARCHAR(100) NOT NULL
+- subject: VARCHAR(200) NOT NULL
+- status: ENUM('open', 'in_progress', 'resolved') DEFAULT 'open'
+- messages: JSONB NOT NULL -- [{ sender, senderName, text, timestamp }]
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- updated_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+TABLE: notifications
+- id: VARCHAR(36) PRIMARY KEY
+- audience: ENUM('all', 'customer', 'salon') NOT NULL
+- audience_id: VARCHAR(36) NULLABLE -- Targeted user/salon ID or NULL for broadcast
+- title: VARCHAR(150) NOT NULL
+- message: TEXT NOT NULL
+- type: ENUM('booking', 'payout', 'promo', 'system') DEFAULT 'system'
+- is_read: BOOLEAN DEFAULT FALSE
+- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+================================================================================
+4. END-TO-END BUSINESS LOGIC & OPERATIONAL FLOWS
+================================================================================
+
+--------------------------------------------------------------------------------
+FLOW 01: Customer Auth & Onboarding Flow
+--------------------------------------------------------------------------------
+1. User enters 10-digit mobile number at `/customer/auth`.
+2. Backend generates a 6-digit OTP and dispatches via SMS Gateway (or returns in dev).
+3. User enters OTP:
+   - Backend verifies OTP.
+   - If phone number exists in `customers` table: Fetch profile and issue JWT.
+   - If phone does not exist: Automatically create new customer record with 
+     default referral code (e.g. `NAME50`), blank profile, and issue JWT.
+4. Client stores JWT in local secure storage.
+5. User can view and update Personal Profile (Name, Email, Gender, DOB) anytime at 
+   `/customer/profile` via `PUT /api/customers/profile`.
+
+--------------------------------------------------------------------------------
+FLOW 02: Geolocation, Search & Salon Discovery Flow
+--------------------------------------------------------------------------------
+1. On app open or on `/customer/location`, app requests GPS coordinates.
+2. If GPS granted: Backend maps `(lat, lng)` via Haversine formula to return 
+   salons sorted by distance (in km).
+3. If GPS denied: Customer picks manual locality (e.g. "South Tukoganj, Indore").
+4. Customer filters salons by Gender Category (`Women`, `Men`, `Unisex`), rating, 
+   or searches specific treatments (e.g., "RICA Waxing", "Keratin Spa").
+5. Real-time availability indicator badge on salon cards calculates:
+   - If available chairs > 0: Display "Instant Seat Available".
+   - If available chairs == 0: Display "Next slot: 11:30 AM".
+
+--------------------------------------------------------------------------------
+FLOW 03: Service Catalog & Cart Management Flow (Single-Salon Scoping)
+--------------------------------------------------------------------------------
+1. Customer opens a Salon Profile (`/customer/salons/:id`).
+2. Catalog is browsed by category tabs (Hair, Facial, Spa, Waxing, Makeup, Nails).
+3. User clicks "Add" on a service.
+4. CRITICAL BUSINESS RULE (Defect D2 Guard):
+   - A cart is strictly scoped to ONE salon at a time.
+   - If the user adds a service from Salon B while their cart contains services 
+     from Salon A, the frontend informs the user and resets the cart for Salon B.
+   - Backend API MUST reject any booking payload containing service IDs from 
+     multiple distinct `salon_id`s.
+
+--------------------------------------------------------------------------------
+FLOW 04: Concurrency Slot-Hold Engine (8-Minute Temporary Lock)
+--------------------------------------------------------------------------------
+To prevent race conditions where two customers book the same chair/stylist:
+1. Customer clicks "Book Appointment", selects Date & Timeslot.
+2. Frontend immediately calls `POST /api/holds` with `{ salonId, staffId, date, startMin, endMin }`.
+3. Backend checks if `slot_holds` has an active non-expired record for that chair/slot.
+4. If available:
+   - Creates hold record with `expires_at = NOW() + 8 minutes`.
+   - Returns `{ holdId: "hold-xxx", expiresAt: "..." }`.
+   - Frontend starts an 8-minute countdown timer on screen (`HoldCountdown.jsx`).
+5. If another customer attempts to pick the same slot during these 8 minutes, 
+   the slot returns disabled (`isAvailable: false`).
+6. If the 8-minute timer runs out before payment completion:
+   - Hold status transitions to `expired`.
+   - Checkout displays warning: "Held slot expired. Please pick a new one."
+7. When the booking is successfully confirmed, the hold status transitions to 
+   `confirmed` and binds to the booking record.
+
+--------------------------------------------------------------------------------
+FLOW 05: Instant Seat Booking vs Scheduled Timeslot Booking Flow
+--------------------------------------------------------------------------------
+The platform provides two distinct booking modes:
+
+MODE A: "INSTANT CHAIR" (Walk-in / Immediate Visit)
+- Available only during salon operating hours when `total_chairs - occupied_chairs > 0`.
+- The customer books for immediate arrival ("Within 15 mins").
+- Booking is immediately marked `Confirmed`.
+- Salon receives instant notification sound: "New Instant Walk-in Chair Booking!".
+- Station is temporarily reserved for 15 minutes awaiting customer arrival.
+
+MODE B: "SCHEDULED TIMESLOT" (Advance Booking)
+- Customer selects date from a 14-day rolling window (`rollingDays(14)`).
+- Time slots are generated based on salon operating hours (e.g. 10:00 AM - 08:00 PM) 
+  in 30-minute intervals.
+- Slot availability engine checks:
+  1. Salon operating hours for that day.
+  2. Confirmed bookings during that window.
+  3. Active holds during that window.
+  4. Stylist / staff working roster.
+
+--------------------------------------------------------------------------------
+FLOW 06: Checkout, Coupons, Elite VIP Pricing & Payment Processing Flow
+--------------------------------------------------------------------------------
+1. Pricing Calculation Engine:
+   - `Gross Subtotal` = Sum of all service prices.
+   - `Coupon Discount` = Computed via promo rules (flat amount or percentage with cap).
+     * Check rule: `firstBookingOnly` -> Verify `bookings.count(customerId) == 0`.
+     * Check rule: `minOrder` -> Verify `Gross Subtotal >= coupon.minOrder`.
+   - `Elite VIP Discount` = If `customer.isElite == true`, apply extra 10% discount 
+     on the remaining balance.
+   - `Convenience Fee` = ₹15 (Waived if customer is Elite VIP).
+   - `GST Tax` = 5% of taxable base.
+   - `Net Payable` = `Gross Subtotal - Discounts + Convenience Fee + GST`.
+2. Payment Gateways:
+   - Online: UPI (Google Pay, PhonePe, Paytm), Credit/Debit Card, Net Banking.
+   - Offline: "Pay at Salon" -> Creates booking with `paymentStatus: "Pending"`.
+3. Upon payment success:
+   - Create record in `bookings` table.
+   - Release / confirm hold in `slot_holds`.
+   - Increment `coupon.usageCount`.
+   - Send push & SMS booking confirmation to customer.
+   - Broadcast `NEW_BOOKING` event to Salon Partner Portal.
+
+--------------------------------------------------------------------------------
+FLOW 07: Real-Time Booking State Machine (Canonical 8-State Engine)
+--------------------------------------------------------------------------------
+Both Customer App, Salon Portal, and Admin Console adhere to this strict lifecycle:
+
+   [Pending] -----------> [Confirmed] -----------> [Cancelled]
+                              |
+                              +---------> [No Show] ------> [Refunded]
+                              |
+                              v
+                        [Checked-In]
+                              |
+                              v
+                     [Service Started]
+                              |
+                              v
+                        [Completed] -------------> [Refunded]
+
+State Actions & Floor Impact:
+1. `Pending`: Payment confirmation pending (or unverified walk-in).
+2. `Confirmed`: Chair reserved; displayed in Salon "Upcoming Bookings" list.
+3. `Checked-In`: Customer arrives at salon; desk clicks "Check-In".
+4. `Service Started`: Stylist begins work; desk assigns Chair & Stylist:
+   - Chair status shifts to `is_occupied: true`.
+   - Salon live occupied chairs counter increments.
+   - Customer UI updates to "In Service".
+5. `Completed`: Service finished; bill settled.
+   - Chair status shifts back to `is_occupied: false`.
+   - Revenue added to Salon Wallet available balance.
+   - Customer UI prompts for Star Rating & Review.
+6. `Cancelled`: Cancelled by customer or salon with mandatory reason.
+7. `No Show`: Customer failed to arrive within 30 minutes of scheduled time.
+8. `Refunded`: Settlement reversed via Admin or automated gateway refund.
+
+--------------------------------------------------------------------------------
+FLOW 08: Booking Rescheduling & Cancellation / Refund Flow
+--------------------------------------------------------------------------------
+RESCHEDULING:
+1. Customer opens an upcoming booking and clicks "Reschedule".
+2. Picks new date and timeslot.
+3. Backend releases existing slot, checks availability for new slot, and locks it.
+4. Booking record updates `dateKey` and `time` with status remaining `Confirmed`.
+
+CANCELLATION & REFUNDS:
+1. Customer clicks "Cancel Booking" and selects a reason.
+2. Backend checks `platform_settings.cancellation_free_hours` (Default: 1 hour).
+   - If slot time is > 1 hour away: Full 100% refund initiated to original payment source.
+   - If slot time is < 1 hour away: Platform fee or late cancellation fee deducted.
+   - If customer has Elite VIP Pass: Free cancellation guaranteed up to 1 hour.
+3. Booking status shifts to `Cancelled`.
+4. Associated chair and staff time freed up immediately.
+
+--------------------------------------------------------------------------------
+FLOW 09: Rating, Review & Salon Inline Reply Synchronization Flow
+--------------------------------------------------------------------------------
+1. Upon booking reaching `Completed` status, Customer App renders review modal.
+2. Customer selects Star Rating (1 to 5), enters comment, and submits.
+3. Frontend triggers `api.bookings.addRating` AND `api.reviews.add(salonId)`.
+4. Backend creates record in `reviews` table and recalculates `salon.rating` & `salon.review_count`.
+5. Review immediately appears in:
+   - Salon Partner Portal at `/salon/reviews`.
+   - Super Admin Console at `/admin/reviews`.
+6. Salon owner clicks "Reply" on `/salon/reviews` and inputs a response.
+7. Backend updates `review.reply = { text, repliedAt: NOW() }`.
+8. The reply reflects in real-time under that review on public salon profiles.
+
+--------------------------------------------------------------------------------
+FLOW 10: Salon Partner Onboarding, Verification & KYC Approval Flow
+--------------------------------------------------------------------------------
+1. Prospective salon visits `/salon/register` (or `/salon/onboarding`).
+2. Multi-Step Registration Form:
+   - Step 1: Salon Name, Category (Women/Men/Unisex), Contact Mobile & Email.
+   - Step 2: Location details (Address, Area, City, Pin, Lat/Lng on map).
+   - Step 3: Operational Timings & Total Chair Capacity.
+   - Step 4: Business KYC (GSTIN, Shop Act License Number, Documents upload).
+   - Step 5: Bank Account for settlements (Bank Name, Account No, IFSC Code).
+   - Step 6: Create Partner Login ID and Secure Password.
+3. Upon submission:
+   - Salon record created with `status: "pending"` and `is_verified: false`.
+   - Partner cannot take public bookings yet.
+4. Super Admin receives new partner alert at `/admin/salons`.
+5. Super Admin inspects KYC documents, sets commission rate (e.g. 12%), and clicks "Approve".
+6. Salon status updates to `active` and `is_verified: true`. Partner can now log in and take bookings.
+
+--------------------------------------------------------------------------------
+FLOW 11: Salon Daily Floor Management (Live Chairs, Staff Roster, Walk-ins)
+--------------------------------------------------------------------------------
+1. Real-Time Occupancy Dashboard (`/salon`):
+   - Shows Total Chairs, Occupied Chairs, and Available Chairs.
+   - Toggle button: "Accepting Online Instant Bookings" (Open / Busy).
+2. Stylist / Staff Management (`/salon/staff`):
+   - Add new staff with category skills (e.g. "Hair", "Facials").
+   - Toggle stylist active/on-leave status.
+3. Workstation / Station Allocation (`/salon` capacity modal):
+   - Assign specific staff member to specific chair.
+   - When booking enters "Service Started", assign station.
+
+--------------------------------------------------------------------------------
+FLOW 12: Salon Payout & Wallet Settlement Flow (GMV, Commission, UTR Clearance)
+--------------------------------------------------------------------------------
+1. Dynamic Wallet Balance Calculation:
+   - `Total GMV` = Sum of all `final_paid` from `Completed` bookings for that salon.
+   - `Platform Commission` = `Total GMV * (salon.commission_rate_percent / 100)`.
+   - `Net Salon Earnings` = `Total GMV - Platform Commission`.
+   - `Available Payout Balance` = `Net Salon Earnings - Sum(Settled & Pending Payouts)`.
+2. Salon Requests Payout (`/salon/payouts`):
+   - Salon enters amount (must be >= `platform_settings.min_payout_threshold`, default ₹1,000).
+   - Submits withdrawal request.
+   - Record created in `payouts` table with `status: "Pending"`.
+3. Admin Settlement Workflow (`/admin/payouts`):
+   - Admin sees pending request with Salon Bank Details and account number.
+   - Admin processes bank transfer via NEFT / RTGS / IMPS.
+   - Admin clicks "Clear", enters Bank UTR Reference Number (e.g. `HDFC0098231456`), and confirms.
+   - Backend updates payout record: `status: "Transferred"`, `utr_number: "...", `clearance_date: NOW()`.
+   - Salon portal ledger updates status immediately to "Transferred" with UTR number displayed.
+
+--------------------------------------------------------------------------------
+FLOW 13: Super Admin Governance & Global Control Flow
+--------------------------------------------------------------------------------
+From `/admin/*`, platform administrators control:
+1. Category & Subcategory Catalog (`/admin/categories`): Add/edit beauty categories, icons, gender badges.
+2. Global Promo Coupons (`/admin/coupons`): Set discount percentages, max caps, first-booking-only flags.
+3. Platform Commercial Rules (`/admin/settings`): Update GST rate (5%), convenience fee (₹15), default commission (12%), referral reward amounts.
+4. Elite VIP Membership (`/admin/settings`): Configure pass price (₹299), validity (90 days), and perks.
+5. Customer Support Desk (`/admin/tickets`): View incoming customer and partner disputes, chat with users, and resolve tickets.
+6. Push Notifications Broadcast (`/admin/notifications`): Dispatch instant broadcast alerts to all users or specific segments.
+
+--------------------------------------------------------------------------------
+FLOW 14: 7 Consumer Ad Touchpoints & Marketing Attribution Engine
+--------------------------------------------------------------------------------
+The platform provides 7 distinct monetization touchpoints for brand advertisers 
+(e.g. L'Oréal, Dyson, O3+, Forest Essentials):
+1. Top Carousel Ads (`TopAdCarousel.jsx`): Header brand sponsorship with promo code CTA.
+2. Hero Banners (`HeroCarousel.jsx`): Primary visual banners.
+3. Mid-Page Campaign Tiles (`PromotionsPage`): Themed campaign clusters.
+4. Sponsored Deals (`SponsoredDealBanner.jsx`): Discount deal cards.
+5. Brand Partner Showcase (`BrandPartnerShowcase.jsx`): Official product partners.
+6. Treatment Product Upsell (`BookingFlowModal.jsx` Step 3): Option to pick 
+   premium brand product formulations (e.g. "L'Oréal Mythic Oil" + ₹200) during checkout.
+7. Sponsored Salon Listings: Premium placement in search & category results.
+Backend tracks `impressions` and `clicks` on every ad campaign record (`/api/ads/track`).
+
+--------------------------------------------------------------------------------
+FLOW 15: Omnichannel Notification & Alert Dispatch Flow
+--------------------------------------------------------------------------------
+Notifications are generated automatically on key events:
+- Booking Confirmed -> Push + WhatsApp confirmation with date & salon location map.
+- 1 Hour Prior to Slot -> SMS reminder to customer with salon phone contact.
+- Service Completed -> Push notification requesting rating & review.
+- Payout Cleared -> WhatsApp & SMS alert to salon owner with bank UTR number.
+- Admin Broadcast -> In-app notification card delivered to user notification drawers.
+
+================================================================================
+5. COMPLETE RESTful API ENDPOINT CONTRACTS (REQUEST / RESPONSE SPEC)
+================================================================================
+
+All response bodies follow the unified JSON structure:
+SUCCESS:
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful"
+}
+
+ERROR:
+{
+  "success": false,
+  "error": {
+    "code": "SLOT_UNAVAILABLE",
+    "message": "This timeslot is already reserved. Please select another slot."
+  }
+}
+
+--------------------------------------------------------------------------------
+5.1 Authentication Endpoints (/api/auth)
+--------------------------------------------------------------------------------
+
+POST /api/auth/customer/otp/send
+- Body: { "phone": "7000792773" }
+- Response: { "success": true, "message": "OTP sent successfully", "data": { "requestId": "req-123" } }
+
+POST /api/auth/customer/otp/verify
+- Body: { "phone": "7000792773", "otp": "123456", "name": "Optional Name" }
+- Response: { "success": true, "data": { "token": "jwt_token...", "customer": { ... } } }
+
+POST /api/auth/salon/login
+- Body: { "loginId": "partner-luxe", "password": "luxe123" }
+- Response: { "success": true, "data": { "token": "jwt_token...", "salon": { ... } } }
+
+POST /api/auth/salon/register
+- Body: Multi-step registration payload (Name, phone, email, address, bank, password, chairs)
+- Response: { "success": true, "data": { "salonId": "sal-xxx", "status": "pending" } }
+
+POST /api/auth/admin/login
+- Body: { "email": "admin@instaatrim.com", "password": "admin2025" }
+- Response: { "success": true, "data": { "token": "jwt_token...", "admin": { ... } } }
+
+--------------------------------------------------------------------------------
+5.2 Customer Endpoints (/api/customers & /api/locations)
+--------------------------------------------------------------------------------
+
+GET /api/customers/me
+- Headers: Authorization: Bearer <token>
+- Response: Returns customer profile, favorite salons, Elite status.
+
+PUT /api/customers/profile
+- Headers: Authorization: Bearer <token>
+- Body: { "name": "...", "email": "...", "phone": "...", "gender": "female", "dob": "YYYY-MM-DD", "notificationPrefs": { ... } }
+- Response: Updated customer object.
+
+POST /api/customers/favorites/toggle
+- Body: { "salonId": "sal-1" }
+- Response: { "success": true, "favoriteSalonIds": ["sal-1", "sal-2"] }
+
+GET /api/locations
+- Headers: Authorization: Bearer <token>
+- Response: Array of saved addresses for the logged-in customer.
+
+POST /api/locations
+- Body: { "area": "South Tukoganj", "address": "...", "landmark": "...", "city": "Indore", "pincode": "452001", "lat": 22.7196, "lng": 75.8577 }
+- Response: Newly created address object.
+
+PUT /api/locations/:id/current
+- Sets the designated address as active `is_current: true`.
+
+--------------------------------------------------------------------------------
+5.3 Salon & Partner Endpoints (/api/salons, /api/staff, /api/stations)
+--------------------------------------------------------------------------------
+
+GET /api/salons
+- Query: ?category=women|men|unisex&lat=22.71&lng=75.85&search=hair
+- Response: List of active verified salons with distance and rating.
+
+GET /api/salons/:id
+- Response: Salon details with full services catalog, staff roster, operating hours, and amenities.
+
+PATCH /api/salons/:id
+- Headers: Authorization: Bearer <partner_or_admin_token>
+- Body: Partial update (operating hours, open/closed toggle, amenities, total chairs).
+
+GET /api/salons/:id/staff
+- Response: List of stylists and therapists for that salon.
+
+POST /api/salons/:id/staff
+- Body: { "name": "...", "role": "Senior Stylist", "phone": "...", "specializations": ["Hair", "Spa"] }
+- Response: Created staff record.
+
+PUT /api/salons/:id/staff/:staffId
+- Body: Updated staff fields / active status toggle.
+
+DELETE /api/salons/:id/staff/:staffId
+- Deactivates or removes staff member.
+
+GET /api/salons/:id/stations
+- Response: Workstations / chairs with live occupancy status.
+
+PATCH /api/salons/:id/stations/:stationId
+- Body: { "isOccupied": true, "assignedStaffId": "staff-1" }
+
+--------------------------------------------------------------------------------
+5.4 Service Catalog & Taxonomy Endpoints (/api/categories, /api/services)
+--------------------------------------------------------------------------------
+
+GET /api/categories
+- Response: Array of high-level service categories (Hair, Facials, Spa, Waxing, Makeup, Nails).
+
+POST /api/categories (Admin Only)
+- Body: Category creation payload.
+
+GET /api/services?salonId=sal-1
+- Response: Array of services provided by the salon.
+
+POST /api/services
+- Headers: Authorization: Bearer <partner_token>
+- Body: { "salonId": "sal-1", "name": "Keratin Treatment", "category": "Hair", "durationMinutes": 60, "price": 2499, "originalPrice": 3999, "gender": "women" }
+
+PUT /api/services/:id
+- Body: Updated service details.
+
+DELETE /api/services/:id
+- Removes or archives service.
+
+--------------------------------------------------------------------------------
+5.5 Concurrency Slot-Hold Endpoints (/api/holds)
+--------------------------------------------------------------------------------
+
+POST /api/holds
+- Body: { "salonId": "sal-1", "staffId": "stf-1", "date": "2026-09-24", "startMin": 660, "endMin": 690 }
+- Response: { "success": true, "data": { "id": "hold-9823", "expiresAt": "2026-09-24T11:08:00Z" } }
+- Error 409 Conflict: If slot is already held or booked.
+
+DELETE /api/holds/:id
+- Explicitly releases hold lock when user cancels or navigates away.
+
+--------------------------------------------------------------------------------
+5.6 Booking Engine Endpoints (/api/bookings)
+--------------------------------------------------------------------------------
+
+GET /api/bookings
+- Query: ?customerId=cust-1 OR ?salonId=sal-1&date=YYYY-MM-DD
+- Response: Filtered list of booking records.
+
+GET /api/bookings/:id
+- Response: Single comprehensive booking record.
+
+POST /api/bookings
+- Headers: Authorization: Bearer <customer_token>
+- Body:
+  {
+    "salonId": "sal-1",
+    "salonName": "Luxe Glow Salon",
+    "address": "South Tukoganj, Indore",
+    "bookingMode": "Scheduled",
+    "dateKey": "2026-09-24",
+    "time": "11:00 AM",
+    "services": [{ "id": "srv-1", "name": "Haircut & Blowdry", "price": 499, "durationMinutes": 30 }],
+    "totalAmount": 499,
+    "discountAmount": 50,
+    "finalPaid": 449,
+    "couponApplied": "SAVE50",
+    "preferredProduct": "L'Oréal",
+    "paymentMethod": "UPI",
+    "paymentStatus": "Successful",
+    "transactionId": "TXN_9872134",
+    "holdId": "hold-9823",
+    "staffId": "stf-1"
+  }
+- Response: Created booking object with unique ID.
+
+PATCH /api/bookings/:id/status
+- Headers: Authorization: Bearer <partner_or_admin_token>
+- Body: { "status": "Checked-In" | "Service Started" | "Completed" | "Cancelled", "cancelReason": "..." }
+- Response: Updated booking with status transition logged.
+
+POST /api/bookings/:id/reschedule
+- Body: { "dateKey": "2026-09-25", "time": "02:00 PM" }
+- Response: Updated booking record.
+
+POST /api/bookings/:id/rating
+- Body: { "rating": 5, "review": "Amazing service and sanitized environment!" }
+- Response: Booking record updated with review details.
+
+--------------------------------------------------------------------------------
+5.7 Commercial, Offers & Coupons Endpoints (/api/coupons, /api/offers)
+--------------------------------------------------------------------------------
+
+GET /api/coupons/validate?code=SAVE100&subtotal=1200&customerId=cust-1
+- Response:
+  {
+    "success": true,
+    "data": { "valid": true, "code": "SAVE100", "discountAmount": 100 }
+  }
+
+GET /api/coupons (Admin list)
+POST /api/coupons (Admin create)
+DELETE /api/coupons/:id (Admin delete)
+
+GET /api/offers?salonId=sal-1
+POST /api/offers (Salon partner create)
+DELETE /api/offers/:id
+
+--------------------------------------------------------------------------------
+5.8 Financial Settlements & Payouts Endpoints (/api/payouts, /api/settings)
+--------------------------------------------------------------------------------
+
+GET /api/payouts
+- Headers: Authorization: Bearer <partner_or_admin_token>
+- Query: ?salonId=sal-1
+- Response: Ledger of withdrawal requests with status and UTR numbers.
+
+POST /api/payouts/request
+- Headers: Authorization: Bearer <partner_token>
+- Body: { "salonId": "sal-1", "amount": 5000 }
+- Logic: Validates amount against `Available Payout Balance` and `minPayoutThreshold`.
+- Response: Created payout request in `Pending` state.
+
+PATCH /api/payouts/:id/status
+- Headers: Authorization: Bearer <admin_token>
+- Body: { "status": "Transferred" | "Rejected", "utrNumber": "HDFC0098231456", "notes": "Settled via NEFT" }
+- Response: Payout record updated with clearance timestamp.
+
+GET /api/settings/platform
+- Response: Current platform settings (GST, convenience fee, commission percent, support contacts).
+
+PUT /api/settings/platform (Admin Only)
+- Body: Updated platform parameters.
+
+--------------------------------------------------------------------------------
+5.9 Elite Membership Endpoints (/api/elite)
+--------------------------------------------------------------------------------
+
+GET /api/elite/plan
+- Response: Current Elite Pass configuration (price, validity, perks).
+
+PUT /api/elite/plan (Admin Only)
+- Body: Updated Elite Pass pricing or perk details.
+
+POST /api/elite/subscribe
+- Headers: Authorization: Bearer <customer_token>
+- Body: { "paymentMethod": "UPI", "transactionId": "..." }
+- Response: Updates `customer.isElite = true` with 90-day expiry.
+
+--------------------------------------------------------------------------------
+5.10 Marketing, Ads & Editorial CMS Endpoints (/api/ads, /api/promotions, /api/editorial)
+--------------------------------------------------------------------------------
+
+GET /api/ads?touchpoint=top_carousel|hero|mid_page|sponsored_deal
+- Response: Active ad campaigns configured for that position.
+
+POST /api/ads/track
+- Body: { "adId": "ad-loreal", "event": "impression" | "click" }
+- Response: Increments metric counter.
+
+POST /api/ads (Admin Only)
+- Body: Full ad campaign configuration payload.
+
+GET /api/editorial/skincare
+GET /api/editorial/trends
+POST /api/editorial/skincare (Admin CMS)
+POST /api/editorial/trends (Admin CMS)
+
+--------------------------------------------------------------------------------
+5.11 Reviews & Feedback Endpoints (/api/reviews)
+--------------------------------------------------------------------------------
+
+GET /api/reviews?salonId=sal-1
+- Response: Reviews list with distribution breakdown (1-star to 5-star count).
+
+POST /api/reviews
+- Body: { "salonId": "sal-1", "customerName": "Ananya Sharma", "rating": 5, "comment": "...", "service": "Facial", "bookingId": "bk-123" }
+
+POST /api/reviews/:id/reply
+- Headers: Authorization: Bearer <partner_token>
+- Body: { "text": "Thank you for visiting Luxe Glow Salon! Looking forward to welcoming you again." }
+
+--------------------------------------------------------------------------------
+5.12 Support Help Desk Endpoints (/api/tickets)
+--------------------------------------------------------------------------------
+
+GET /api/tickets
+- Headers: Authorization: Bearer <token>
+- Response: User's tickets (Customer or Partner) or all tickets (Admin).
+
+POST /api/tickets
+- Body: { "category": "Payment Dispute", "subject": "Refund not credited", "message": "..." }
+
+POST /api/tickets/:id/messages
+- Body: { "text": "Response message..." }
+
+PATCH /api/tickets/:id/status
+- Body: { "status": "resolved" }
+
+--------------------------------------------------------------------------------
+5.13 System Notifications Endpoints (/api/notifications)
+--------------------------------------------------------------------------------
+
+GET /api/notifications
+- Headers: Authorization: Bearer <token>
+- Response: Notification cards for the current user/salon + global broadcasts.
+
+PATCH /api/notifications/:id/read
+- Marks notification as read.
+
+POST /api/notifications/broadcast (Admin Only)
+- Body: { "audience": "all" | "customer" | "salon", "title": "...", "message": "...", "type": "promo" }
+
+--------------------------------------------------------------------------------
+5.14 Analytics & Reporting Endpoints (/api/analytics)
+--------------------------------------------------------------------------------
+
+GET /api/analytics/salon?salonId=sal-1&period=today|week|month
+- Response: GMV, completed bookings count, cancellation rate, chair utilization rate, top services.
+
+GET /api/analytics/admin
+- Response: Platform GMV, total active salons, total bookings, platform net commission, user growth.
+
+================================================================================
+6. REAL-TIME WEBSOCKETS, SSE & BACKGROUND WORKERS SPECIFICATION
+================================================================================
+
+6.1 WebSocket Rooms & Event Channels
+Server should run a WebSocket / Socket.io server at `/ws` or SSE stream at `/api/events`:
+
+Channel Rooms:
+1. `room:salon:<salonId>`: Joined by Salon Partner desk tablets/browsers.
+2. `room:customer:<customerId>`: Joined by Customer App sessions.
+3. `room:admin`: Joined by Super Admin consoles.
+
+Events Emitted:
+- `booking:created` -> Dispatched to `room:salon:<salonId>` and `room:admin`.
+- `booking:status_updated` -> Dispatched to `room:customer:<customerId>` and `room:salon:<salonId>`.
+- `payout:requested` -> Dispatched to `room:admin`.
+- `payout:cleared` -> Dispatched to `room:salon:<salonId>`.
+- `review:added` -> Dispatched to `room:salon:<salonId>`.
+- `chairs:updated` -> Dispatched to public listeners of that salon.
+
+6.2 Scheduled Background Crons (Workers)
+1. Slot Hold Reaper (Runs every 30 seconds):
+   - Queries `slot_holds` where `status = 'active'` AND `expires_at < NOW()`.
+   - Updates status to `expired`.
+   - Frees up slot locks.
+2. Appointment Reminder Worker (Runs every 15 minutes):
+   - Finds confirmed bookings scheduled 1 hour from current time.
+   - Dispatches SMS & WhatsApp reminders to customers with salon address and navigation link.
+3. No-Show Auto-Marker (Runs every 30 minutes):
+   - Flags bookings that were scheduled > 45 minutes ago and were never Checked-In as `No Show`.
+4. Daily GMV & Financial Reconciler (Runs nightly at 00:05 AM):
+   - Audits completed bookings, computes platform commissions, and updates salon earnings ledger.
+
+6.3 Third-Party Webhook Handlers
+- `POST /api/webhooks/razorpay` (or Stripe / Cashfree):
+  * Handles asynchronous payment confirmation, chargebacks, and refund settlements.
+- `POST /api/webhooks/whatsapp` (Gupshup / Twilio / Wati):
+  * Handles message delivery receipts and customer replies.
+
+================================================================================
+7. BUSINESS CONSTRAINTS & AUDIT CHECKLIST FOR BACKEND IMPLEMENTATION
+================================================================================
+
+[ ] Single-Tenant Cart Validation: Reject any checkout request where items span 
+    more than one `salon_id`.
+[ ] Atomic Concurrency Holds: Use database row locking (`SELECT FOR UPDATE`) or 
+    Redis key with TTL to guarantee no double-booking of a stylist/chair.
+[ ] Idempotent Payment Processing: Payment webhook must check if booking is 
+    already confirmed before processing to prevent duplicate bookings on network retries.
+[ ] Wallet Integrity: Available payout balance must NEVER become negative. Validate 
+    balance before creating payout record.
+[ ] Review Authenticity: Customers can only review salons for which they have a 
+    record in `bookings` with status `Completed`.
+[ ] Strict Timezone Consistency: All dates and times must be stored in UTC in the 
+    database, and formatted in Indian Standard Time (IST / UTC+05:30) for display.
+[ ] Passwords & Security: Salon partner passwords and admin credentials must be 
+    hashed with Bcrypt (cost factor >= 10). Never store plain text passwords.
+
+================================================================================
+END OF FLOW SPECIFICATION (flow.txt)
+================================================================================

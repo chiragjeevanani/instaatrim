@@ -18,15 +18,20 @@ import {
   ShieldCheck,
   ExternalLink,
   Sun,
-  Moon
+  Moon,
+  Wallet,
+  Sliders,
+  Sparkles
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
 const NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/salons', label: 'Salons', icon: Store, badgeKey: 'pendingSalons' },
+  { to: '/admin/payouts', label: 'Payouts & Ledger', icon: Wallet, badgeKey: 'pendingPayouts' },
   { to: '/admin/categories', label: 'Categories', icon: Layers },
   { to: '/admin/promotions', label: 'Sponsored & Boost', icon: TrendingUp },
+  { to: '/admin/editorial', label: 'Skincare & Trends', icon: Sparkles },
   { to: '/admin/offers', label: 'Offers & Deals', icon: Tag, badgeKey: 'pendingOffers' },
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarCheck2 },
   { to: '/admin/customers', label: 'Customers', icon: Users },
@@ -35,6 +40,7 @@ const NAV_ITEMS = [
   { to: '/admin/reviews', label: 'Reviews', icon: Star },
   { to: '/admin/tickets', label: 'Support Tickets', icon: LifeBuoy, badgeKey: 'openTickets' },
   { to: '/admin/notifications', label: 'Broadcasts', icon: Bell },
+  { to: '/admin/settings', label: 'Platform Settings', icon: Sliders },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 }
 ];
 

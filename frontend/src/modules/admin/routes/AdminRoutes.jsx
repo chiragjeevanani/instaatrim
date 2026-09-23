@@ -16,6 +16,9 @@ import { AdminReviewsPage } from '../pages/AdminReviewsPage';
 import { AdminTicketsPage } from '../pages/AdminTicketsPage';
 import { AdminNotificationsPage } from '../pages/AdminNotificationsPage';
 import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
+import { AdminPayoutsPage } from '../pages/AdminPayoutsPage';
+import { AdminPlatformSettingsPage } from '../pages/AdminPlatformSettingsPage';
+import { AdminEditorialPage } from '../pages/AdminEditorialPage';
 
 export const AdminRoutes = () => {
   return (
@@ -28,8 +31,10 @@ export const AdminRoutes = () => {
         <Route index element={<AdminDashboardPage />} />
         <Route path="salons" element={<AdminSalonsPage />} />
         <Route path="salons/:id" element={<AdminSalonDetailPage />} />
+        <Route path="payouts" element={<AdminPayoutsPage />} />
         <Route path="categories" element={<AdminCategoriesPage />} />
         <Route path="promotions" element={<AdminPromotionsPage />} />
+        <Route path="editorial" element={<AdminEditorialPage />} />
         <Route path="offers" element={<AdminOffersPage />} />
         <Route path="bookings" element={<AdminBookingsPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
@@ -38,6 +43,7 @@ export const AdminRoutes = () => {
         <Route path="reviews" element={<AdminReviewsPage />} />
         <Route path="tickets" element={<AdminTicketsPage />} />
         <Route path="notifications" element={<AdminNotificationsPage />} />
+        <Route path="settings" element={<AdminPlatformSettingsPage />} />
         <Route path="analytics" element={<AdminAnalyticsPage />} />
       </Route>
 

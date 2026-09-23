@@ -4,7 +4,27 @@
 // goes through here, so it is the one place the whole data model can be
 // read at a glance.
 
-import { SALONS, SERVICES, STAFF, STATIONS, BOOKINGS, OFFERS, COUPONS, REVIEWS, LOCATIONS, DEFAULT_CUSTOMER, CATEGORIES, BANNERS } from '../data/seed';
+import {
+  SALONS,
+  SERVICES,
+  STAFF,
+  STATIONS,
+  BOOKINGS,
+  OFFERS,
+  COUPONS,
+  REVIEWS,
+  LOCATIONS,
+  DEFAULT_CUSTOMER,
+  CATEGORIES,
+  BANNERS,
+  DEFAULT_PAYOUTS,
+  DEFAULT_PLATFORM_SETTINGS,
+  DEFAULT_ELITE_PLAN,
+  DEFAULT_EDITORIAL_SKINCARE,
+  DEFAULT_EDITORIAL_TRENDS,
+  DEFAULT_TICKETS,
+  DEFAULT_NOTIFICATIONS
+} from '../data/seed';
 import { TOP_ADVERTISEMENTS, BRAND_PARTNERS, MID_PAGE_CAMPAIGN, MID_PAGE_CAMPAIGNS } from '../data/advertisements';
 import { canTransition } from '../lib/bookingStatus';
 import { dateKey } from '../lib/time';
@@ -33,9 +53,14 @@ export const buildInitialState = () => ({
   brandPartners: BRAND_PARTNERS.map((bp) => ({ ...bp, isActive: bp.isActive !== false })),
   midPageCampaign: { ...MID_PAGE_CAMPAIGN, isActive: MID_PAGE_CAMPAIGN.isActive !== false },
   midPageCampaigns: MID_PAGE_CAMPAIGNS.map((c) => ({ ...c, isActive: c.isActive !== false })),
+  payouts: DEFAULT_PAYOUTS,
+  platformSettings: DEFAULT_PLATFORM_SETTINGS,
+  elitePlan: DEFAULT_ELITE_PLAN,
+  skincareItems: DEFAULT_EDITORIAL_SKINCARE,
+  trendsItems: DEFAULT_EDITORIAL_TRENDS,
   holds: [],
-  notifications: [],
-  tickets: [],
+  notifications: DEFAULT_NOTIFICATIONS,
+  tickets: DEFAULT_TICKETS,
   customers: [{ ...DEFAULT_CUSTOMER }],
   currentCustomerId: 'cust-1',
   partnerSession: null, // { salonId } once a partner logs in
@@ -507,6 +532,104 @@ export function appReducer(state, action) {
     }
     case 'SET_ADMIN_SESSION': {
       return { ...state, adminSession: action.payload };
+    }
+
+    // ---------------- Payouts & Settlements ----------------
+    case 'REQUEST_PAYOUT': {
+      return { ...state, payouts: [action.payload, ...(state.payouts || [])] };
+    }
+    case 'UPDATE_PAYOUT_STATUS': {
+      const { payoutId, status, extra = {} } = action.payload;
+      return {
+        ...state,
+        payouts: (state.payouts || []).map((p) => (p.id === payoutId ? { ...p, status, ...extra } : p))
+      };
+    }
+    case 'DELETE_PAYOUT': {
+      return {
+        ...state,
+        payouts: (state.payouts || []).filter((p) => p.id !== action.payload.payoutId)
+      };
+    }
+
+    // ---------------- Platform Global Settings ----------------
+    case 'UPDATE_PLATFORM_SETTINGS': {
+      return {
+        ...state,
+        platformSettings: { ...(state.platformSettings || DEFAULT_PLATFORM_SETTINGS), ...action.payload }
+      };
+    }
+
+    // ---------------- Elite Membership Plan ----------------
+    case 'UPDATE_ELITE_PLAN': {
+      return {
+        ...state,
+        elitePlan: { ...(state.elitePlan || DEFAULT_ELITE_PLAN), ...action.payload }
+      };
+    }
+
+    // ---------------- Editorial: Skincare & Trends ----------------
+    case 'ADD_EDITORIAL_SKINCARE': {
+      return { ...state, skincareItems: [action.payload, ...(state.skincareItems || [])] };
+    }
+    case 'UPDATE_EDITORIAL_SKINCARE': {
+      const { id, patch } = action.payload;
+      return {
+        ...state,
+        skincareItems: (state.skincareItems || []).map((item) => (item.id === id ? { ...item, ...patch } : item))
+      };
+    }
+    case 'DELETE_EDITORIAL_SKINCARE': {
+      return {
+        ...state,
+        skincareItems: (state.skincareItems || []).filter((item) => item.id !== action.payload.id)
+      };
+    }
+    case 'ADD_EDITORIAL_TREND': {
+      return { ...state, trendsItems: [action.payload, ...(state.trendsItems || [])] };
+    }
+    case 'UPDATE_EDITORIAL_TREND': {
+      const { id, patch } = action.payload;
+      return {
+        ...state,
+        trendsItems: (state.trendsItems || []).map((item) => (item.id === id ? { ...item, ...patch } : item))
+      };
+    }
+    case 'DELETE_EDITORIAL_TREND': {
+      return {
+        ...state,
+        trendsItems: (state.trendsItems || []).filter((item) => item.id !== action.payload.id)
+      };
+    }
+
+    // ---------------- Staff Management ----------------
+    case 'ADD_STAFF': {
+      return { ...state, staff: [action.payload, ...(state.staff || [])] };
+    }
+    case 'UPDATE_STAFF': {
+      const { staffId, patch } = action.payload;
+      return {
+        ...state,
+        staff: (state.staff || []).map((st) => (st.id === staffId ? { ...st, ...patch } : st))
+      };
+    }
+    case 'DELETE_STAFF': {
+      return {
+        ...state,
+        staff: (state.staff || []).filter((st) => st.id !== action.payload.staffId)
+      };
+    }
+
+    // ---------------- Reviews & Salon Replies ----------------
+    case 'ADD_REVIEW': {
+      return { ...state, reviews: [action.payload, ...(state.reviews || [])] };
+    }
+    case 'REPLY_REVIEW': {
+      const { reviewId, reply } = action.payload;
+      return {
+        ...state,
+        reviews: (state.reviews || []).map((r) => (r.id === reviewId ? { ...r, reply } : r))
+      };
     }
 
     default:

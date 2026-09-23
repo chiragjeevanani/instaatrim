@@ -4,10 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Scissors, Zap, Check, IndianRupee, Clock } from 'lucide-react';
 
 export const ServiceModal = ({ isOpen, onClose, editingService }) => {
-  const { addService, updateService } = useSalon();
+  const { addService, updateService, categories: dynamicCategories } = useSalon();
+
+  const availableCategories = (dynamicCategories && dynamicCategories.length > 0)
+    ? dynamicCategories.map((c) => c.name || c.shortName)
+    : ['Waxing', 'Facial', 'Spa', 'Body Polishing', 'Mani-Pedi', 'Hair Studio', 'Cleanup'];
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('Waxing');
+  const [category, setCategory] = useState(availableCategories[0] || 'Waxing');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('45 mins');
   const [price, setPrice] = useState('');
@@ -17,7 +21,7 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
   useEffect(() => {
     if (editingService) {
       setName(editingService.name || '');
-      setCategory(editingService.category || 'Waxing');
+      setCategory(editingService.category || availableCategories[0] || 'Waxing');
       setDescription(editingService.description || '');
       setDuration(editingService.duration || '45 mins');
       setPrice(editingService.price || '');
@@ -25,14 +29,14 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
       setIsInstantEligible(editingService.isInstantEligible ?? true);
     } else {
       setName('');
-      setCategory('Waxing');
+      setCategory(availableCategories[0] || 'Waxing');
       setDescription('');
       setDuration('45 mins');
       setPrice('');
       setOriginalPrice('');
       setIsInstantEligible(true);
     }
-  }, [editingService, isOpen]);
+  }, [editingService, isOpen, availableCategories]);
 
   if (!isOpen) return null;
 
@@ -116,13 +120,11 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full bg-white text-xs text-stone-800 rounded-xl border border-stone-300 p-2 outline-none font-normal"
                 >
-                  <option value="Waxing">Waxing</option>
-                  <option value="Facial">Facial</option>
-                  <option value="Spa">Spa &amp; Massage</option>
-                  <option value="Body Polishing">Body Polishing</option>
-                  <option value="Mani-Pedi">Mani-Pedi</option>
-                  <option value="Hair Studio">Hair Studio</option>
-                  <option value="Cleanup">Clean-Up</option>
+                  {availableCategories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
               </div>
 

@@ -44,12 +44,12 @@ export const CheckoutPage = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] max-w-[480px] mx-auto p-6 flex flex-col items-center justify-center text-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] max-w-[480px] mx-auto p-6 flex flex-col items-center justify-center text-center">
         <h2 className="text-sm font-bold text-stone-900">No Services to Checkout</h2>
         <p className="text-xs text-stone-500 mt-1">Please add services to your cart first.</p>
         <button
           onClick={() => navigate('/customer')}
-          className="mt-4 px-5 py-2 bg-[#1e2329] text-white font-bold text-xs rounded-xl shadow-xs"
+          className="mt-4 px-5 py-2 bg-brand-maroon text-white font-bold text-xs rounded-xl shadow-xs"
         >
           Go to Home
         </button>
@@ -116,10 +116,10 @@ export const CheckoutPage = () => {
       initial={{ opacity: 0, x: 10 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -10 }}
-      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-24 mx-auto border-x border-stone-200/80 overflow-x-hidden box-border shadow-md"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 overflow-x-hidden box-border"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-stone-200/80 flex items-center justify-between gap-2">
+      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-purple-100 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95">
             <ArrowLeft className="w-4 h-4 stroke-[2]" />
@@ -184,7 +184,7 @@ export const CheckoutPage = () => {
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-brand-maroon" />
                 <span className="text-[10.5px] font-bold text-purple-950">
-                  Preferred Brand / Kit: <span className="text-brand-maroon">{preferredProduct}</span>
+                  Preferred Treatment: <span className="text-brand-maroon">{preferredProduct}</span>
                 </span>
               </div>
               <span className="text-[9px] bg-white text-brand-maroon font-extrabold px-1.5 py-0.5 rounded shadow-xs">

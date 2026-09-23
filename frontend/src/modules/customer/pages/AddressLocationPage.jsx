@@ -87,9 +87,9 @@ export const AddressLocationPage = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="w-full flex justify-center items-start min-h-screen text-stone-900 antialiased select-none bg-[#faf9f6]"
+      className="w-full flex justify-center items-start min-h-screen text-stone-900 antialiased select-none bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5]"
     >
-      <div className="relative w-full max-w-[480px] min-w-0 min-h-screen bg-[#faf9f6] flex flex-col overflow-y-auto border-x border-stone-200/80 box-border pb-8 shadow-md">
+      <div className="relative w-full max-w-[480px] min-w-0 min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col overflow-y-auto border-x border-purple-200/50 box-border pb-8">
         {/* Top Header & Search Area */}
         <div className="relative z-10 w-full flex flex-col pt-3 px-3.5">
           <nav className="flex items-center gap-2 mb-2.5">
@@ -111,7 +111,7 @@ export const AddressLocationPage = () => {
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[34px] pl-8 pr-3 text-[12px] bg-stone-200/70 text-stone-900 placeholder:text-stone-500 rounded-xl border border-stone-300/60 focus:outline-none focus:ring-1 focus:ring-stone-400 transition-all"
+                className="w-full h-[34px] pl-8 pr-3 text-[12px] bg-[#eaddf3] text-stone-900 placeholder:text-stone-500 rounded-2xl border border-purple-200/60 focus:outline-none focus:ring-1 focus:ring-purple-400 transition-all"
                 placeholder="Search saved addresses..."
                 type="text"
               />

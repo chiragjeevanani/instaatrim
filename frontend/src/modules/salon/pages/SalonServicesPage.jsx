@@ -21,14 +21,20 @@ import {
 
 export const SalonServicesPage = () => {
   const navigate = useNavigate();
-  const { services, salonProfile, toggleServiceActive, toggleInstantEligible, deleteService, showToast } = useSalon();
+  const { services, salonProfile, categories: dynamicCategories, toggleServiceActive, toggleInstantEligible, deleteService, showToast } = useSalon();
 
   const isApproved = Boolean(salonProfile?.isVerified && salonProfile?.verificationStatus === 'Live');
   const isRejected = salonProfile?.verificationStatus === 'Rejected';
 
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const categories = ['All', 'Waxing', 'Facial', 'Spa', 'Body Polishing', 'Mani-Pedi', 'Grooming', 'Beard'];
+  const categories = useMemo(() => {
+    const fromAdmin = (dynamicCategories || []).map((c) => c.name || c.shortName);
+    // Also include any service category currently in this salon's catalog so existing items are selectable
+    const fromServices = services.map((s) => s.category).filter(Boolean);
+    const combined = Array.from(new Set([...fromAdmin, ...fromServices]));
+    return ['All', ...(combined.length > 0 ? combined : ['Waxing', 'Facial', 'Spa', 'Body Polishing', 'Mani-Pedi'])];
+  }, [dynamicCategories, services]);
 
   const filteredServices = services.filter((s) => {
     if (selectedCategory === 'All') return true;

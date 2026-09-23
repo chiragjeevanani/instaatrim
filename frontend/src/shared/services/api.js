@@ -13,7 +13,7 @@
 
 import { getState, dispatch } from '../store/bridge';
 import { withLatency, ApiError } from './latency';
-import { newBookingId, newReviewId, newAddressId, newServiceId, newOfferId, newTicketId, newNotificationId, newStaffId, newStationId, newAdId, newPartnerId } from '../lib/ids';
+import { newBookingId, newReviewId, newAddressId, newCategoryId, newServiceId, newOfferId, newTicketId, newNotificationId, newStaffId, newStationId, newAdId, newPartnerId, newBannerId, newCampaignId } from '../lib/ids';
 import { BOOKING_STATUS, canTransition } from '../lib/bookingStatus';
 import { dateKey } from '../lib/time';
 import { ADMIN_CREDENTIALS } from '../data/seed';
@@ -710,6 +710,8 @@ const ads = {
       return {
         advertisements: clone(s.advertisements || []),
         brandPartners: clone(s.brandPartners || []),
+        heroBanners: clone(s.heroBanners || []),
+        midPageCampaigns: clone(s.midPageCampaigns || []),
         midPageCampaign: clone(s.midPageCampaign || {})
       };
     }),
@@ -776,14 +778,207 @@ const ads = {
       return clone(updated);
     }),
 
-  updateMidCampaign: (patch) =>
+  // Hero Carousel Banners
+  createHeroBanner: (data) =>
     withLatency(() => {
-      dispatch({ type: 'MID_CAMPAIGN_UPDATE', payload: patch });
-      return clone(getState().midPageCampaign);
+      const item = {
+        id: newBannerId(),
+        isActive: true,
+        ...data
+      };
+      dispatch({ type: 'ADD_HERO_BANNER', payload: item });
+      return clone(item);
+    }),
+
+  updateHeroBanner: (id, patch) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_HERO_BANNER', payload: { id, patch } });
+      const updated = (getState().heroBanners || []).find((b) => b.id === id);
+      return clone(updated);
+    }),
+
+  deleteHeroBanner: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_HERO_BANNER', payload: id });
+      return true;
+    }),
+
+  toggleHeroBannerActive: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'TOGGLE_HERO_BANNER_ACTIVE', payload: id });
+      const updated = (getState().heroBanners || []).find((b) => b.id === id);
+      return clone(updated);
+    }),
+
+  // Mid-Page Deals Carousel Campaigns
+  createMidCampaign: (data) =>
+    withLatency(() => {
+      const item = {
+        id: newCampaignId(),
+        isActive: true,
+        ...data
+      };
+      dispatch({ type: 'ADD_MID_CAMPAIGN', payload: item });
+      return clone(item);
+    }),
+
+  updateMidCampaign: (idOrPatch, patch) =>
+    withLatency(() => {
+      if (typeof idOrPatch === 'string') {
+        dispatch({ type: 'UPDATE_MID_CAMPAIGN', payload: { id: idOrPatch, patch } });
+        const updated = (getState().midPageCampaigns || []).find((c) => c.id === idOrPatch);
+        return clone(updated);
+      } else {
+        // Backward compatibility for single-object patch
+        dispatch({ type: 'MID_CAMPAIGN_UPDATE', payload: idOrPatch });
+        return clone(getState().midPageCampaign);
+      }
+    }),
+
+  deleteMidCampaign: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_MID_CAMPAIGN', payload: id });
+      return true;
+    }),
+
+  toggleMidCampaignActive: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'TOGGLE_MID_CAMPAIGN_ACTIVE', payload: id });
+      const updated = (getState().midPageCampaigns || []).find((c) => c.id === id);
+      return clone(updated);
+    })
+};
+
+// =============================================================================
+// Categories (Admin-defined, salon & customer accessible)
+// =============================================================================
+const categories = {
+  list: (filters = {}) =>
+    withLatency(() => {
+      let result = getState().categories || [];
+      if (filters.onlyActive) {
+        result = result.filter((c) => c.isActive !== false);
+      }
+      if (filters.gender && filters.gender !== 'all') {
+        result = result.filter(
+          (c) => c.gender === 'unisex' || c.gender === filters.gender
+        );
+      }
+      return clone(result);
+    }),
+
+  get: (categoryId) =>
+    withLatency(() => {
+      const cat = (getState().categories || []).find(
+        (c) => c.id === categoryId || c.slug === categoryId
+      );
+      if (!cat) throw new ApiError(`Category ${categoryId} not found`, 'NOT_FOUND');
+      return clone(cat);
+    }),
+
+  create: (data) =>
+    withLatency(() => {
+      const id = newCategoryId();
+      const slug =
+        (data.slug || data.name || 'category')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || `cat-${Date.now()}`;
+
+      const rawServiceCategories = Array.isArray(data.serviceCategories)
+        ? data.serviceCategories
+        : typeof data.serviceCategories === 'string'
+        ? data.serviceCategories.split(',').map((s) => s.trim()).filter(Boolean)
+        : [data.name];
+
+      const newCategory = {
+        id,
+        slug,
+        name: data.name?.trim() || 'New Category',
+        shortName: data.shortName?.trim() || data.name?.trim() || 'Category',
+        serviceCategories: rawServiceCategories.length ? rawServiceCategories : [data.name?.trim() || 'General'],
+        gender: data.gender || 'unisex',
+        image:
+          data.image?.trim() ||
+          'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
+        description: data.description?.trim() || '',
+        isActive: data.isActive !== false,
+        colSpan: Number(data.colSpan) || 1,
+        createdAt: new Date().toISOString()
+      };
+
+      dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
+      return clone(newCategory);
+    }),
+
+  update: (categoryId, patch) =>
+    withLatency(() => {
+      const category = (getState().categories || []).find((c) => c.id === categoryId);
+      if (!category) throw new ApiError(`Category ${categoryId} not found`, 'NOT_FOUND');
+
+      let updatedPatch = { ...patch };
+      if (patch.serviceCategories && typeof patch.serviceCategories === 'string') {
+        updatedPatch.serviceCategories = patch.serviceCategories
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+
+      dispatch({ type: 'UPDATE_CATEGORY', payload: { categoryId, patch: updatedPatch } });
+      const updated = (getState().categories || []).find((c) => c.id === categoryId);
+      return clone(updated);
+    }),
+
+  remove: (categoryId) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_CATEGORY', payload: { categoryId } });
+      return true;
+    }),
+
+  toggleActive: (categoryId) =>
+    withLatency(() => {
+      dispatch({ type: 'TOGGLE_CATEGORY_ACTIVE', payload: { categoryId } });
+      const updated = (getState().categories || []).find((c) => c.id === categoryId);
+      return clone(updated);
+    })
+};
+
+// =============================================================================
+// Promotions & Indexing Boost (Admin control for pushing salons/services on top)
+// =============================================================================
+const promotions = {
+  boostSalon: (salonId, boostData) =>
+    withLatency(() => {
+      dispatch({ type: 'BOOST_SALON', payload: { salonId, boostData } });
+      const updated = getState().salons.find((s) => s.id === salonId);
+      return clone(updated);
+    }),
+
+  removeSalonBoost: (salonId) =>
+    withLatency(() => {
+      dispatch({ type: 'REMOVE_SALON_BOOST', payload: { salonId } });
+      const updated = getState().salons.find((s) => s.id === salonId);
+      return clone(updated);
+    }),
+
+  boostService: (serviceId, boostData) =>
+    withLatency(() => {
+      dispatch({ type: 'BOOST_SERVICE', payload: { serviceId, boostData } });
+      const updated = getState().services.find((s) => s.id === serviceId);
+      return clone(updated);
+    }),
+
+  removeServiceBoost: (serviceId) =>
+    withLatency(() => {
+      dispatch({ type: 'REMOVE_SERVICE_BOOST', payload: { serviceId } });
+      const updated = getState().services.find((s) => s.id === serviceId);
+      return clone(updated);
     })
 };
 
 export const api = {
+  categories,
+  promotions,
   salons,
   services,
   staff,
@@ -803,4 +998,5 @@ export const api = {
 
 export { ApiError };
 export default api;
+
 

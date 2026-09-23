@@ -4,8 +4,8 @@
 // goes through here, so it is the one place the whole data model can be
 // read at a glance.
 
-import { SALONS, SERVICES, STAFF, STATIONS, BOOKINGS, OFFERS, COUPONS, REVIEWS, LOCATIONS, DEFAULT_CUSTOMER } from '../data/seed';
-import { TOP_ADVERTISEMENTS, BRAND_PARTNERS, MID_PAGE_CAMPAIGN } from '../data/advertisements';
+import { SALONS, SERVICES, STAFF, STATIONS, BOOKINGS, OFFERS, COUPONS, REVIEWS, LOCATIONS, DEFAULT_CUSTOMER, CATEGORIES, BANNERS } from '../data/seed';
+import { TOP_ADVERTISEMENTS, BRAND_PARTNERS, MID_PAGE_CAMPAIGN, MID_PAGE_CAMPAIGNS } from '../data/advertisements';
 import { canTransition } from '../lib/bookingStatus';
 import { dateKey } from '../lib/time';
 
@@ -18,6 +18,8 @@ const resolveSeedBookingDates = (bookings) =>
   });
 
 export const buildInitialState = () => ({
+  categories: CATEGORIES.map((c) => ({ ...c, isActive: c.isActive !== false })),
+  heroBanners: BANNERS.map((b) => ({ ...b, isActive: b.isActive !== false })),
   salons: SALONS,
   services: SERVICES,
   staff: STAFF,
@@ -30,6 +32,7 @@ export const buildInitialState = () => ({
   advertisements: TOP_ADVERTISEMENTS.map((ad) => ({ ...ad, isActive: ad.isActive !== false })),
   brandPartners: BRAND_PARTNERS.map((bp) => ({ ...bp, isActive: bp.isActive !== false })),
   midPageCampaign: { ...MID_PAGE_CAMPAIGN, isActive: MID_PAGE_CAMPAIGN.isActive !== false },
+  midPageCampaigns: MID_PAGE_CAMPAIGNS.map((c) => ({ ...c, isActive: c.isActive !== false })),
   holds: [],
   notifications: [],
   tickets: [],
@@ -98,6 +101,38 @@ export function appReducer(state, action) {
       };
     }
 
+    // ---------------- Categories (Admin Defined) ----------------
+    case 'ADD_CATEGORY':
+    case 'CATEGORY_CREATE': {
+      return { ...state, categories: [action.payload, ...state.categories] };
+    }
+    case 'UPDATE_CATEGORY':
+    case 'CATEGORY_UPDATE': {
+      const targetId = action.payload.categoryId || action.payload.id;
+      const patch = action.payload.patch || action.payload;
+      return {
+        ...state,
+        categories: state.categories.map((c) => (c.id === targetId ? { ...c, ...patch } : c))
+      };
+    }
+    case 'DELETE_CATEGORY':
+    case 'CATEGORY_DELETE': {
+      const targetId = action.payload.categoryId || action.payload.id || action.payload;
+      return {
+        ...state,
+        categories: state.categories.filter((c) => c.id !== targetId)
+      };
+    }
+    case 'TOGGLE_CATEGORY_ACTIVE': {
+      const targetId = action.payload.categoryId || action.payload.id || action.payload;
+      return {
+        ...state,
+        categories: state.categories.map((c) =>
+          c.id === targetId ? { ...c, isActive: !c.isActive } : c
+        )
+      };
+    }
+
     // ---------------- Salons ----------------
     case 'ADD_SALON': {
       return {
@@ -110,6 +145,78 @@ export function appReducer(state, action) {
       return {
         ...state,
         salons: state.salons.map((s) => (s.id === salonId ? { ...s, ...patch } : s))
+      };
+    }
+    case 'BOOST_SALON': {
+      const { salonId, boostData } = action.payload;
+      return {
+        ...state,
+        salons: state.salons.map((s) =>
+          s.id === salonId
+            ? {
+                ...s,
+                isBoosted: boostData.isBoosted !== false,
+                isSponsored: boostData.isSponsored ?? true,
+                boostRank: Number(boostData.boostRank) || 1,
+                boostReason: boostData.boostReason || 'Featured Partner Spotlight',
+                sponsorBadge: boostData.sponsorBadge || 'SPONSORED'
+              }
+            : s
+        )
+      };
+    }
+    case 'REMOVE_SALON_BOOST': {
+      const { salonId } = action.payload;
+      return {
+        ...state,
+        salons: state.salons.map((s) =>
+          s.id === salonId
+            ? {
+                ...s,
+                isBoosted: false,
+                isSponsored: false,
+                boostRank: null,
+                boostReason: null,
+                sponsorBadge: null
+              }
+            : s
+        )
+      };
+    }
+    case 'BOOST_SERVICE': {
+      const { serviceId, boostData } = action.payload;
+      return {
+        ...state,
+        services: state.services.map((srv) =>
+          srv.id === serviceId
+            ? {
+                ...srv,
+                isBoosted: boostData.isBoosted !== false,
+                isSponsored: boostData.isSponsored ?? true,
+                boostRank: Number(boostData.boostRank) || 1,
+                boostReason: boostData.boostReason || 'Top Trending Pick',
+                sponsorBadge: boostData.sponsorBadge || 'SPONSORED'
+              }
+            : srv
+        )
+      };
+    }
+    case 'REMOVE_SERVICE_BOOST': {
+      const { serviceId } = action.payload;
+      return {
+        ...state,
+        services: state.services.map((srv) =>
+          srv.id === serviceId
+            ? {
+                ...srv,
+                isBoosted: false,
+                isSponsored: false,
+                boostRank: null,
+                boostReason: null,
+                sponsorBadge: null
+              }
+            : srv
+        )
       };
     }
 
@@ -246,12 +353,80 @@ export function appReducer(state, action) {
       };
     }
 
-    // ---------------- Mid-Page Campaign Banner ----------------
-    case 'UPDATE_MID_CAMPAIGN':
-    case 'MID_CAMPAIGN_UPDATE': {
+    // ---------------- Hero Package Banners Carousel ----------------
+    case 'ADD_HERO_BANNER':
+    case 'HERO_BANNER_CREATE': {
+      return { ...state, heroBanners: [action.payload, ...state.heroBanners] };
+    }
+    case 'UPDATE_HERO_BANNER':
+    case 'HERO_BANNER_UPDATE': {
+      const targetId = action.payload.bannerId || action.payload.id;
+      const patch = action.payload.patch || action.payload;
       return {
         ...state,
-        midPageCampaign: { ...state.midPageCampaign, ...action.payload }
+        heroBanners: state.heroBanners.map((b) => (b.id === targetId ? { ...b, ...patch } : b))
+      };
+    }
+    case 'DELETE_HERO_BANNER':
+    case 'HERO_BANNER_DELETE': {
+      const targetId = action.payload.bannerId || action.payload.id || action.payload;
+      return {
+        ...state,
+        heroBanners: state.heroBanners.filter((b) => b.id !== targetId)
+      };
+    }
+    case 'TOGGLE_HERO_BANNER_ACTIVE': {
+      const targetId = action.payload.bannerId || action.payload.id || action.payload;
+      return {
+        ...state,
+        heroBanners: state.heroBanners.map((b) =>
+          b.id === targetId ? { ...b, isActive: !b.isActive } : b
+        )
+      };
+    }
+
+    // ---------------- Mid-Page Campaign Carousel ----------------
+    case 'ADD_MID_CAMPAIGN':
+    case 'MID_CAMPAIGN_CREATE': {
+      const nextList = [action.payload, ...(state.midPageCampaigns || [])];
+      return {
+        ...state,
+        midPageCampaigns: nextList,
+        midPageCampaign: action.payload
+      };
+    }
+    case 'UPDATE_MID_CAMPAIGN':
+    case 'MID_CAMPAIGN_UPDATE': {
+      const targetId = action.payload.campaignId || action.payload.id;
+      const patch = action.payload.patch || action.payload;
+      const nextList = (state.midPageCampaigns || []).map((c) =>
+        c.id === targetId ? { ...c, ...patch } : c
+      );
+      const updatedPrimary = nextList.find((c) => c.id === targetId) || { ...state.midPageCampaign, ...patch };
+      return {
+        ...state,
+        midPageCampaigns: nextList,
+        midPageCampaign: updatedPrimary
+      };
+    }
+    case 'DELETE_MID_CAMPAIGN':
+    case 'MID_CAMPAIGN_DELETE': {
+      const targetId = action.payload.campaignId || action.payload.id || action.payload;
+      const nextList = (state.midPageCampaigns || []).filter((c) => c.id !== targetId);
+      return {
+        ...state,
+        midPageCampaigns: nextList,
+        midPageCampaign: nextList[0] || state.midPageCampaign
+      };
+    }
+    case 'TOGGLE_MID_CAMPAIGN_ACTIVE': {
+      const targetId = action.payload.campaignId || action.payload.id || action.payload;
+      const nextList = (state.midPageCampaigns || []).map((c) =>
+        c.id === targetId ? { ...c, isActive: !c.isActive } : c
+      );
+      return {
+        ...state,
+        midPageCampaigns: nextList
       };
     }
 

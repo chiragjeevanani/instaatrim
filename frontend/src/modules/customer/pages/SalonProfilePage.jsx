@@ -75,7 +75,7 @@ export const SalonProfilePage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-24 mx-auto border-x border-stone-200/80 relative overflow-x-hidden box-border shadow-md"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 relative overflow-x-hidden box-border"
     >
       {/* Hero Header with Cover Image */}
       <div className="relative h-52 w-full bg-stone-900">
@@ -216,8 +216,8 @@ export const SalonProfilePage = () => {
               onClick={() => setActiveCategory(cat)}
               className={`px-3 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-all cursor-pointer ${
                 activeCategory === cat
-                  ? 'bg-[#1e2329] text-white shadow-2xs'
-                  : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
+                  ? 'bg-brand-maroon text-white shadow-xs'
+                  : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
               }`}
             >
               {cat}

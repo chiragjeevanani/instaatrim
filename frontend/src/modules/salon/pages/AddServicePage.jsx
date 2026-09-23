@@ -19,7 +19,7 @@ import {
 export const AddServicePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addService, updateService, services, salonProfile, showToast } = useSalon();
+  const { addService, updateService, services, salonProfile, categories: dynamicCategories, showToast } = useSalon();
 
   const isApproved = Boolean(salonProfile?.isVerified && salonProfile?.verificationStatus === 'Live');
   const isRejected = salonProfile?.verificationStatus === 'Rejected';
@@ -27,8 +27,26 @@ export const AddServicePage = () => {
   const editingServiceId = location.state?.serviceId;
   const existingService = services.find((s) => s.id === editingServiceId);
 
+  // Available categories defined by admin
+  const availableCategories = (dynamicCategories && dynamicCategories.length > 0)
+    ? dynamicCategories.map((c) => c.name || c.shortName)
+    : [
+        'Waxing',
+        'Facial',
+        'Spa',
+        'Body Polishing',
+        'Mani-Pedi',
+        'Hair Studio',
+        'Beard',
+        'Grooming',
+        'Makeup',
+        'Mehandi',
+        'Cleanup',
+        'Bleach & D-Tan'
+      ];
+
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('Waxing');
+  const [category, setCategory] = useState(availableCategories[0] || 'Waxing');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('45 mins');
   const [price, setPrice] = useState('');
@@ -38,29 +56,16 @@ export const AddServicePage = () => {
   useEffect(() => {
     if (existingService) {
       setName(existingService.name || '');
-      setCategory(existingService.category || 'Waxing');
+      setCategory(existingService.category || availableCategories[0] || 'Waxing');
       setDescription(existingService.description || '');
       setDuration(existingService.duration || '45 mins');
       setPrice(existingService.price || '');
       setOriginalPrice(existingService.originalPrice || '');
       setIsInstantEligible(existingService.isInstantEligible ?? true);
+    } else if (availableCategories.length > 0 && !category) {
+      setCategory(availableCategories[0]);
     }
-  }, [existingService]);
-
-  const categories = [
-    'Waxing',
-    'Facial',
-    'Spa',
-    'Body Polishing',
-    'Mani-Pedi',
-    'Hair Studio',
-    'Beard',
-    'Grooming',
-    'Makeup',
-    'Mehandi',
-    'Cleanup',
-    'Bleach & D-Tan'
-  ];
+  }, [existingService, availableCategories]);
 
   const durations = [
     '20 mins',
@@ -243,7 +248,7 @@ export const AddServicePage = () => {
                 <span className="text-[10px] font-semibold text-rose-900">{category}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {categories.map((cat) => {
+                {availableCategories.map((cat) => {
                   const isSelected = category === cat;
                   return (
                     <button

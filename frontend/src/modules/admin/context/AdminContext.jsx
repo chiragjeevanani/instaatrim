@@ -56,6 +56,7 @@ export const AdminProvider = ({ children }) => {
   }, [showToast]);
 
   // Global store entities
+  const categories = state.categories || [];
   const salons = state.salons;
   const bookings = state.bookings;
   const offers = state.offers;
@@ -68,6 +69,8 @@ export const AdminProvider = ({ children }) => {
   const staff = state.staff;
   const advertisements = state.advertisements || [];
   const brandPartners = state.brandPartners || [];
+  const heroBanners = state.heroBanners || [];
+  const midPageCampaigns = state.midPageCampaigns || [];
   const midPageCampaign = state.midPageCampaign || {};
 
   // KPIs
@@ -338,12 +341,174 @@ export const AdminProvider = ({ children }) => {
     }
   }, [showToast]);
 
-  const updateMidCampaign = useCallback(async (patch) => {
+  const updateMidCampaign = useCallback(async (idOrPatch, patch) => {
     try {
-      await api.ads.updateMidCampaign(patch);
+      await api.ads.updateMidCampaign(idOrPatch, patch);
       showToast('Mid-page campaign banner updated', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to update campaign banner', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const createMidCampaign = useCallback(async (data) => {
+    try {
+      const cmp = await api.ads.createMidCampaign(data);
+      showToast('Mid-page deal campaign added', 'success');
+      return cmp;
+    } catch (err) {
+      showToast(err.message || 'Failed to add mid-page campaign', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const deleteMidCampaign = useCallback(async (id) => {
+    try {
+      await api.ads.deleteMidCampaign(id);
+      showToast('Mid-page deal campaign removed', 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete campaign', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const toggleMidCampaignActive = useCallback(async (id) => {
+    try {
+      const updated = await api.ads.toggleMidCampaignActive(id);
+      showToast(`Campaign is now ${updated?.isActive ? 'active' : 'paused'}`, 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to toggle campaign status', 'error');
+    }
+  }, [showToast]);
+
+  // Hero Carousel Banners actions
+  const createHeroBanner = useCallback(async (data) => {
+    try {
+      const banner = await api.ads.createHeroBanner(data);
+      showToast(`Banner "${banner.title || 'Slide'}" created successfully`, 'success');
+      return banner;
+    } catch (err) {
+      showToast(err.message || 'Failed to create banner', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const updateHeroBanner = useCallback(async (id, patch) => {
+    try {
+      const updated = await api.ads.updateHeroBanner(id, patch);
+      showToast('Hero banner updated successfully', 'success');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to update banner', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const deleteHeroBanner = useCallback(async (id) => {
+    try {
+      await api.ads.deleteHeroBanner(id);
+      showToast('Hero banner deleted', 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete banner', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const toggleHeroBannerActive = useCallback(async (id) => {
+    try {
+      const updated = await api.ads.toggleHeroBannerActive(id);
+      showToast(`Hero banner is now ${updated?.isActive ? 'active' : 'hidden'}`, 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to toggle hero banner status', 'error');
+    }
+  }, [showToast]);
+
+  // Category actions
+  const createCategory = useCallback(async (data) => {
+    try {
+      const created = await api.categories.create(data);
+      showToast(`Category "${created.name}" created successfully`, 'success');
+      return created;
+    } catch (err) {
+      showToast(err.message || 'Failed to create category', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const updateCategory = useCallback(async (id, patch) => {
+    try {
+      const updated = await api.categories.update(id, patch);
+      showToast(`Category "${updated.name}" updated`, 'success');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to update category', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const deleteCategory = useCallback(async (id) => {
+    try {
+      await api.categories.remove(id);
+      showToast('Category deleted from catalog', 'info');
+      return true;
+    } catch (err) {
+      showToast(err.message || 'Failed to delete category', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const toggleCategoryActive = useCallback(async (id) => {
+    try {
+      const updated = await api.categories.toggleActive(id);
+      showToast(`Category is now ${updated.isActive ? 'Active' : 'Hidden'}`, 'info');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to toggle category', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  // Promotions & Indexing Boost actions
+  const boostSalon = useCallback(async (salonId, boostData) => {
+    try {
+      const updated = await api.promotions.boostSalon(salonId, boostData);
+      showToast(`Salon "${updated?.name}" pushed to rank #${boostData.boostRank || 1}!`, 'success');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to boost salon indexing', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const removeSalonBoost = useCallback(async (salonId) => {
+    try {
+      const updated = await api.promotions.removeSalonBoost(salonId);
+      showToast(`Removed indexing boost for "${updated?.name}"`, 'info');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to remove salon boost', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const boostService = useCallback(async (serviceId, boostData) => {
+    try {
+      const updated = await api.promotions.boostService(serviceId, boostData);
+      showToast(`Service "${updated?.name}" boosted to top ranking!`, 'success');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to boost service', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const removeServiceBoost = useCallback(async (serviceId) => {
+    try {
+      const updated = await api.promotions.removeServiceBoost(serviceId);
+      showToast(`Removed boost for "${updated?.name}"`, 'info');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to remove service boost', 'error');
       throw err;
     }
   }, [showToast]);
@@ -359,6 +524,7 @@ export const AdminProvider = ({ children }) => {
       showToast,
       login,
       logout,
+      categories,
       salons,
       bookings,
       offers,
@@ -370,6 +536,14 @@ export const AdminProvider = ({ children }) => {
       services,
       staff,
       kpis,
+      createCategory,
+      updateCategory,
+      deleteCategory,
+      toggleCategoryActive,
+      boostSalon,
+      removeSalonBoost,
+      boostService,
+      removeServiceBoost,
       verifySalon,
       rejectSalon,
       setSalonCommission,
@@ -387,6 +561,8 @@ export const AdminProvider = ({ children }) => {
       sendBroadcastNotification,
       advertisements,
       brandPartners,
+      heroBanners,
+      midPageCampaigns,
       midPageCampaign,
       createAd,
       updateAd,
@@ -396,7 +572,14 @@ export const AdminProvider = ({ children }) => {
       updateBrandPartner,
       deleteBrandPartner,
       toggleBrandPartnerActive,
-      updateMidCampaign
+      updateMidCampaign,
+      createMidCampaign,
+      deleteMidCampaign,
+      toggleMidCampaignActive,
+      createHeroBanner,
+      updateHeroBanner,
+      deleteHeroBanner,
+      toggleHeroBannerActive
     }),
     [
       isAuthenticated,
@@ -407,6 +590,7 @@ export const AdminProvider = ({ children }) => {
       showToast,
       login,
       logout,
+      categories,
       salons,
       bookings,
       offers,
@@ -419,8 +603,18 @@ export const AdminProvider = ({ children }) => {
       staff,
       advertisements,
       brandPartners,
+      heroBanners,
+      midPageCampaigns,
       midPageCampaign,
       kpis,
+      createCategory,
+      updateCategory,
+      deleteCategory,
+      toggleCategoryActive,
+      boostSalon,
+      removeSalonBoost,
+      boostService,
+      removeServiceBoost,
       verifySalon,
       rejectSalon,
       setSalonCommission,
@@ -444,7 +638,14 @@ export const AdminProvider = ({ children }) => {
       updateBrandPartner,
       deleteBrandPartner,
       toggleBrandPartnerActive,
-      updateMidCampaign
+      updateMidCampaign,
+      createMidCampaign,
+      deleteMidCampaign,
+      toggleMidCampaignActive,
+      createHeroBanner,
+      updateHeroBanner,
+      deleteHeroBanner,
+      toggleHeroBannerActive
     ]
   );
 

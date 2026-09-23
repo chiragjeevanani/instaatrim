@@ -20,7 +20,10 @@ export const newReviewId = () => next('REV');
 export const newTicketId = () => next('TKT');
 export const newNotificationId = () => next('NTF');
 export const newAddressId = () => next('LOC');
+export const newCategoryId = () => next('CAT');
 export const newAdId = () => next('AD');
+export const newBannerId = () => next('BAN');
+export const newCampaignId = () => next('CMP');
 export const newPartnerId = () => next('BP');
 export const newHoldId = () => `HOLD-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 export const newSessionId = () => {

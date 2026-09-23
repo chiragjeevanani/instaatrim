@@ -555,7 +555,7 @@ export const ServiceDetailModal = () => {
                 <button
                   type="button"
                   onClick={handleBookNowDirect}
-                  className="h-9 px-3.5 bg-[#1e2329] hover:bg-stone-900 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-md"
+                  className="h-9 px-3.5 bg-brand-maroon hover:bg-brand-darkMaroon text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-md"
                 >
                   <span>Book Now</span>
                 </button>

@@ -18,37 +18,53 @@ export const TopBar = ({ onSearchClick }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full max-w-[480px] mx-auto bg-[#faf9f6]/95 backdrop-blur-md pt-2 px-3.5 pb-2 box-border border-b border-stone-200/70 shadow-2xs">
+    <header className="sticky top-0 z-40 w-full max-w-[480px] mx-auto bg-[#f8f4fb]/95 backdrop-blur-md pt-1.5 px-3.5 pb-1 box-border border-b border-purple-100">
       {/* Top Utility Row: Location & Badges */}
       <div className="flex items-center justify-between gap-1.5 mb-1.5 w-full">
         {/* Location Selector - Slender, delicate, compact */}
         <div
-          className="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer active:opacity-75 transition-opacity"
+          className="flex items-center gap-1 flex-1 min-w-0 cursor-pointer active:opacity-75 transition-opacity"
           data-purpose="location-picker"
           onClick={() => navigate('/customer/location')}
         >
-          <MapPin className="w-3.5 h-3.5 text-stone-900 shrink-0 stroke-[2]" />
+          <MapPin className="w-3.5 h-3.5 text-brand-maroon shrink-0 stroke-[1.8]" />
           <div className="truncate leading-none">
             <div className="flex items-center gap-1">
-              <span className="font-bold text-[13px] tracking-tight text-stone-900 truncate">
-                {currentLocation?.area ? `${currentLocation.area.slice(0, 15)}` : 'South Tukoganj'}
+              <span className="font-bold text-[13px] tracking-tight text-stone-800 truncate">
+                {currentLocation?.area ? `${currentLocation.area.slice(0, 13)}..` : 'South Tukoga..'}
               </span>
               <ChevronDown className="w-3 h-3 text-stone-500 stroke-[2]" />
             </div>
-            <p className="text-[9.5px] font-medium text-stone-500 truncate mt-0.5">
-              {currentLocation?.landmark || 'Corporate House, Indore'}
+            <p className="text-[9.5px] font-normal text-stone-500 truncate mt-0.5">
+              {currentLocation?.landmark || 'Corporate House'}
             </p>
           </div>
         </div>
 
         {/* Action Badges (Refer & Earn, Buy Elite, Cart Indicator) */}
         <div className="flex items-center gap-1.5 shrink-0" data-purpose="reward-actions">
+          {/* Refer & Earn */}
+          <button
+            type="button"
+            onClick={() => setIsReferModalOpen(true)}
+            className="flex items-center gap-1 bg-[#2e1065] text-white px-2 py-0.5 h-[26px] rounded-full text-left active:scale-95 transition-transform cursor-pointer"
+          >
+            <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-[8px] text-stone-900 font-bold shrink-0">
+              👑
+            </div>
+            <span className="text-[8px] font-semibold leading-tight text-purple-100">
+              Refer &amp;<br />Earn
+            </span>
+          </button>
+
+          {/* Buy Elite */}
           <button
             type="button"
             onClick={() => setIsEliteModalOpen(true)}
-            className="flex items-center justify-center bg-[#1e2329] hover:bg-stone-800 text-white px-3 h-[28px] rounded-full border border-stone-700/60 active:scale-95 transition-transform cursor-pointer shadow-2xs"
+            className="flex flex-col items-center justify-center bg-[#1e1035] text-white px-2.5 h-[26px] rounded-full border border-purple-800/40 active:scale-95 transition-transform min-w-[38px] cursor-pointer"
           >
-            <span className="text-[11px] font-serif font-black text-amber-400">Elite</span>
+            <span className="text-[7.5px] text-purple-300 font-normal leading-none">Buy</span>
+            <span className="text-[11px] font-serif font-bold text-[#e1b670] leading-none mt-0.5">Elite</span>
           </button>
 
           {/* Cart Icon (if items in cart) */}
@@ -56,7 +72,7 @@ export const TopBar = ({ onSearchClick }) => {
             <button
               type="button"
               onClick={() => setIsCartOpen(true)}
-              className="relative p-1.5 bg-[#1e2329] hover:bg-stone-800 text-white rounded-full shadow-2xs active:scale-95 transition-transform cursor-pointer"
+              className="relative p-1 bg-brand-maroon text-white rounded-full shadow-xs active:scale-95 transition-transform cursor-pointer"
               title="View Cart"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
@@ -68,24 +84,24 @@ export const TopBar = ({ onSearchClick }) => {
         </div>
       </div>
 
-      {/* Search Input Bar - Sleek luxury neutral */}
+      {/* Search Input Bar - Ultra-slim matching reference */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           runSearch();
         }}
-        className="relative w-full bg-stone-200/70 hover:bg-stone-200/90 focus-within:bg-white focus-within:ring-1 focus-within:ring-stone-400 transition-all rounded-xl flex items-center h-[34px] px-2.5 text-xs border border-stone-300/60 shadow-2xs"
+        className="relative w-full bg-[#eaddf3] hover:bg-[#e2d2ed] focus-within:bg-[#e2d2ed] transition-colors rounded-xl flex items-center h-[34px] px-2.5 text-xs border border-purple-200/50"
         data-purpose="service-search"
       >
-        <Search className="w-3.5 h-3.5 text-stone-500 mr-2 shrink-0 stroke-[2]" />
+        <Search className="w-3.5 h-3.5 text-purple-600 mr-2 shrink-0 stroke-[1.8]" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => onSearchClick && onSearchClick()}
           type="search"
-          placeholder="Search for 'Haircut', 'Beard Trim', 'Facial', 'Spa'..."
+          placeholder="Search for 'Body Polishing'"
           aria-label="Search salons and services"
-          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-stone-900 placeholder:text-stone-500 font-medium text-[11.5px] focus:outline-none focus:ring-0"
+          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-stone-800 placeholder:text-stone-500 font-normal text-[11.5px] focus:outline-none focus:ring-0"
         />
       </form>
     </header>

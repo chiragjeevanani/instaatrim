@@ -142,6 +142,11 @@ export const SalonProvider = ({ children }) => {
     [salonId, salonProfile.name, salonProfile.area, showToast]
   );
 
+  // ---------------- Categories (Admin defined, dynamic) ----------------
+  const categories = useMemo(() => {
+    return (state.categories || []).filter((c) => c.isActive !== false);
+  }, [state.categories]);
+
   // ---------------- Services ----------------
   const services = useMemo(() => state.services.filter((s) => s.salonId === salonId), [state.services, salonId]);
 
@@ -306,6 +311,7 @@ export const SalonProvider = ({ children }) => {
         setOccupiedChairs,
         bookings,
         services,
+        categories,
         offers,
         staff,
         stations,

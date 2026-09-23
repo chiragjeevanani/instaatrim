@@ -3,6 +3,8 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Store,
+  Layers,
+  TrendingUp,
   Tag,
   CalendarCheck2,
   Users,
@@ -23,6 +25,8 @@ import { useAdmin } from '../context/AdminContext';
 const NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/salons', label: 'Salons', icon: Store, badgeKey: 'pendingSalons' },
+  { to: '/admin/categories', label: 'Categories', icon: Layers },
+  { to: '/admin/promotions', label: 'Sponsored & Boost', icon: TrendingUp },
   { to: '/admin/offers', label: 'Offers & Deals', icon: Tag, badgeKey: 'pendingOffers' },
   { to: '/admin/bookings', label: 'Bookings', icon: CalendarCheck2 },
   { to: '/admin/customers', label: 'Customers', icon: Users },

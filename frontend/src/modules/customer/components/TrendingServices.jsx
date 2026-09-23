@@ -41,10 +41,18 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
         return {
           ...s,
           title: s.name,
-          badge: s.category,
+          badge: s.sponsorBadge || s.category,
+          isBoosted: Boolean(s.isBoosted || s.isSponsored),
+          boostRank: s.boostRank || 999,
           salonName: salon?.name || 'Salon Partner',
           discount: discountPct > 0 ? `${discountPct}% OFF` : null
         };
+      })
+      .sort((a, b) => {
+        if (a.isBoosted && !b.isBoosted) return -1;
+        if (!a.isBoosted && b.isBoosted) return 1;
+        if (a.isBoosted && b.isBoosted) return a.boostRank - b.boostRank;
+        return 0;
       });
   }, [state.services, state.salons, genderFilter]);
 
@@ -76,10 +84,10 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
               key={tab}
               type="button"
               onClick={() => setSelectedFilter(tab)}
-              className={`text-[10.5px] font-bold px-3 py-1 rounded-full shrink-0 transition-all cursor-pointer ${
+              className={`text-[10.5px] font-medium px-3 py-1 rounded-full shrink-0 transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-[#1e2329] text-white shadow-2xs'
-                  : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80 hover:text-stone-900'
+                  ? 'bg-brand-maroon text-white font-semibold shadow-xs'
+                  : 'bg-[#eaddf3] text-purple-900 hover:bg-[#e2d2ed]'
               }`}
             >
               {tab}
@@ -159,7 +167,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                       e.stopPropagation();
                       addToCart(service, { id: service.salonId, name: service.salonName });
                     }}
-                    className="mt-2.5 w-full h-[28px] border border-stone-800 text-stone-900 bg-stone-50 hover:bg-stone-900 hover:text-white font-bold text-[10.5px] rounded-lg active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+                    className="mt-2.5 w-full h-[28px] border border-brand-maroon/50 text-brand-maroon bg-white hover:bg-rose-50/70 font-bold text-[10.5px] rounded-lg active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                   >
                     Add To Cart
                   </button>

@@ -5,6 +5,8 @@ import { AdminLoginPage } from '../pages/AdminLoginPage';
 import { AdminDashboardPage } from '../pages/AdminDashboardPage';
 import { AdminSalonsPage } from '../pages/AdminSalonsPage';
 import { AdminSalonDetailPage } from '../pages/AdminSalonDetailPage';
+import { AdminCategoriesPage } from '../pages/AdminCategoriesPage';
+import { AdminPromotionsPage } from '../pages/AdminPromotionsPage';
 import { AdminOffersPage } from '../pages/AdminOffersPage';
 import { AdminBookingsPage } from '../pages/AdminBookingsPage';
 import { AdminCustomersPage } from '../pages/AdminCustomersPage';
@@ -26,6 +28,8 @@ export const AdminRoutes = () => {
         <Route index element={<AdminDashboardPage />} />
         <Route path="salons" element={<AdminSalonsPage />} />
         <Route path="salons/:id" element={<AdminSalonDetailPage />} />
+        <Route path="categories" element={<AdminCategoriesPage />} />
+        <Route path="promotions" element={<AdminPromotionsPage />} />
         <Route path="offers" element={<AdminOffersPage />} />
         <Route path="bookings" element={<AdminBookingsPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />

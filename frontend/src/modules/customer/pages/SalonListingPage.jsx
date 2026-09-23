@@ -17,7 +17,11 @@ export const SalonListingPage = () => {
 
   // Category and Brand filters
   const categorySlug = searchParams.get('category') || '';
-  const activeCategory = categorySlug ? findCategoryBySlug(categorySlug) : null;
+  const activeCategory = useMemo(() => {
+    if (!categorySlug) return null;
+    const dynamicFound = (state.categories || []).find((c) => c.slug === categorySlug);
+    return dynamicFound || findCategoryBySlug(categorySlug);
+  }, [categorySlug, state.categories]);
 
   const brandQuery = searchParams.get('brand') || '';
   const activeBrand = brandQuery
@@ -69,15 +73,25 @@ export const SalonListingPage = () => {
         return matchesCategory && matchesSearch && matchesGender && matchesInstant;
       })
       .sort((a, b) => {
+        // 1. Admin Indexing Override: Boosted / Sponsored salons always indexed at top
+        const aBoosted = a.isBoosted || a.isSponsored;
+        const bBoosted = b.isBoosted || b.isSponsored;
+        if (aBoosted && !bBoosted) return -1;
+        if (!aBoosted && bBoosted) return 1;
+        if (aBoosted && bBoosted) {
+          const aRank = a.boostRank || 999;
+          const bRank = b.boostRank || 999;
+          if (aRank !== bRank) return aRank - bRank;
+        }
+
+        // 2. Standard user-selected sorting
         if (sortBy === 'Highest Rated') return b.rating - a.rating;
         if (sortBy === 'Nearest') return (a.distanceKm ?? 99) - (b.distanceKm ?? 99);
         if (sortBy === 'Price Low to High') return a.startingPrice - b.startingPrice;
         if (sortBy === 'Price High to Low') return b.startingPrice - a.startingPrice;
         if (sortBy === 'Best Offers') return (b.offer ? 1 : 0) - (a.offer ? 1 : 0);
-        // Recommended: a light composite of rating, review volume and
-        // instant availability — real ranking weights land in Phase 3's
-        // shared/lib/ranking.js; this replaces the previous no-op that
-        // always returned 0.
+
+        // Recommended default composite
         const scoreOf = (s) => s.rating * 20 + Math.min(s.reviewsCount, 500) / 10 + (s.isInstantBookingEnabled ? 15 : 0);
         return scoreOf(b) - scoreOf(a);
       });
@@ -115,10 +129,10 @@ export const SalonListingPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-20 mx-auto border-x border-stone-200/80 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Top Bar with Search */}
-      <header className="sticky top-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md px-3.5 pt-2 pb-2 border-b border-stone-200/80">
+      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 pt-2 pb-2 border-b border-purple-100">
         <div className="flex items-center gap-2 mb-2">
           <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95 cursor-pointer">
             <ArrowLeft className="w-4 h-4 stroke-[2]" />
@@ -132,7 +146,7 @@ export const SalonListingPage = () => {
                 : 'Discover Salons & Spas'}
             </h1>
             <p className="text-[10px] text-stone-500 truncate flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3 text-stone-700 shrink-0" />
+              <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
               {currentLocation?.area || 'South Tukoganj'}
             </p>
           </div>
@@ -146,7 +160,7 @@ export const SalonListingPage = () => {
             placeholder="Search salon, haircut, beard, facial, spa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-stone-200/70 rounded-xl text-xs text-stone-800 placeholder-stone-500 border border-stone-300/60 focus:outline-none focus:ring-1 focus:ring-stone-400"
+            className="w-full pl-8 pr-3 py-1.5 bg-[#eaddf3] rounded-xl text-xs text-stone-800 placeholder-stone-500 border border-purple-200/60 focus:outline-none focus:ring-1 focus:ring-brand-maroon"
           />
         </div>
 
@@ -154,7 +168,7 @@ export const SalonListingPage = () => {
         {(activeCategory || activeBrand) && (
           <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar">
             {activeCategory && (
-              <span className="inline-flex items-center gap-1 bg-[#1e2329] text-white text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0 shadow-2xs">
+              <span className="inline-flex items-center gap-1 bg-brand-maroon/10 text-brand-maroon text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0">
                 {activeCategory.name}
                 <button onClick={clearCategory} className="active:opacity-60 cursor-pointer">
                   <X className="w-3 h-3" />
@@ -162,7 +176,7 @@ export const SalonListingPage = () => {
               </span>
             )}
             {activeBrand && (
-              <span className="inline-flex items-center gap-1 bg-stone-200 text-stone-900 border border-stone-300 text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0 shadow-2xs">
+              <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-900 border border-purple-300 text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0">
                 <span>{activeBrand.logo}</span>
                 <span>{activeBrand.name} Partner Salons</span>
                 <button onClick={clearBrand} className="active:opacity-60 cursor-pointer">
@@ -180,7 +194,7 @@ export const SalonListingPage = () => {
             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-colors cursor-pointer ${
               instantOnly
                 ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs'
-                : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
+                : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
             }`}
           >
             <Zap className="w-3 h-3 fill-amber-500 text-amber-500" />
@@ -193,8 +207,8 @@ export const SalonListingPage = () => {
               onClick={() => setSelectedGender(g)}
               className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-colors cursor-pointer ${
                 selectedGender === g
-                  ? 'bg-[#1e2329] text-white shadow-2xs'
-                  : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300/80'
+                  ? 'bg-brand-maroon text-white shadow-xs'
+                  : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
               }`}
             >
               {g}
@@ -204,7 +218,7 @@ export const SalonListingPage = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-stone-200/80 text-stone-800 text-[10.5px] font-bold px-2 py-1 rounded-full border border-stone-300/70 outline-none shrink-0 cursor-pointer"
+            className="bg-[#eaddf3] text-purple-950 text-[10.5px] font-bold px-2 py-1 rounded-full border border-purple-200/60 outline-none shrink-0 cursor-pointer"
           >
             <option value="Recommended">Recommended</option>
             <option value="Nearest">Nearest</option>
@@ -247,7 +261,7 @@ export const SalonListingPage = () => {
                   <span className="text-[9px] font-extrabold bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded border border-emerald-400/40">
                     {activeBrand.offer} Applied (Code: {activeBrand.couponCode})
                   </span>
-                  <span className="text-[8.5px] text-stone-300">Certified Authentic Products</span>
+                  <span className="text-[8.5px] text-stone-300">Certified Authentic Salon Services</span>
                 </div>
               </div>
             </div>
@@ -329,7 +343,8 @@ export const SalonListingPage = () => {
         {filteredSalons.map((salon, index) => {
           const isFav = favoriteSalonIds.includes(salon.id);
           const nextSlotLabel = salon.isInstantBookingEnabled && salon.isStoreOpen ? `Ready in ${salon.instantWaitMinutes} mins` : null;
-          const isSponsored = index < 2;
+          const isSponsored = Boolean(salon.isSponsored || salon.isBoosted || index < 2);
+          const badgeText = salon.sponsorBadge || `SPONSORED • TOP PICK #${index + 1}`;
 
           return (
             <motion.article
@@ -357,7 +372,7 @@ export const SalonListingPage = () => {
                   <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
                     <span className="bg-amber-400 text-stone-950 text-[8.5px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1 uppercase tracking-wider">
                       <Sparkles className="w-2.5 h-2.5 fill-current" />
-                      SPONSORED • TOP PICK #{index + 1}
+                      {badgeText}
                     </span>
                     <div className="bg-black/75 backdrop-blur-xs text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs">
                       <Star className="w-3 h-3 fill-amber-400 text-amber-400" />

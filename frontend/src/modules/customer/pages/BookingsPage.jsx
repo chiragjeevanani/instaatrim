@@ -55,19 +55,19 @@ export const BookingsPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] text-stone-900 min-h-screen pb-20 mx-auto border-x border-stone-200/80 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md px-3.5 pt-2.5 pb-2 border-b border-stone-200/80">
+      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 pt-2.5 pb-2 border-b border-purple-100">
         <h1 className="text-sm font-bold text-stone-900 tracking-tight">My Bookings</h1>
         <p className="text-[10.5px] text-stone-500">Manage appointments or view history</p>
 
         {/* Tab Switcher - Compact */}
-        <div className="grid grid-cols-2 gap-1.5 bg-stone-200/80 border border-stone-300/60 p-1 rounded-xl mt-2">
+        <div className="grid grid-cols-2 gap-1.5 bg-[#eaddf3] border border-purple-200/50 p-1 rounded-xl mt-2">
           <button
             onClick={() => setActiveTab('upcoming')}
             className={`py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              activeTab === 'upcoming' ? 'bg-[#1e2329] text-white shadow-2xs' : 'text-stone-700 hover:text-stone-900'
+              activeTab === 'upcoming' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             Upcoming ({upcomingBookings.length})
@@ -75,7 +75,7 @@ export const BookingsPage = () => {
           <button
             onClick={() => setActiveTab('history')}
             className={`py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              activeTab === 'history' ? 'bg-[#1e2329] text-white shadow-2xs' : 'text-stone-700 hover:text-stone-900'
+              activeTab === 'history' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
             History ({pastBookings.length})
@@ -146,7 +146,7 @@ export const BookingsPage = () => {
                   {b.preferredProduct && (
                     <div className="flex items-center gap-1.5 text-[10px] text-purple-900 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200/50">
                       <Sparkles className="w-3 h-3 text-brand-maroon shrink-0" />
-                      <span className="truncate">Product kit: <strong className="text-brand-maroon">{b.preferredProduct}</strong></span>
+                      <span className="truncate">Treatment formulation: <strong className="text-brand-maroon">{b.preferredProduct}</strong></span>
                     </div>
                   )}
 

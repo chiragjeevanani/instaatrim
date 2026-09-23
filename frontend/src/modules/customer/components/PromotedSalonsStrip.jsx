@@ -8,23 +8,35 @@ export const PromotedSalonsStrip = () => {
   const navigate = useNavigate();
   const { state } = useAppData();
 
-  // Positions #1 and #2 boosted verified salons
+  // Prioritize explicitly admin-boosted salons, ordered by boostRank, fallback to top verified salons
   const promotedSalons = state.salons
     .filter((s) => s.isVerified && s.verificationStatus === 'Live')
+    .sort((a, b) => {
+      const aBoost = a.isBoosted || a.isSponsored ? (a.boostRank || 1) : 999;
+      const bBoost = b.isBoosted || b.isSponsored ? (b.boostRank || 1) : 999;
+      if (aBoost !== bBoost) return aBoost - bBoost;
+      return (b.rating || 0) - (a.rating || 0);
+    })
     .slice(0, 2);
 
   if (promotedSalons.length === 0) return null;
 
   return (
     <section className="mt-5 px-4 w-full max-w-full min-w-0 box-border" data-purpose="promoted-salons-homepage-strip">
-      <div className="flex items-center justify-between mb-2.5">
-        <h2 className="text-[14px] font-bold text-stone-900 tracking-tight">Top Salons</h2>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <h2 className="text-[12.5px] font-bold text-stone-900 tracking-tight">Promoted Salons</h2>
+          <span className="text-[8.5px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300/80 px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
+            <Sparkles className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
+            Top Picks
+          </span>
+        </div>
         <button
           onClick={() => navigate('/customer/salons')}
-          className="text-[11px] font-semibold text-stone-500 hover:text-stone-900 flex items-center gap-0.5 cursor-pointer transition-colors"
+          className="text-[9.5px] font-bold text-brand-maroon hover:underline flex items-center gap-0.5 cursor-pointer"
         >
           <span>View All</span>
-          <ChevronRight className="w-3.5 h-3.5 stroke-[2]" />
+          <ChevronRight className="w-3 h-3 stroke-[2.5]" />
         </button>
       </div>
 
@@ -51,7 +63,7 @@ export const PromotedSalonsStrip = () => {
                 <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
                   <span className="bg-amber-400 text-stone-950 text-[8.5px] font-black px-2 py-0.5 rounded shadow-xs flex items-center gap-1 uppercase tracking-wider">
                     <Sparkles className="w-2.5 h-2.5 fill-current" />
-                    SPONSORED • TOP PICK #{index + 1}
+                    {salon.sponsorBadge || `SPONSORED • TOP PICK #${index + 1}`}
                   </span>
                   <div className="bg-black/75 backdrop-blur-xs text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />

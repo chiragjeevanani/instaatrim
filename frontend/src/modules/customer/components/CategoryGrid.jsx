@@ -213,14 +213,13 @@ export const CategoryGrid = ({ genderFilter = 'all' }) => {
               onClick={() => handleCategoryClick(cat)}
               className="group cursor-pointer flex flex-col items-center"
             >
-              <div className="w-full aspect-square rounded-2xl overflow-hidden bg-stone-100 border border-stone-200/80 shadow-2xs transition-transform group-hover:scale-96 relative">
+              <div className="w-full aspect-square rounded-2xl overflow-hidden bg-[#eaddf3]/70 border border-purple-200/50 shadow-2xs transition-transform group-hover:scale-96 relative">
                 <img
                   alt={cat.shortName}
                   className="w-full h-full object-cover rounded-2xl"
                   src={cat.image}
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-stone-950/5 group-hover:bg-transparent transition-colors" />
               </div>
               <span className="text-[10px] font-semibold text-stone-800 mt-1.5 block leading-tight tracking-tight line-clamp-1">
                 {cat.shortName || cat.name}

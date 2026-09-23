@@ -166,9 +166,9 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 50, opacity: 0 }}
-          className="relative w-full max-w-[420px] bg-[#faf9f6] rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 z-10 space-y-3 border-t sm:border border-stone-300/80 max-h-[85vh] overflow-y-auto"
+          className="relative w-full max-w-[420px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 z-10 space-y-3 border-t sm:border border-purple-200/80 max-h-[85vh] overflow-y-auto"
         >
-          <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
+          <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
             <div>
               <h3 className="font-bold text-stone-900 text-sm">Choose Appointment Slot</h3>
               <p className="text-[10px] text-stone-500">{salon.name} · {durationMinutes} min service</p>
@@ -178,7 +178,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 bg-stone-200/80 border border-stone-300/60 p-1 rounded-xl">
+          <div className="grid grid-cols-2 gap-1.5 bg-[#eaddf3] border border-purple-200/50 p-1 rounded-xl">
             <button
               onClick={() => setBookingType('Scheduled')}
               className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold text-xs transition-all ${

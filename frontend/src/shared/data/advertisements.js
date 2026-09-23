@@ -147,14 +147,42 @@ export const BRAND_PARTNERS = [
 ];
 
 
-export const MID_PAGE_CAMPAIGN = {
-  id: 'mid-ad-beauty-pass',
-  badge: 'Sponsored Campaign',
-  title: 'InstaaTrim Gold Glow Carnival',
-  subtitle: 'Co-sponsored by Lakmé & O3+ Pro',
-  highlight: 'Book 2 Services • Get Free De-Tan',
-  coupon: 'CARNIVAL50',
-  ctaText: 'Claim Pass',
-  bannerImage: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80'
-};
+export const MID_PAGE_CAMPAIGNS = [
+  {
+    id: 'mid-ad-beauty-pass',
+    badge: 'Sponsored Campaign',
+    title: 'InstaaTrim Gold Glow Carnival',
+    subtitle: 'Co-sponsored by Lakmé & O3+ Pro',
+    highlight: 'Book 2 Services • Get Free De-Tan',
+    coupon: 'CARNIVAL50',
+    ctaText: 'Claim Pass',
+    bannerImage: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
+    isActive: true
+  },
+  {
+    id: 'mid-ad-korean-glow',
+    badge: 'Luxury Rituals Spotlight',
+    title: 'Korean Glass Skin & Hair Botox Fest',
+    subtitle: 'Flat ₹500 OFF with Dyson & L’Oréal Salons',
+    highlight: 'HydraGlo Facial + Blowout Package',
+    coupon: 'KOREAGLOW',
+    ctaText: 'Explore Rituals',
+    bannerImage: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+    isActive: true
+  },
+  {
+    id: 'mid-ad-monsoon-spa',
+    badge: 'Seasonal Relaxation Pass',
+    title: 'Monsoon Ayurvedic Spa & Aromatherapy',
+    subtitle: 'Partnered with Forest Essentials & Pure Botanicals',
+    highlight: 'Deep Tissue Massage + Warm Towel Detox',
+    coupon: 'MONSOONSPA',
+    ctaText: 'Book Chair',
+    bannerImage: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+    isActive: true
+  }
+];
+
+export const MID_PAGE_CAMPAIGN = MID_PAGE_CAMPAIGNS[0];
+
 

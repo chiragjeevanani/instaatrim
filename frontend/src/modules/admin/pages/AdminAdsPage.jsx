@@ -16,7 +16,9 @@ import {
   Tag,
   Copy,
   RefreshCw,
-  X
+  X,
+  Sliders,
+  Image as ImageIcon
 } from 'lucide-react';
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
@@ -25,8 +27,11 @@ export const AdminAdsPage = () => {
   const {
     advertisements = [],
     brandPartners = [],
+    heroBanners = [],
+    midPageCampaigns = [],
     midPageCampaign = {},
     salons = [],
+    services = [],
     createAd,
     updateAd,
     deleteAd,
@@ -35,18 +40,25 @@ export const AdminAdsPage = () => {
     updateBrandPartner,
     deleteBrandPartner,
     toggleBrandPartnerActive,
+    createHeroBanner,
+    updateHeroBanner,
+    deleteHeroBanner,
+    toggleHeroBannerActive,
+    createMidCampaign,
     updateMidCampaign,
+    deleteMidCampaign,
+    toggleMidCampaignActive,
     theme
   } = useAdmin();
 
   const isLight = theme === 'light';
 
-  // Active Tab: 'top-ads' | 'brand-partners' | 'mid-campaign'
+  // Active Tab: 'top-ads' | 'hero-banners' | 'mid-campaign' | 'brand-partners'
   const [activeTab, setActiveTab] = useState('top-ads');
   const [searchQuery, setSearchQuery] = useState('');
 
   // ---------------- Modal States ----------------
-  // Ad Modal
+  // 1. Spotlight Ad Modal
   const [adModalOpen, setAdModalOpen] = useState(false);
   const [editingAd, setEditingAd] = useState(null);
   const [adFormData, setAdFormData] = useState({
@@ -65,7 +77,38 @@ export const AdminAdsPage = () => {
     isActive: true
   });
 
-  // Partner Modal
+  // 2. Hero Package Banner Modal
+  const [heroModalOpen, setHeroModalOpen] = useState(false);
+  const [editingHeroBanner, setEditingHeroBanner] = useState(null);
+  const [heroFormData, setHeroFormData] = useState({
+    title: '',
+    subtitle: '',
+    desc: '',
+    ctaText: 'Book Now',
+    tag: 'Trending Ritual',
+    image: '',
+    salonId: '',
+    serviceId: '',
+    link: '',
+    isActive: true
+  });
+
+  // 3. Mid-Page Deal Campaign Modal
+  const [midModalOpen, setMidModalOpen] = useState(false);
+  const [editingMidCampaign, setEditingMidCampaign] = useState(null);
+  const [midFormData, setMidFormData] = useState({
+    badge: 'Sponsored Campaign',
+    title: '',
+    subtitle: '',
+    highlight: '',
+    coupon: '',
+    ctaText: 'Claim Pass',
+    bannerImage: '',
+    link: '',
+    isActive: true
+  });
+
+  // 4. Partner Modal
   const [partnerModalOpen, setPartnerModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
   const [partnerFormData, setPartnerFormData] = useState({
@@ -80,36 +123,7 @@ export const AdminAdsPage = () => {
   });
 
   // Delete Confirm Modal
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: 'ad'|'partner', id, title }
-
-  // Mid Campaign Local Form
-  const [campaignFormData, setCampaignFormData] = useState({
-    badge: 'Sponsored Campaign',
-    title: '',
-    subtitle: '',
-    highlight: '',
-    coupon: '',
-    ctaText: 'Claim Pass',
-    bannerImage: '',
-    isActive: true
-  });
-  const [campaignSaved, setCampaignSaved] = useState(false);
-
-  // Sync campaignFormData when midPageCampaign changes
-  useEffect(() => {
-    if (midPageCampaign) {
-      setCampaignFormData({
-        badge: midPageCampaign.badge || 'Sponsored Campaign',
-        title: midPageCampaign.title || '',
-        subtitle: midPageCampaign.subtitle || '',
-        highlight: midPageCampaign.highlight || '',
-        coupon: midPageCampaign.coupon || '',
-        ctaText: midPageCampaign.ctaText || 'Claim Pass',
-        bannerImage: midPageCampaign.bannerImage || '',
-        isActive: midPageCampaign.isActive !== false
-      });
-    }
-  }, [midPageCampaign]);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: 'ad'|'hero'|'mid'|'partner', id, title }
 
   // ---------------- Handlers: Top Ads ----------------
   const handleOpenCreateAd = () => {
@@ -169,6 +183,109 @@ export const AdminAdsPage = () => {
     setAdModalOpen(false);
   };
 
+  // ---------------- Handlers: Hero Banners ----------------
+  const handleOpenCreateHeroBanner = () => {
+    setEditingHeroBanner(null);
+    setHeroFormData({
+      title: 'Radiance Revival\n& Glow Package',
+      subtitle: 'Exclusive Salon Ritual',
+      desc: 'Infused with organic botanicals & ultra-hydrating serums',
+      ctaText: 'Book Chair',
+      tag: 'Festive Special',
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+      salonId: salons[0]?.id || '',
+      serviceId: services[0]?.id || '',
+      link: '',
+      isActive: true
+    });
+    setHeroModalOpen(true);
+  };
+
+  const handleOpenEditHeroBanner = (banner) => {
+    setEditingHeroBanner(banner);
+    setHeroFormData({
+      title: banner.title || '',
+      subtitle: banner.subtitle || '',
+      desc: banner.desc || '',
+      ctaText: banner.ctaText || 'Book Now',
+      tag: banner.tag || 'Special Deal',
+      image: banner.image || '',
+      salonId: banner.salonId || '',
+      serviceId: banner.serviceId || '',
+      link: banner.link || '',
+      isActive: banner.isActive !== false
+    });
+    setHeroModalOpen(true);
+  };
+
+  const handleSubmitHeroBanner = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...heroFormData,
+      title: heroFormData.title.trim(),
+      subtitle: heroFormData.subtitle.trim(),
+      desc: heroFormData.desc.trim(),
+      image: heroFormData.image.trim()
+    };
+
+    if (editingHeroBanner) {
+      await updateHeroBanner(editingHeroBanner.id, payload);
+    } else {
+      await createHeroBanner(payload);
+    }
+    setHeroModalOpen(false);
+  };
+
+  // ---------------- Handlers: Mid-Page Deals ----------------
+  const handleOpenCreateMidCampaign = () => {
+    setEditingMidCampaign(null);
+    setMidFormData({
+      badge: 'Sponsored Campaign',
+      title: 'Glow Festival Special Deal',
+      subtitle: 'Co-sponsored by Lakmé & O3+ Pro',
+      highlight: 'Book Any 2 Services • Get Free De-Tan',
+      coupon: 'GLOW50',
+      ctaText: 'Claim Pass',
+      bannerImage: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
+      link: '/customer/salons',
+      isActive: true
+    });
+    setMidModalOpen(true);
+  };
+
+  const handleOpenEditMidCampaign = (campaign) => {
+    setEditingMidCampaign(campaign);
+    setMidFormData({
+      badge: campaign.badge || 'Sponsored Campaign',
+      title: campaign.title || '',
+      subtitle: campaign.subtitle || '',
+      highlight: campaign.highlight || '',
+      coupon: campaign.coupon || '',
+      ctaText: campaign.ctaText || 'Claim Pass',
+      bannerImage: campaign.bannerImage || '',
+      link: campaign.link || '',
+      isActive: campaign.isActive !== false
+    });
+    setMidModalOpen(true);
+  };
+
+  const handleSubmitMidCampaign = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...midFormData,
+      title: midFormData.title.trim(),
+      coupon: midFormData.coupon.trim().toUpperCase(),
+      bannerImage: midFormData.bannerImage.trim()
+    };
+
+    if (editingMidCampaign) {
+      await updateMidCampaign(editingMidCampaign.id, payload);
+    } else {
+      await createMidCampaign(payload);
+    }
+    setMidModalOpen(false);
+  };
+
   // ---------------- Handlers: Brand Partners ----------------
   const handleOpenCreatePartner = () => {
     setEditingPartner(null);
@@ -216,22 +333,15 @@ export const AdminAdsPage = () => {
     setPartnerModalOpen(false);
   };
 
-  // ---------------- Handlers: Mid Campaign ----------------
-  const handleSaveCampaign = async (e) => {
-    e.preventDefault();
-    await updateMidCampaign({
-      ...campaignFormData,
-      coupon: campaignFormData.coupon.trim().toUpperCase()
-    });
-    setCampaignSaved(true);
-    setTimeout(() => setCampaignSaved(false), 3000);
-  };
-
   // ---------------- Delete Confirmation Handler ----------------
   const handleConfirmDelete = async () => {
     if (!deleteConfirm) return;
     if (deleteConfirm.type === 'ad') {
       await deleteAd(deleteConfirm.id);
+    } else if (deleteConfirm.type === 'hero') {
+      await deleteHeroBanner(deleteConfirm.id);
+    } else if (deleteConfirm.type === 'mid') {
+      await deleteMidCampaign(deleteConfirm.id);
     } else if (deleteConfirm.type === 'partner') {
       await deleteBrandPartner(deleteConfirm.id);
     }
@@ -250,6 +360,33 @@ export const AdminAdsPage = () => {
     );
   });
 
+  const filteredHeroBanners = heroBanners.filter((banner) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      banner.title?.toLowerCase().includes(q) ||
+      banner.subtitle?.toLowerCase().includes(q) ||
+      banner.tag?.toLowerCase().includes(q)
+    );
+  });
+
+  const resolvedMidCampaigns =
+    midPageCampaigns && midPageCampaigns.length > 0
+      ? midPageCampaigns
+      : midPageCampaign && midPageCampaign.title
+      ? [midPageCampaign]
+      : [];
+
+  const filteredMidCampaigns = resolvedMidCampaigns.filter((cmp) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      cmp.title?.toLowerCase().includes(q) ||
+      cmp.coupon?.toLowerCase().includes(q) ||
+      cmp.highlight?.toLowerCase().includes(q)
+    );
+  });
+
   const filteredPartners = brandPartners.filter((bp) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
@@ -262,16 +399,38 @@ export const AdminAdsPage = () => {
   });
 
   const activeAdsCount = advertisements.filter((a) => a.isActive !== false).length;
+  const activeHeroCount = heroBanners.filter((b) => b.isActive !== false).length;
+  const activeMidCount = resolvedMidCampaigns.filter((m) => m.isActive !== false).length;
   const activePartnersCount = brandPartners.filter((b) => b.isActive !== false).length;
 
   return (
     <div className="flex-1 flex flex-col bg-[#0d0d12]">
       {/* Top Bar */}
       <AdminTopBar
-        title="Ads & Banners Management"
-        subtitle="Manage customer app top sponsored carousel, brand showcase partners, and campaign banners"
+        title="Carousel Banners & Ads"
+        subtitle="Manage customer app hero carousel slides, mid-page deal banners, top spotlight carousels, and partner showcases"
         action={
           <div className="flex items-center gap-2.5">
+            {activeTab === 'hero-banners' && (
+              <button
+                type="button"
+                onClick={handleOpenCreateHeroBanner}
+                className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Hero Carousel Slide</span>
+              </button>
+            )}
+            {activeTab === 'mid-campaign' && (
+              <button
+                type="button"
+                onClick={handleOpenCreateMidCampaign}
+                className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Mid-Page Deal Slide</span>
+              </button>
+            )}
             {activeTab === 'top-ads' && (
               <button
                 type="button"
@@ -279,7 +438,7 @@ export const AdminAdsPage = () => {
                 className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Carousel Ad</span>
+                <span>Add Spotlight Ad</span>
               </button>
             )}
             {activeTab === 'brand-partners' && (
@@ -299,7 +458,68 @@ export const AdminAdsPage = () => {
       <div className="p-8 space-y-6 flex-1 overflow-y-auto">
         {/* Navigation Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#262638] pb-4">
-          <div className="admin-filter-bar flex items-center gap-1.5 bg-[#14141e] border border-[#262638] p-1 rounded-xl">
+          <div className="admin-filter-bar flex flex-wrap items-center gap-1.5 bg-[#14141e] border border-[#262638] p-1 rounded-xl">
+            {/* TAB 1: Hero Carousel Banners */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('hero-banners');
+                setSearchQuery('');
+              }}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'hero-banners'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : isLight
+                  ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-stone-400 hover:text-stone-200 hover:bg-[#1a1a24]'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Hero Package Carousel</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                  activeTab === 'hero-banners'
+                    ? 'bg-white/20 text-white'
+                    : isLight
+                    ? 'bg-slate-200 text-slate-700'
+                    : 'bg-stone-800 text-stone-400'
+                }`}
+              >
+                {activeHeroCount}/{heroBanners.length}
+              </span>
+            </button>
+
+            {/* TAB 2: Mid-Page Deals Carousel */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('mid-campaign');
+                setSearchQuery('');
+              }}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'mid-campaign'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : isLight
+                  ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-stone-400 hover:text-stone-200 hover:bg-[#1a1a24]'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5" />
+              <span>Mid-Page Deals Carousel</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                  activeTab === 'mid-campaign'
+                    ? 'bg-white/20 text-white'
+                    : isLight
+                    ? 'bg-slate-200 text-slate-700'
+                    : 'bg-stone-800 text-stone-400'
+                }`}
+              >
+                {activeMidCount}/{resolvedMidCampaigns.length}
+              </span>
+            </button>
+
+            {/* TAB 3: Top Spotlight Ads */}
             <button
               type="button"
               onClick={() => {
@@ -315,7 +535,7 @@ export const AdminAdsPage = () => {
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Top Ad Carousel</span>
+              <span>Top Spotlight Carousel</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
                   activeTab === 'top-ads'
@@ -329,6 +549,7 @@ export const AdminAdsPage = () => {
               </span>
             </button>
 
+            {/* TAB 4: Brand Partners */}
             <button
               type="button"
               onClick={() => {
@@ -357,81 +578,408 @@ export const AdminAdsPage = () => {
                 {activePartnersCount}/{brandPartners.length}
               </span>
             </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('mid-campaign');
-                setSearchQuery('');
-              }}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'mid-campaign'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : isLight
-                  ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-[#1a1a24]'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5" />
-              <span>Mid-Page Campaign</span>
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  midPageCampaign.isActive !== false ? 'bg-emerald-500' : 'bg-stone-400'
-                }`}
-              />
-            </button>
           </div>
 
-          {/* Search bar for list tabs */}
-          {activeTab !== 'mid-campaign' && (
-            <div className="relative w-full sm:w-64">
-              <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-400' : 'text-stone-500'}`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={
-                  activeTab === 'top-ads' ? 'Search ads, brands...' : 'Search brand partners...'
-                }
-                className="w-full bg-[#14141e] border border-[#262638] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-stone-500 focus:border-purple-500 outline-none"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-300"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          )}
+          {/* Search bar */}
+          <div className="relative w-full sm:w-64">
+            <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-400' : 'text-stone-500'}`} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title, coupon..."
+              className="w-full bg-[#14141e] border border-[#262638] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-stone-500 focus:border-purple-500 outline-none"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* ---------------- TAB 1: TOP AD CAROUSEL ---------------- */}
-        {activeTab === 'top-ads' && (
+        {/* ---------------- TAB: HERO PACKAGE CAROUSEL ---------------- */}
+        {activeTab === 'hero-banners' && (
           <div className="space-y-4">
-            <div className="admin-table-card bg-[#14141e] border border-[#262638] rounded-2xl overflow-hidden shadow-xl">
+            <div
+              className={`border rounded-2xl overflow-hidden shadow-xl ${
+                isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
+              }`}
+            >
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="admin-table-header border-b border-[#262638] text-stone-400 font-semibold bg-[#101018]">
-                      <th className="py-3.5 px-4">Preview & Brand</th>
-                      <th className="py-3.5 px-4">Headline & Offer</th>
-                      <th className="py-3.5 px-4">Target Salon / Category</th>
-                      <th className="py-3.5 px-4">Validity</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4 text-right">Actions</th>
+                    <tr className={`border-b text-[11px] uppercase tracking-wider font-semibold ${
+                      isLight ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-[#181824] border-[#262638] text-stone-400'
+                    }`}>
+                      <th className="py-3 px-4">Banner Slide</th>
+                      <th className="py-3 px-4">Headline & Description</th>
+                      <th className="py-3 px-4">Destination Target</th>
+                      <th className="py-3 px-4">Tag Badge</th>
+                      <th className="py-3 px-4">Visibility</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1e1e2c]">
+                  <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#20202e]'}`}>
+                    {filteredHeroBanners.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-stone-500">
+                          <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-40 text-stone-400" />
+                          <p className="font-semibold text-sm">No hero banners found</p>
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            Click "+ Add Hero Carousel Slide" to upload a new banner image.
+                          </p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredHeroBanners.map((banner) => {
+                        const targetSalon = salons.find((s) => s.id === banner.salonId);
+                        const isActive = banner.isActive !== false;
+
+                        return (
+                          <tr
+                            key={banner.id}
+                            className={`transition-colors ${
+                              isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
+                            }`}
+                          >
+                            {/* Banner Slide Preview */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+                                <div className="w-24 h-14 rounded-xl overflow-hidden bg-stone-900 border border-stone-700/60 shrink-0 relative group shadow-sm">
+                                  <img
+                                    src={banner.image}
+                                    alt={banner.title}
+                                    className="w-full h-full object-cover object-right group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+                                <div>
+                                  <span className="font-mono text-[10px] text-stone-400 block">
+                                    {banner.id}
+                                  </span>
+                                  <span className="text-[11px] font-bold text-amber-500 block">
+                                    {banner.ctaText || 'Book Now'}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Headline & Description */}
+                            <td className="py-3.5 px-4 max-w-xs">
+                              <div className="text-[10px] font-semibold text-purple-400">
+                                {banner.subtitle}
+                              </div>
+                              <div className={`font-bold text-xs mt-0.5 whitespace-pre-line leading-tight ${
+                                isLight ? 'text-slate-900' : 'text-white'
+                              }`}>
+                                {banner.title}
+                              </div>
+                              <p className={`text-[10.5px] truncate mt-1 ${isLight ? 'text-slate-500 font-medium' : 'text-stone-400'}`}>
+                                {banner.desc}
+                              </p>
+                            </td>
+
+                            {/* Destination Target */}
+                            <td className="py-3.5 px-4">
+                              <div className={`font-semibold truncate max-w-[170px] ${isLight ? 'text-slate-900' : 'text-stone-200'}`}>
+                                {targetSalon ? targetSalon.name : banner.salonId ? banner.salonId : banner.link || 'All Salons'}
+                              </div>
+                              <div className={`text-[10px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-stone-400'}`}>
+                                {banner.serviceId ? `Service: ${banner.serviceId}` : 'Direct Link'}
+                              </div>
+                            </td>
+
+                            {/* Tag */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                {banner.tag || 'Special Offer'}
+                              </span>
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => toggleHeroBannerActive(banner.id)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                                  isActive
+                                    ? isLight
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                    : isLight
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-300'
+                                    : 'bg-stone-800 text-stone-400 border border-stone-700'
+                                }`}
+                              >
+                                {isActive ? (
+                                  <>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span>Active</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff className="w-3 h-3" />
+                                    <span>Hidden</span>
+                                  </>
+                                )}
+                              </button>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditHeroBanner(banner)}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
+                                    isLight
+                                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
+                                      : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
+                                  }`}
+                                  title="Edit Banner Image & Text"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDeleteConfirm({
+                                      type: 'hero',
+                                      id: banner.id,
+                                      title: banner.title?.replace(/\n/g, ' ') || 'Hero Banner'
+                                    })
+                                  }
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
+                                    isLight
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
+                                      : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
+                                  }`}
+                                  title="Delete Banner"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- TAB: MID-PAGE DEALS CAROUSEL ---------------- */}
+        {activeTab === 'mid-campaign' && (
+          <div className="space-y-6">
+            <div
+              className={`border rounded-2xl overflow-hidden shadow-xl ${
+                isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
+              }`}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className={`border-b text-[11px] uppercase tracking-wider font-semibold ${
+                      isLight ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-[#181824] border-[#262638] text-stone-400'
+                    }`}>
+                      <th className="py-3 px-4">Deal Slide Image</th>
+                      <th className="py-3 px-4">Campaign Title & Highlight</th>
+                      <th className="py-3 px-4">Coupon Code</th>
+                      <th className="py-3 px-4">Badge & CTA</th>
+                      <th className="py-3 px-4">Visibility</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#20202e]'}`}>
+                    {filteredMidCampaigns.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-stone-500">
+                          <Flame className="w-8 h-8 mx-auto mb-2 opacity-40 text-stone-400" />
+                          <p className="font-semibold text-sm">No mid-page deal slides found</p>
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            Click "+ Add Mid-Page Deal Slide" to add an interactive deal banner slide.
+                          </p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredMidCampaigns.map((cmp) => {
+                        const isActive = cmp.isActive !== false;
+
+                        return (
+                          <tr
+                            key={cmp.id || cmp.title}
+                            className={`transition-colors ${
+                              isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
+                            }`}
+                          >
+                            {/* Slide Background Image Preview */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <div className="w-24 h-14 rounded-xl overflow-hidden bg-gradient-to-r from-stone-900 to-purple-950 border border-purple-500/30 shrink-0 relative group shadow-sm">
+                                {cmp.bannerImage && (
+                                  <img
+                                    src={cmp.bannerImage}
+                                    alt={cmp.title}
+                                    className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                )}
+                                <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white bg-black/30 backdrop-blur-2xs">
+                                  Slide
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Title & Highlight */}
+                            <td className="py-3.5 px-4 max-w-sm">
+                              <div className={`font-bold text-xs leading-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                {cmp.title}
+                              </div>
+                              <div className="text-[10px] text-amber-400 font-medium mt-0.5">
+                                {cmp.highlight}
+                              </div>
+                              {cmp.subtitle && (
+                                <p className={`text-[10px] truncate mt-0.5 ${isLight ? 'text-slate-500' : 'text-stone-400'}`}>
+                                  {cmp.subtitle}
+                                </p>
+                              )}
+                            </td>
+
+                            {/* Coupon Code */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              {cmp.coupon ? (
+                                <span className="font-mono text-[10px] font-extrabold px-2 py-1 rounded-md bg-amber-400 text-stone-950 shadow-2xs">
+                                  {cmp.coupon}
+                                </span>
+                              ) : (
+                                <span className="text-stone-500 text-[10px]">—</span>
+                              )}
+                            </td>
+
+                            {/* Badge & CTA */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <div className="text-[10.5px] font-semibold text-stone-300">
+                                {cmp.badge || 'Sponsored'}
+                              </div>
+                              <div className="text-[10px] text-purple-400 font-bold">
+                                CTA: {cmp.ctaText || 'Claim Pass'}
+                              </div>
+                            </td>
+
+                            {/* Visibility Toggle */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => toggleMidCampaignActive(cmp.id)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                                  isActive
+                                    ? isLight
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                    : isLight
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-300'
+                                    : 'bg-stone-800 text-stone-400 border border-stone-700'
+                                }`}
+                              >
+                                {isActive ? (
+                                  <>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span>Active</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff className="w-3 h-3" />
+                                    <span>Paused</span>
+                                  </>
+                                )}
+                              </button>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditMidCampaign(cmp)}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
+                                    isLight
+                                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
+                                      : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
+                                  }`}
+                                  title="Edit Deal Slide"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDeleteConfirm({
+                                      type: 'mid',
+                                      id: cmp.id,
+                                      title: cmp.title || 'Mid Campaign Deal'
+                                    })
+                                  }
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
+                                    isLight
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
+                                      : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
+                                  }`}
+                                  title="Delete Deal Slide"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- TAB: TOP SPOTLIGHT ADS ---------------- */}
+        {activeTab === 'top-ads' && (
+          <div className="space-y-4">
+            <div
+              className={`border rounded-2xl overflow-hidden shadow-xl ${
+                isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
+              }`}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr
+                      className={`border-b text-[11px] uppercase tracking-wider font-semibold ${
+                        isLight
+                          ? 'bg-slate-50 border-slate-200 text-slate-500'
+                          : 'bg-[#181824] border-[#262638] text-stone-400'
+                      }`}
+                    >
+                      <th className="py-3 px-4">Ad Image & Brand</th>
+                      <th className="py-3 px-4">Headline / Offer</th>
+                      <th className="py-3 px-4">Target Salon / Category</th>
+                      <th className="py-3 px-4">Validity</th>
+                      <th className="py-3 px-4">Visibility</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#20202e]'}`}>
                     {filteredAds.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-12 text-center text-stone-500">
-                          <Megaphone className="w-8 h-8 mx-auto mb-2 opacity-40 text-stone-400" />
-                          <p className="font-semibold text-sm">No carousel ads found</p>
+                          <Layers className="w-8 h-8 mx-auto mb-2 opacity-40 text-stone-400" />
+                          <p className="font-semibold text-sm">No ads found</p>
                           <p className="text-xs text-stone-500 mt-0.5">
-                            {searchQuery ? 'Try clearing your search query' : 'Click "+ Add Carousel Ad" to create your first top advertisement'}
+                            {searchQuery ? 'Try another search query' : 'Click "+ Add Spotlight Ad" to create one'}
                           </p>
                         </td>
                       </tr>
@@ -443,67 +991,44 @@ export const AdminAdsPage = () => {
                         return (
                           <tr
                             key={ad.id}
-                            className="hover:bg-[#181824] transition-colors group"
+                            className={`transition-colors ${
+                              isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
+                            }`}
                           >
-                            {/* Preview & Brand */}
-                            <td className="py-3.5 px-4">
+                            {/* Ad Image & Brand */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
                               <div className="flex items-center gap-3">
-                                <div className={`w-16 h-11 rounded-lg overflow-hidden shrink-0 border ${isLight ? 'border-slate-200 bg-slate-100' : 'border-[#2d2d40] bg-stone-900'} relative`}>
+                                <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-900 border border-stone-700/60 shrink-0 relative group">
                                   <img
                                     src={ad.image}
                                     alt={ad.brand}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.target.src =
-                                        'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80';
-                                    }}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                   />
                                 </div>
-                                <div className="min-w-0">
-                                  <div className={`font-bold text-xs truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                <div>
+                                  <span className="font-bold text-sm block leading-tight text-white">
                                     {ad.brand}
-                                  </div>
-                                  <span
-                                    className={`inline-block mt-0.5 text-[9.5px] px-1.5 py-0.2 rounded font-semibold border ${
-                                      isLight
-                                        ? 'bg-purple-100 text-purple-800 border-purple-200'
-                                        : 'bg-purple-950/60 text-purple-300 border-purple-800/40'
-                                    }`}
-                                  >
-                                    {ad.sponsorBadge || 'Sponsored'}
+                                  </span>
+                                  <span className="text-[10px] text-purple-400 font-semibold block mt-0.5">
+                                    {ad.sponsorBadge}
                                   </span>
                                 </div>
                               </div>
                             </td>
 
-                            {/* Headline & Offer */}
-                            <td className="py-3.5 px-4 max-w-[240px]">
-                              <div className={`font-semibold line-clamp-1 leading-snug ${isLight ? 'text-slate-900' : 'text-stone-200'}`}>
-                                {ad.title?.replace(/\n/g, ' • ')}
+                            {/* Headline / Offer */}
+                            <td className="py-3.5 px-4 max-w-xs">
+                              <div className={`font-bold text-xs leading-tight whitespace-pre-line ${isLight ? 'text-slate-900' : 'text-stone-100'}`}>
+                                {ad.title}
                               </div>
-                              <div className={`text-[10.5px] line-clamp-1 mt-0.5 ${isLight ? 'text-slate-500 font-medium' : 'text-stone-400'}`}>
-                                {ad.subtitle}
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              <div className="flex items-center gap-1.5 mt-1">
                                 {ad.discountBadge && (
-                                  <span
-                                    className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded border ${
-                                      isLight
-                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                        : 'bg-emerald-950/70 text-emerald-400 border-emerald-800/50'
-                                    }`}
-                                  >
+                                  <span className="text-[9.5px] font-extrabold px-1.5 py-0.2 rounded bg-rose-950/60 text-rose-400 border border-rose-800/40">
                                     {ad.discountBadge}
                                   </span>
                                 )}
                                 {ad.couponCode && (
-                                  <span
-                                    className={`font-mono text-[9.5px] font-extrabold px-1.5 py-0.2 rounded border ${
-                                      isLight
-                                        ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                        : 'bg-amber-950/60 text-amber-300 border-amber-800/50'
-                                    }`}
-                                  >
+                                  <span className="font-mono text-[9.5px] font-extrabold px-1.5 py-0.2 rounded border bg-amber-950/60 text-amber-300 border-amber-800/50">
                                     {ad.couponCode}
                                   </span>
                                 )}
@@ -533,13 +1058,12 @@ export const AdminAdsPage = () => {
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
                                   isActive
                                     ? isLight
-                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
-                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                                     : isLight
-                                    ? 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
-                                    : 'bg-stone-800 text-stone-400 border border-stone-700 hover:bg-stone-700'
+                                    ? 'bg-slate-100 text-slate-600 border border-slate-300'
+                                    : 'bg-stone-800 text-stone-400 border border-stone-700'
                                 }`}
-                                title={isActive ? 'Click to pause ad' : 'Click to activate ad'}
                               >
                                 {isActive ? (
                                   <>
@@ -548,7 +1072,7 @@ export const AdminAdsPage = () => {
                                   </>
                                 ) : (
                                   <>
-                                    <EyeOff className={`w-3 h-3 ${isLight ? 'text-slate-500' : 'text-stone-400'}`} />
+                                    <EyeOff className="w-3 h-3" />
                                     <span>Paused</span>
                                   </>
                                 )}
@@ -601,7 +1125,7 @@ export const AdminAdsPage = () => {
           </div>
         )}
 
-        {/* ---------------- TAB 2: BRAND PARTNER SHOWCASE ---------------- */}
+        {/* ---------------- TAB: BRAND PARTNER SHOWCASE ---------------- */}
         {activeTab === 'brand-partners' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -610,7 +1134,7 @@ export const AdminAdsPage = () => {
                   <Award className="w-8 h-8 mx-auto mb-2 opacity-40 text-stone-400" />
                   <p className="font-semibold text-sm">No brand partners found</p>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    {searchQuery ? 'Try clearing your search query' : 'Click "+ Add Brand Partner" to list a collaboration'}
+                    Click "+ Add Brand Partner" to list a collaboration.
                   </p>
                 </div>
               ) : (
@@ -626,7 +1150,6 @@ export const AdminAdsPage = () => {
                           : 'bg-[#14141e] border-[#262638] shadow-md hover:border-purple-500/40'
                       }`}
                     >
-                      {/* Status indicator top bar */}
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
                           <div
@@ -665,7 +1188,6 @@ export const AdminAdsPage = () => {
                         </button>
                       </div>
 
-                      {/* Details */}
                       <div className="space-y-2 mb-4">
                         <p className={`text-xs line-clamp-2 leading-relaxed ${isLight ? 'text-slate-600' : 'text-stone-300'}`}>
                           {bp.description || bp.tagline || 'Official Brand Partner collaboration'}
@@ -699,7 +1221,6 @@ export const AdminAdsPage = () => {
                         </div>
                       </div>
 
-                      {/* Footer Actions */}
                       <div className={`flex items-center justify-end gap-2 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-[#222230]'}`}>
                         <button
                           type="button"
@@ -739,116 +1260,41 @@ export const AdminAdsPage = () => {
             </div>
           </div>
         )}
+      </div>
 
-        {/* ---------------- TAB 3: MID-PAGE CAMPAIGN BANNER ---------------- */}
-        {activeTab === 'mid-campaign' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Form Column */}
-            <div
-              className={`lg:col-span-7 rounded-2xl p-6 shadow-xl space-y-5 border ${
-                isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
-              }`}
-            >
-              <div className={`flex items-center justify-between border-b pb-4 ${isLight ? 'border-slate-200' : 'border-[#262638]'}`}>
-                <div>
-                  <h3 className={`text-base font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span>Mid-Page Featured Campaign Banner</span>
-                  </h3>
-                  <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-500' : 'text-stone-400'}`}>
-                    This sponsored banner appears between categories and salons on the customer home feed.
-                  </p>
-                </div>
+      {/* ---------------- MODAL 1: ADD / EDIT HERO PACKAGE BANNER ---------------- */}
+      {heroModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div
+            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${
+              isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
+            }`}
+          >
+            <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
+              <h3 className={`text-base font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <ImageIcon className="w-4 h-4 text-purple-600" />
+                <span>{editingHeroBanner ? 'Edit Hero Banner Slide' : 'Add Hero Banner Slide'}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setHeroModalOpen(false)}
+                className={`cursor-pointer ${isLight ? 'text-slate-400 hover:text-slate-700' : 'text-stone-400 hover:text-white'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-                <div className="flex items-center gap-2">
-                  <label className={`flex items-center gap-2 text-xs font-semibold cursor-pointer select-none ${isLight ? 'text-slate-700' : 'text-stone-300'}`}>
-                    <input
-                      type="checkbox"
-                      checked={campaignFormData.isActive}
-                      onChange={(e) =>
-                        setCampaignFormData({ ...campaignFormData, isActive: e.target.checked })
-                      }
-                      className="w-4 h-4 rounded text-purple-600 bg-stone-900 border-stone-700 cursor-pointer"
-                    />
-                    <span>Active on App</span>
-                  </label>
-                </div>
-              </div>
-
-              <form onSubmit={handleSaveCampaign} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                      Badge Text
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={campaignFormData.badge}
-                      onChange={(e) =>
-                        setCampaignFormData({ ...campaignFormData, badge: e.target.value })
-                      }
-                      placeholder="e.g. Sponsored Campaign"
-                      className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                        isLight
-                          ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                          : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                      }`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                      CTA Button Text
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={campaignFormData.ctaText}
-                      onChange={(e) =>
-                        setCampaignFormData({ ...campaignFormData, ctaText: e.target.value })
-                      }
-                      placeholder="e.g. Claim Pass"
-                      className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                        isLight
-                          ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                          : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                      }`}
-                    />
-                  </div>
-                </div>
-
+            <form onSubmit={handleSubmitHeroBanner} className="space-y-4 pt-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                    Campaign Title
+                    Banner Tag / Badge
                   </label>
                   <input
                     type="text"
-                    required
-                    value={campaignFormData.title}
-                    onChange={(e) =>
-                      setCampaignFormData({ ...campaignFormData, title: e.target.value })
-                    }
-                    placeholder="e.g. InstaaTrim Gold Glow Carnival"
-                    className={`w-full rounded-xl px-3 py-2 font-bold outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                    Subtitle / Co-sponsors
-                  </label>
-                  <input
-                    type="text"
-                    value={campaignFormData.subtitle}
-                    onChange={(e) =>
-                      setCampaignFormData({ ...campaignFormData, subtitle: e.target.value })
-                    }
-                    placeholder="e.g. Co-sponsored by Lakmé & O3+ Pro"
+                    value={heroFormData.tag}
+                    onChange={(e) => setHeroFormData({ ...heroFormData, tag: e.target.value })}
+                    placeholder="e.g. Trending Ritual, 40% OFF"
                     className={`w-full rounded-xl px-3 py-2 outline-none border ${
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
@@ -856,64 +1302,268 @@ export const AdminAdsPage = () => {
                     }`}
                   />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                      Highlight Offer Message
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={campaignFormData.highlight}
-                      onChange={(e) =>
-                        setCampaignFormData({ ...campaignFormData, highlight: e.target.value })
-                      }
-                      placeholder="e.g. Book 2 Services • Get Free De-Tan"
-                      className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                        isLight
-                          ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                          : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                      }`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                      Coupon Code
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={campaignFormData.coupon}
-                      onChange={(e) =>
-                        setCampaignFormData({
-                          ...campaignFormData,
-                          coupon: e.target.value.toUpperCase()
-                        })
-                      }
-                      placeholder="e.g. CARNIVAL50"
-                      className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${
-                        isLight
-                          ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                          : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                      }`}
-                    />
-                  </div>
-                </div>
-
                 <div>
                   <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                    Banner Background Image URL
+                    Subtitle Lead
                   </label>
+                  <input
+                    type="text"
+                    value={heroFormData.subtitle}
+                    onChange={(e) => setHeroFormData({ ...heroFormData, subtitle: e.target.value })}
+                    placeholder="e.g. Precision Beard & Hair Craft"
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                  Banner Title * <span className="text-stone-500 font-normal">(Break line with Enter or \n)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  required
+                  value={heroFormData.title}
+                  onChange={(e) => setHeroFormData({ ...heroFormData, title: e.target.value })}
+                  placeholder="Executive Beard\n& Fade Sculpting"
+                  className={`w-full rounded-xl px-3 py-2 outline-none border font-bold text-sm ${
+                    isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={heroFormData.desc}
+                  onChange={(e) => setHeroFormData({ ...heroFormData, desc: e.target.value })}
+                  placeholder="Short ritual description shown on the hero banner card..."
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
+                    isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                  }`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                    CTA Button Text
+                  </label>
+                  <input
+                    type="text"
+                    value={heroFormData.ctaText}
+                    onChange={(e) => setHeroFormData({ ...heroFormData, ctaText: e.target.value })}
+                    placeholder="e.g. Book Chair, Explore"
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                    Linked Destination Salon
+                  </label>
+                  <select
+                    value={heroFormData.salonId}
+                    onChange={(e) => setHeroFormData({ ...heroFormData, salonId: e.target.value })}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  >
+                    <option value="">All Salons Overview</option>
+                    {salons.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.area || s.city})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                  Banner Image URL *
+                </label>
+                <div className="flex items-center gap-3">
                   <input
                     type="url"
                     required
-                    value={campaignFormData.bannerImage}
-                    onChange={(e) =>
-                      setCampaignFormData({ ...campaignFormData, bannerImage: e.target.value })
-                    }
-                    placeholder="https://images.unsplash.com/..."
+                    value={heroFormData.image}
+                    onChange={(e) => setHeroFormData({ ...heroFormData, image: e.target.value })}
+                    placeholder="https://images.unsplash.com/photo-..."
+                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  />
+                  {heroFormData.image && (
+                    <div className="w-16 h-10 rounded-lg overflow-hidden border border-purple-500/40 shrink-0 bg-stone-900">
+                      <img
+                        src={heroFormData.image}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-2 select-none">
+                <input
+                  type="checkbox"
+                  checked={heroFormData.isActive}
+                  onChange={(e) => setHeroFormData({ ...heroFormData, isActive: e.target.checked })}
+                  className="rounded text-purple-600 bg-stone-900 border-stone-700 w-4 h-4 cursor-pointer"
+                />
+                <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-stone-300'}`}>
+                  Active (Visible in Customer Hero Carousel)
+                </span>
+              </label>
+
+              <div className={`flex justify-end gap-3 pt-4 border-t ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
+                <button
+                  type="button"
+                  onClick={() => setHeroModalOpen(false)}
+                  className={`px-4 py-2 rounded-xl cursor-pointer ${
+                    isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold cursor-pointer shadow-lg"
+                >
+                  {editingHeroBanner ? 'Update Slide' : 'Add Slide'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- MODAL 2: ADD / EDIT MID-PAGE DEAL CAMPAIGN ---------------- */}
+      {midModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div
+            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${
+              isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
+            }`}
+          >
+            <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
+              <h3 className={`text-base font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <Flame className="w-4 h-4 text-purple-600" />
+                <span>{editingMidCampaign ? 'Edit Mid-Page Deal Slide' : 'Add Mid-Page Deal Slide'}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMidModalOpen(false)}
+                className={`cursor-pointer ${isLight ? 'text-slate-400 hover:text-slate-700' : 'text-stone-400 hover:text-white'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitMidCampaign} className="space-y-4 pt-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                    Badge Text
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={midFormData.badge}
+                    onChange={(e) => setMidFormData({ ...midFormData, badge: e.target.value })}
+                    placeholder="e.g. Sponsored Campaign"
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                    CTA Button Text
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={midFormData.ctaText}
+                    onChange={(e) => setMidFormData({ ...midFormData, ctaText: e.target.value })}
+                    placeholder="e.g. Claim Pass"
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                  Campaign Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={midFormData.title}
+                  onChange={(e) => setMidFormData({ ...midFormData, title: e.target.value })}
+                  placeholder="e.g. InstaaTrim Gold Glow Carnival"
+                  className={`w-full rounded-xl px-3 py-2 font-bold outline-none border ${
+                    isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                  Subtitle / Co-sponsors
+                </label>
+                <input
+                  type="text"
+                  value={midFormData.subtitle}
+                  onChange={(e) => setMidFormData({ ...midFormData, subtitle: e.target.value })}
+                  placeholder="e.g. Co-sponsored by Lakmé & O3+ Pro"
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
+                    isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                  }`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                    Highlight Offer Message *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={midFormData.highlight}
+                    onChange={(e) => setMidFormData({ ...midFormData, highlight: e.target.value })}
+                    placeholder="e.g. Book 2 Services • Get Free De-Tan"
                     className={`w-full rounded-xl px-3 py-2 outline-none border ${
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
@@ -922,107 +1572,88 @@ export const AdminAdsPage = () => {
                   />
                 </div>
 
-                <div className={`flex items-center justify-between pt-4 border-t ${isLight ? 'border-slate-200' : 'border-[#262638]'}`}>
-                  {campaignSaved ? (
-                    <span className="text-emerald-600 font-bold flex items-center gap-1.5 text-xs">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Campaign updated successfully!</span>
-                    </span>
-                  ) : (
-                    <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-stone-500'}`}>
-                      Changes are reflected immediately in the customer app.
-                    </span>
-                  )}
-
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs shadow-lg transition-colors cursor-pointer flex items-center gap-2"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Save Campaign Changes</span>
-                  </button>
+                <div>
+                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                    Coupon Code
+                  </label>
+                  <input
+                    type="text"
+                    value={midFormData.coupon}
+                    onChange={(e) => setMidFormData({ ...midFormData, coupon: e.target.value.toUpperCase() })}
+                    placeholder="e.g. CARNIVAL50"
+                    className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  />
                 </div>
-              </form>
-            </div>
+              </div>
 
-            {/* Live Preview Column */}
-            <div className="lg:col-span-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLight ? 'text-slate-700' : 'text-stone-300'}`}>
-                  <Eye className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Customer App Live Preview</span>
+              <div>
+                <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                  Banner Background Image URL *
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="url"
+                    required
+                    value={midFormData.bannerImage}
+                    onChange={(e) => setMidFormData({ ...midFormData, bannerImage: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
+                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${
+                      isLight
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
+                  />
+                  {midFormData.bannerImage && (
+                    <div className="w-16 h-10 rounded-lg overflow-hidden border border-purple-500/40 shrink-0 bg-stone-900">
+                      <img
+                        src={midFormData.bannerImage}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-2 select-none">
+                <input
+                  type="checkbox"
+                  checked={midFormData.isActive}
+                  onChange={(e) => setMidFormData({ ...midFormData, isActive: e.target.checked })}
+                  className="rounded text-purple-600 bg-stone-900 border-stone-700 w-4 h-4 cursor-pointer"
+                />
+                <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-stone-300'}`}>
+                  Active (Visible in Customer Mid-Page Deals Carousel)
                 </span>
-                <span
-                  className={`text-[10px] font-bold px-2.5 py-0.8 rounded-full border ${
-                    campaignFormData.isActive
-                      ? isLight
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                      : isLight
-                      ? 'bg-slate-100 text-slate-600 border-slate-300'
-                      : 'bg-stone-800 text-stone-400 border-stone-700'
+              </label>
+
+              <div className={`flex justify-end gap-3 pt-4 border-t ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
+                <button
+                  type="button"
+                  onClick={() => setMidModalOpen(false)}
+                  className={`px-4 py-2 rounded-xl cursor-pointer ${
+                    isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
                   }`}
                 >
-                  {campaignFormData.isActive ? 'Active on Feed' : 'Hidden (Paused)'}
-                </span>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold cursor-pointer shadow-lg"
+                >
+                  {editingMidCampaign ? 'Update Deal Slide' : 'Add Deal Slide'}
+                </button>
               </div>
-
-              {/* Exact Mockup of SponsoredDealBanner */}
-              <div className="w-full max-w-md mx-auto">
-                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-stone-900 via-stone-850 to-purple-950 p-4 text-white shadow-2xl border border-purple-200/40">
-                  {campaignFormData.bannerImage && (
-                    <img
-                      alt="Campaign background"
-                      src={campaignFormData.bannerImage}
-                      className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay"
-                    />
-                  )}
-
-                  <div className="relative z-10 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-[8.5px] font-extrabold uppercase tracking-wider bg-amber-400 text-stone-950 px-2 py-0.5 rounded-full shadow-2xs">
-                        <Sparkles className="w-2.5 h-2.5 fill-current" />
-                        {campaignFormData.badge || 'Sponsored Campaign'}
-                      </span>
-                      <span className="text-[9px] text-stone-300 font-medium">Limited Seats</span>
-                    </div>
-
-                    <h3 className="text-[14px] font-bold text-white leading-tight">
-                      {campaignFormData.title || 'Your Campaign Title Here'}
-                    </h3>
-
-                    {campaignFormData.subtitle && (
-                      <p className="text-[10px] text-stone-300">{campaignFormData.subtitle}</p>
-                    )}
-
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 mt-2 border border-white/15 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <span className="text-[9px] text-amber-300 font-bold block uppercase tracking-wide">
-                          Special Offer
-                        </span>
-                        <p className="text-[10px] text-stone-100 font-medium truncate">
-                          {campaignFormData.highlight || 'Highlight offer terms'}
-                        </p>
-                      </div>
-
-                      <div className="shrink-0 bg-white text-stone-900 font-extrabold text-[10px] px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-xs">
-                        <Copy className="w-3 h-3 text-brand-maroon" />
-                        <span>CODE: {campaignFormData.coupon || 'CODE'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`mt-3 text-[11px] text-center ${isLight ? 'text-slate-500' : 'text-stone-500'}`}>
-                  Preview mirrors real customer device presentation inside mobile shell.
-                </div>
-              </div>
-            </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ---------------- MODAL: ADD / EDIT CAROUSEL AD ---------------- */}
+      {/* ---------------- MODAL 3: ADD / EDIT SPOTLIGHT AD ---------------- */}
       {adModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -1313,7 +1944,7 @@ export const AdminAdsPage = () => {
         </div>
       )}
 
-      {/* ---------------- MODAL: ADD / EDIT BRAND PARTNER ---------------- */}
+      {/* ---------------- MODAL 4: ADD / EDIT BRAND PARTNER ---------------- */}
       {partnerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div
@@ -1404,7 +2035,7 @@ export const AdminAdsPage = () => {
                     onChange={(e) =>
                       setPartnerFormData({ ...partnerFormData, tagline: e.target.value })
                     }
-                    placeholder="e.g. Paris Hair & Skin"
+                    placeholder="e.g. Parisian Hair Expert"
                     className={`w-full rounded-xl px-3 py-2 outline-none border ${
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
@@ -1414,14 +2045,16 @@ export const AdminAdsPage = () => {
                 </div>
                 <div>
                   <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                    Promotional Offer *
+                    Offer Badge *
                   </label>
                   <input
                     type="text"
                     required
                     value={partnerFormData.offer}
-                    onChange={(e) => setPartnerFormData({ ...partnerFormData, offer: e.target.value })}
-                    placeholder="e.g. 40% OFF or Free Kit"
+                    onChange={(e) =>
+                      setPartnerFormData({ ...partnerFormData, offer: e.target.value })
+                    }
+                    placeholder="e.g. Flat ₹400 OFF"
                     className={`w-full rounded-xl px-3 py-2 outline-none border ${
                       isLight
                         ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
@@ -1433,7 +2066,7 @@ export const AdminAdsPage = () => {
 
               <div>
                 <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                  Associated Coupon Code
+                  Coupon Code
                 </label>
                 <input
                   type="text"
@@ -1444,7 +2077,7 @@ export const AdminAdsPage = () => {
                       couponCode: e.target.value.toUpperCase()
                     })
                   }
-                  placeholder="e.g. LOREAL400"
+                  placeholder="e.g. LOREALPRO"
                   className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${
                     isLight
                       ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'

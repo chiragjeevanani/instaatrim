@@ -4,7 +4,7 @@ import { AudienceToggle } from '../components/AudienceToggle';
 import { TopAdCarousel } from '../components/TopAdCarousel';
 import { CategoryGrid } from '../components/CategoryGrid';
 import { TrendingServices } from '../components/TrendingServices';
-import { BrandPartnerShowcase } from '../components/BrandPartnerShowcase';
+import { FeaturedServicesShowcase } from '../components/FeaturedServicesShowcase';
 import { PromotedSalonsStrip } from '../components/PromotedSalonsStrip';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { EliteStrip } from '../components/EliteStrip';
@@ -44,7 +44,7 @@ export const HomePage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-[#faf9f6] font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto border-x border-stone-200/80 relative selection:bg-stone-200 flex flex-col justify-between overflow-x-hidden box-border shadow-md"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] font-sans text-brand-textDark antialiased min-h-screen pb-24 mx-auto border-x border-purple-200/50 relative selection:bg-brand-lightPink flex flex-col justify-between overflow-x-hidden box-border shadow-md"
     >
       {/* 1. Header with Location, Search & Cart */}
       <TopBar />
@@ -65,8 +65,8 @@ export const HomePage = () => {
         {/* 6. Verified & Promoted Salons Strip */}
         <PromotedSalonsStrip />
 
-        {/* 7. Brand Partners Showcase */}
-        <BrandPartnerShowcase onSelectBrand={handleSelectBrand} />
+        {/* 7. Featured Service Packages (Bookable Services) */}
+        <FeaturedServicesShowcase genderFilter={genderFilter} />
 
         {/* 8. Curated Package Banners */}
         <HeroCarousel />

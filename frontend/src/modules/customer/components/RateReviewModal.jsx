@@ -50,9 +50,9 @@ export const RateReviewModal = ({ isOpen, onClose, booking }) => {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-[380px] bg-[#faf9f6] rounded-2xl shadow-2xl p-4 z-10 space-y-3 border border-stone-300/80"
+          className="relative w-full max-w-[380px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-2xl shadow-2xl p-4 z-10 space-y-3 border border-purple-200/80"
         >
-          <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
+          <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
             <div>
               <h3 className="font-bold text-stone-900 text-sm">Rate Experience</h3>
               <p className="text-[10px] text-stone-500">{booking.salonName}</p>

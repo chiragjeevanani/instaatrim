@@ -231,7 +231,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
   const stepTitles = [
     { num: 1, label: 'Cart' },
     { num: 2, label: 'Slot & Date' },
-    ...(hasUpsell ? [{ num: 3, label: 'Product Kit' }] : []),
+    ...(hasUpsell ? [{ num: 3, label: 'Treatment Option' }] : []),
     { num: 4, label: 'Summary' }
   ];
 
@@ -276,7 +276,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                 <div>
                   <h3 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
                     <span>Service Booking Flow</span>
-                    <span className="text-[10px] bg-[#1e2329] text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+                    <span className="text-[10px] bg-purple-100 text-brand-maroon font-extrabold px-1.5 py-0.2 rounded-full">
                       Step {currentStep === 4 && !hasUpsell ? 3 : currentStep} of {hasUpsell ? 4 : 3}
                     </span>
                   </h3>
@@ -583,17 +583,17 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 text-[8.5px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
                       <Sparkles className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
-                      Brand Kit Customizer
+                      Treatment Customizer
                     </span>
                     <span className="text-[8.5px] bg-purple-100 text-brand-maroon font-black px-1.5 py-0.5 rounded">
-                      Official Partner Kits
+                      In-Salon Service Upgrade
                     </span>
                   </div>
                   <h4 className="text-xs font-black text-stone-900 tracking-tight">
-                    Step 3: Customise {cartCategories[0] ? `${cartCategories[0]} Kit` : 'Treatment Kit'}
+                    Step 3: Customise {cartCategories[0] ? `${cartCategories[0]} Service` : 'Treatment Service'}
                   </h4>
                   <p className="text-[10.5px] text-stone-500 leading-snug">
-                    Select your preferred brand formulation. Salon specialists will prepare your session with genuine certified salon kits.
+                    Select your preferred treatment formulation. Your salon specialist will tailor your session with this certified treatment ritual.
                   </p>
                 </div>
 
@@ -607,7 +607,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                         onClick={() => setPreferredProduct(null)}
                         className="text-[10px] text-rose-600 font-bold hover:underline cursor-pointer"
                       >
-                        Reset Kit Selection
+                        Reset Selection
                       </button>
                     )}
                   </div>
@@ -822,7 +822,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                     </>
                   ) : (
                     <>
-                      <span>{hasUpsell ? 'Continue to Product Kit' : 'Review Summary'}</span>
+                      <span>{hasUpsell ? 'Customize Treatment' : 'Review Summary'}</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </>
                   )}

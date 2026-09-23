@@ -225,14 +225,73 @@ export const CustomerProvider = ({ children }) => {
   );
 
   const rateBooking = useCallback(
-    (bookingId, rating, review) => {
-      api.bookings
-        .addRating(bookingId, { rating, review })
-        .then(() => showToast('Thank you for your rating & review!'))
-        .catch(() => showToast('Could not submit review'));
+    async (bookingId, rating, reviewText, salonId, serviceName = '') => {
+      try {
+        await api.bookings.addRating(bookingId, { rating, review: reviewText });
+        if (salonId) {
+          await api.reviews.add(salonId, {
+            customerName: user.name || 'Verified Customer',
+            rating: Number(rating),
+            comment: reviewText,
+            service: serviceName || 'Salon Service',
+            bookingId
+          });
+        }
+        showToast('Thank you for your rating & review!');
+      } catch {
+        showToast('Could not submit review');
+      }
     },
-    [showToast]
+    [user.name, showToast]
   );
+
+  // ---------------- Notifications & Broadcasts ----------------
+  const notifications = useMemo(
+    () =>
+      (state.notifications || []).filter(
+        (n) => n.audience === 'all' || (n.audience === 'customer' && (!n.audienceId || n.audienceId === user.id))
+      ),
+    [state.notifications, user.id]
+  );
+
+  const markNotificationRead = useCallback((notificationId) => {
+    api.notifications.markRead(notificationId).catch(() => {});
+  }, []);
+
+  // ---------------- Support Tickets ----------------
+  const createSupportTicket = useCallback(
+    async (subject, category, messageText) => {
+      try {
+        await api.tickets.create({
+          userId: user.id,
+          userName: user.name || 'Customer',
+          userRole: 'customer',
+          userContact: user.phone ? `+91 ${user.phone}` : user.email || 'customer',
+          salonId: null,
+          salonName: 'InstaaTrim Customer Care',
+          category: category || 'Customer Query',
+          subject: subject || 'Customer Support Request',
+          messages: [
+            {
+              sender: 'customer',
+              senderName: user.name || 'Customer',
+              text: messageText,
+              timestamp: new Date().toISOString()
+            }
+          ]
+        });
+        showToast('Support ticket sent! Our team will respond shortly.');
+      } catch (e) {
+        showToast(e.message || 'Could not submit support ticket');
+      }
+    },
+    [user, showToast]
+  );
+
+  // ---------------- Editorial Items & Elite Plan ----------------
+  const skincareItems = state.skincareItems || [];
+  const trendsItems = state.trendsItems || [];
+  const elitePlan = state.elitePlan || {};
 
   // ---------------- Favourites (persisted on the customer profile) ----------------
   const favoriteSalonIds = user.favoriteSalonIds || [];
@@ -275,7 +334,19 @@ export const CustomerProvider = ({ children }) => {
       .catch(() => {});
   }, [showToast]);
 
-  const updateProfile = useCallback((patch) => api.customers.updateProfile(patch), []);
+  const updateProfile = useCallback(
+    async (patch) => {
+      try {
+        const updated = await api.customers.updateProfile(patch);
+        showToast('Profile updated successfully');
+        return updated;
+      } catch (e) {
+        showToast(e.message || 'Could not update profile');
+        throw e;
+      }
+    },
+    [showToast]
+  );
 
   return (
     <CustomerContext.Provider
@@ -323,6 +394,12 @@ export const CustomerProvider = ({ children }) => {
         rateBooking,
         favoriteSalonIds,
         toggleFavorite,
+        notifications,
+        markNotificationRead,
+        createSupportTicket,
+        skincareItems,
+        trendsItems,
+        elitePlan,
         toastMessage,
         showToast
       }}

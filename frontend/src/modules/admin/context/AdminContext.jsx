@@ -72,6 +72,11 @@ export const AdminProvider = ({ children }) => {
   const heroBanners = state.heroBanners || [];
   const midPageCampaigns = state.midPageCampaigns || [];
   const midPageCampaign = state.midPageCampaign || {};
+  const payouts = state.payouts || [];
+  const platformSettings = state.platformSettings || {};
+  const elitePlan = state.elitePlan || {};
+  const skincareItems = state.skincareItems || [];
+  const trendsItems = state.trendsItems || [];
 
   // KPIs
   const kpis = useMemo(() => {
@@ -90,6 +95,7 @@ export const AdminProvider = ({ children }) => {
     const pendingOffers = offers.filter((o) => o.approvalStatus === 'pending').length;
     const openTickets = tickets.filter((t) => t.status === 'Open').length;
     const totalCustomers = customers.length;
+    const pendingPayouts = payouts.filter((p) => p.status === 'Pending').length;
 
     return {
       totalRevenue,
@@ -100,9 +106,10 @@ export const AdminProvider = ({ children }) => {
       pendingSalons,
       pendingOffers,
       openTickets,
-      totalCustomers
+      totalCustomers,
+      pendingPayouts
     };
-  }, [bookings, salons, offers, tickets, customers]);
+  }, [bookings, salons, offers, tickets, customers, payouts]);
 
   // Salon actions
   const verifySalon = useCallback(async (salonId, status = 'Live') => {
@@ -513,6 +520,117 @@ export const AdminProvider = ({ children }) => {
     }
   }, [showToast]);
 
+  // Payout actions
+  const approvePayout = useCallback(async (payoutId, utr, notes = '') => {
+    try {
+      await api.payouts.updateStatus(payoutId, 'Transferred', {
+        utr: utr || `UTR${Date.now()}`,
+        settledAt: new Date().toISOString(),
+        notes
+      });
+      showToast(`Payout ${payoutId} approved and marked settled!`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to approve payout', 'error');
+    }
+  }, [showToast]);
+
+  const rejectPayout = useCallback(async (payoutId, reason = '') => {
+    try {
+      await api.payouts.updateStatus(payoutId, 'Rejected', { rejectionReason: reason });
+      showToast(`Payout ${payoutId} rejected`, 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to reject payout', 'error');
+    }
+  }, [showToast]);
+
+  const deletePayout = useCallback(async (payoutId) => {
+    try {
+      await api.payouts.delete(payoutId);
+      showToast('Payout record removed', 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete payout', 'error');
+    }
+  }, [showToast]);
+
+  // Platform settings actions
+  const updatePlatformSettings = useCallback(async (patch) => {
+    try {
+      await api.platformSettings.update(patch);
+      showToast('Platform settings saved successfully!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to save platform settings', 'error');
+    }
+  }, [showToast]);
+
+  // Elite plan actions
+  const updateElitePlan = useCallback(async (patch) => {
+    try {
+      await api.elitePlan.update(patch);
+      showToast('Elite Membership settings updated!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to update Elite plan', 'error');
+    }
+  }, [showToast]);
+
+  // Editorial actions
+  const addSkincareItem = useCallback(async (data) => {
+    try {
+      const item = await api.editorial.addSkincare(data);
+      showToast(`Added skincare item "${item.title}"`, 'success');
+      return item;
+    } catch (err) {
+      showToast(err.message || 'Failed to add skincare item', 'error');
+    }
+  }, [showToast]);
+
+  const updateSkincareItem = useCallback(async (id, patch) => {
+    try {
+      const updated = await api.editorial.updateSkincare(id, patch);
+      showToast('Skincare item updated', 'success');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to update skincare item', 'error');
+    }
+  }, [showToast]);
+
+  const deleteSkincareItem = useCallback(async (id) => {
+    try {
+      await api.editorial.deleteSkincare(id);
+      showToast('Skincare item deleted', 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete skincare item', 'error');
+    }
+  }, [showToast]);
+
+  const addTrendItem = useCallback(async (data) => {
+    try {
+      const item = await api.editorial.addTrend(data);
+      showToast(`Added trend "${item.title}"`, 'success');
+      return item;
+    } catch (err) {
+      showToast(err.message || 'Failed to add trend', 'error');
+    }
+  }, [showToast]);
+
+  const updateTrendItem = useCallback(async (id, patch) => {
+    try {
+      const updated = await api.editorial.updateTrend(id, patch);
+      showToast('Trend updated', 'success');
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to update trend', 'error');
+    }
+  }, [showToast]);
+
+  const deleteTrendItem = useCallback(async (id) => {
+    try {
+      await api.editorial.deleteTrend(id);
+      showToast('Trend deleted', 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete trend', 'error');
+    }
+  }, [showToast]);
+
   const value = useMemo(
     () => ({
       isAuthenticated,
@@ -535,6 +653,11 @@ export const AdminProvider = ({ children }) => {
       notifications,
       services,
       staff,
+      payouts,
+      platformSettings,
+      elitePlan,
+      skincareItems,
+      trendsItems,
       kpis,
       createCategory,
       updateCategory,
@@ -579,7 +702,18 @@ export const AdminProvider = ({ children }) => {
       createHeroBanner,
       updateHeroBanner,
       deleteHeroBanner,
-      toggleHeroBannerActive
+      toggleHeroBannerActive,
+      approvePayout,
+      rejectPayout,
+      deletePayout,
+      updatePlatformSettings,
+      updateElitePlan,
+      addSkincareItem,
+      updateSkincareItem,
+      deleteSkincareItem,
+      addTrendItem,
+      updateTrendItem,
+      deleteTrendItem
     }),
     [
       isAuthenticated,
@@ -601,6 +735,11 @@ export const AdminProvider = ({ children }) => {
       notifications,
       services,
       staff,
+      payouts,
+      platformSettings,
+      elitePlan,
+      skincareItems,
+      trendsItems,
       advertisements,
       brandPartners,
       heroBanners,
@@ -645,7 +784,18 @@ export const AdminProvider = ({ children }) => {
       createHeroBanner,
       updateHeroBanner,
       deleteHeroBanner,
-      toggleHeroBannerActive
+      toggleHeroBannerActive,
+      approvePayout,
+      rejectPayout,
+      deletePayout,
+      updatePlatformSettings,
+      updateElitePlan,
+      addSkincareItem,
+      updateSkincareItem,
+      deleteSkincareItem,
+      addTrendItem,
+      updateTrendItem,
+      deleteTrendItem
     ]
   );
 

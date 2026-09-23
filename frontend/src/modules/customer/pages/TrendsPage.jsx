@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCustomer } from '../context/CustomerContext';
 import { BottomNav } from '../components/BottomNav';
 import { CartDrawer } from '../components/CartDrawer';
 import { ArrowLeft, Flame, Sparkles, Heart } from 'lucide-react';
@@ -7,33 +8,9 @@ import { motion } from 'framer-motion';
 
 export const TrendsPage = () => {
   const navigate = useNavigate();
+  const { trendsItems = [] } = useCustomer();
 
-  const trends = [
-    {
-      id: 't-1',
-      title: 'Korean Rice Towel Body Polishing',
-      tag: '#1 Trend Across Salons',
-      reads: '14.2k bookings',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDritZYUH3wWaqkvavo6kcFqWBR8YbSIvUYKV-YBRJo8rH1tMeY16TLt53edhR-5vbpC_jQ5pcVDRmop0Ya7L87JrMW41Xx7xOAm_8PXybl3wHwppBJqgvWJCkG7Pg_h6btwEeLQPRQCRMlEeU2MVu2f_dn20QdX6hogxOhBK1m1X8jvxSC5vPEOF4H1HCZonTB1St4pUkQsWdKC_bhQV4awCLT1mqWcGmkl0YO1eCMlZE5DbV9zzkzIA',
-      desc: 'Inspired by traditional bathhouses in Seoul, combining physical Italy towel exfoliation with hot oil seal.'
-    },
-    {
-      id: 't-2',
-      title: 'HydraGlo Deep Pore Diamond Infusion',
-      tag: 'Celebrity Glow',
-      reads: '21.5k bookings',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKOZvsFacJMzTEx78j1kJJGV9xWdwRp3-fNcdJELVxA84BL49qmSzZQFwfF_DwDPSujw7BeLRcD36407W6shCprJc3SSww_wPfLk-c9i22zEkrsXoLx12PYtglXJKNFcLoUe4fTw5sx5jls1407Q8MD3OFTg_bFRv_-WLEWbUHkDje49n770wAyt2dzq-gAFGTR9XgwR3mBKrdOwU3d91eojLJ6B5YQGtJnz0tQ8gtpjEm672xqwnp-w',
-      desc: 'Multi-stage facial combining vortex vacuum debris extraction and hyaluronic hydration.'
-    },
-    {
-      id: 't-3',
-      title: 'Japanese Head Spa & Scalp Detox',
-      tag: 'Viral ASMR Ritual',
-      reads: '9.8k bookings',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80',
-      desc: 'Water halo circulation with botanical tea rinse and tension-relieving acupressure.'
-    }
-  ];
+  const trends = trendsItems.filter((t) => t.isActive !== false);
 
   return (
     <div

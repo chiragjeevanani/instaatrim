@@ -15,6 +15,9 @@ import { EditSalonProfilePage } from '../pages/EditSalonProfilePage';
 import { SalonOnboardingPage } from '../pages/SalonOnboardingPage';
 import { SalonRegistrationPage } from '../pages/SalonRegistrationPage';
 import { AddServicePage } from '../pages/AddServicePage';
+import { SalonPayoutsPage } from '../pages/SalonPayoutsPage';
+import { SalonStaffPage } from '../pages/SalonStaffPage';
+import { SalonReviewsPage } from '../pages/SalonReviewsPage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Routes reachable without a partner session — login and registration/onboarding
@@ -44,7 +47,10 @@ export const SalonRoutes = () => {
     location.pathname.includes('/salon/services/new') ||
     location.pathname.includes('/salon/services/edit') ||
     location.pathname.includes('/salon/profile/edit') ||
-    location.pathname.includes('/salon/profile/business');
+    location.pathname.includes('/salon/profile/business') ||
+    location.pathname.includes('/salon/payouts') ||
+    location.pathname.includes('/salon/staff') ||
+    location.pathname.includes('/salon/reviews');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none">
@@ -64,6 +70,9 @@ export const SalonRoutes = () => {
             <Route path="/services/edit/:id" element={<AddServicePage />} />
             <Route path="/offers" element={<SalonOffersPage />} />
             <Route path="/analytics" element={<SalonAnalyticsPage />} />
+            <Route path="/payouts" element={<SalonPayoutsPage />} />
+            <Route path="/staff" element={<SalonStaffPage />} />
+            <Route path="/reviews" element={<SalonReviewsPage />} />
             <Route path="/profile" element={<SalonProfilePage />} />
             <Route path="/profile/business" element={<SalonBusinessProfilePage />} />
             <Route path="/profile/edit" element={<EditSalonProfilePage />} />

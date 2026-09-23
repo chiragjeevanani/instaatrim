@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCustomer } from '../context/CustomerContext';
 import { BottomNav } from '../components/BottomNav';
 import { CartDrawer } from '../components/CartDrawer';
 import { Sparkles, ArrowLeft, Heart, Star, ShoppingBag, ShieldCheck } from 'lucide-react';
@@ -7,36 +8,9 @@ import { motion } from 'framer-motion';
 
 export const SkincarePage = () => {
   const navigate = useNavigate();
+  const { skincareItems = [] } = useCustomer();
 
-  const rituals = [
-    {
-      id: 'skin-1',
-      title: 'Korean Rice Milk Gentle Cleansing Scrub',
-      subtitle: 'Micro-exfoliating powder for silky pore detox',
-      price: 649,
-      originalPrice: 999,
-      rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 'skin-2',
-      title: 'Centella & Green Tea Calming Mask Therapy',
-      subtitle: 'Instant redness soothe & skin barrier repair',
-      price: 899,
-      originalPrice: 1399,
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      id: 'skin-3',
-      title: 'Hydra-Infusion Hyaluronic Glass Skin Serum',
-      subtitle: 'Deep dermal hydration with botanical peptides',
-      price: 1199,
-      originalPrice: 1899,
-      rating: 5.0,
-      image: 'https://images.unsplash.com/photo-1608248597359-2e06915cf505?auto=format&fit=crop&w=600&q=80'
-    }
-  ];
+  const rituals = skincareItems.filter((i) => i.isActive !== false);
 
   return (
     <motion.div

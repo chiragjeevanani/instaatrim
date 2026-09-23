@@ -1,12 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
-import { ShoppingBag, Search, MapPin, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Search, MapPin, ChevronDown, Bell } from 'lucide-react';
+import { CustomerNotificationsSheet } from './CustomerNotificationsSheet';
 
 export const TopBar = ({ onSearchClick }) => {
   const navigate = useNavigate();
-  const { currentLocation, setIsReferModalOpen, setIsEliteModalOpen, cartItems, setIsCartOpen } = useCustomer();
+  const {
+    currentLocation,
+    setIsReferModalOpen,
+    setIsEliteModalOpen,
+    cartItems,
+    setIsCartOpen,
+    notifications = []
+  } = useCustomer();
   const [query, setQuery] = useState('');
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const runSearch = () => {
     if (onSearchClick) {
@@ -18,61 +29,77 @@ export const TopBar = ({ onSearchClick }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full max-w-[480px] mx-auto bg-[#f8f4fb]/95 backdrop-blur-md pt-1.5 px-3.5 pb-1 box-border border-b border-purple-100">
-      {/* Top Utility Row: Location & Badges */}
-      <div className="flex items-center justify-between gap-1.5 mb-1.5 w-full">
-        {/* Location Selector - Slender, delicate, compact */}
-        <div
-          className="flex items-center gap-1 flex-1 min-w-0 cursor-pointer active:opacity-75 transition-opacity"
-          data-purpose="location-picker"
-          onClick={() => navigate('/customer/location')}
-        >
-          <MapPin className="w-3.5 h-3.5 text-brand-maroon shrink-0 stroke-[1.8]" />
-          <div className="truncate leading-none">
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-[13px] tracking-tight text-stone-800 truncate">
-                {currentLocation?.area ? `${currentLocation.area.slice(0, 13)}..` : 'South Tukoga..'}
-              </span>
-              <ChevronDown className="w-3 h-3 text-stone-500 stroke-[2]" />
+    <>
+      <header className="sticky top-0 z-40 w-full max-w-[480px] mx-auto bg-[#f8f4fb]/95 backdrop-blur-md pt-1.5 px-3.5 pb-1 box-border border-b border-purple-100">
+        {/* Top Utility Row: Location & Badges */}
+        <div className="flex items-center justify-between gap-1.5 mb-1.5 w-full">
+          {/* Location Selector - Slender, delicate, compact */}
+          <div
+            className="flex items-center gap-1 flex-1 min-w-0 cursor-pointer active:opacity-75 transition-opacity"
+            data-purpose="location-picker"
+            onClick={() => navigate('/customer/location')}
+          >
+            <MapPin className="w-3.5 h-3.5 text-brand-maroon shrink-0 stroke-[1.8]" />
+            <div className="truncate leading-none">
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-[13px] tracking-tight text-stone-800 truncate">
+                  {currentLocation?.area ? `${currentLocation.area.slice(0, 13)}..` : 'South Tukoga..'}
+                </span>
+                <ChevronDown className="w-3 h-3 text-stone-500 stroke-[2]" />
+              </div>
+              <p className="text-[9.5px] font-normal text-stone-500 truncate mt-0.5">
+                {currentLocation?.landmark || 'Corporate House'}
+              </p>
             </div>
-            <p className="text-[9.5px] font-normal text-stone-500 truncate mt-0.5">
-              {currentLocation?.landmark || 'Corporate House'}
-            </p>
           </div>
-        </div>
 
-        {/* Action Badges (Refer & Earn, Buy Elite, Cart Indicator) */}
-        <div className="flex items-center gap-1.5 shrink-0" data-purpose="reward-actions">
-          {/* Refer & Earn */}
-          <button
-            type="button"
-            onClick={() => setIsReferModalOpen(true)}
-            className="flex items-center gap-1 bg-[#2e1065] text-white px-2 py-0.5 h-[26px] rounded-full text-left active:scale-95 transition-transform cursor-pointer"
-          >
-            <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-[8px] text-stone-900 font-bold shrink-0">
-              👑
-            </div>
-            <span className="text-[8px] font-semibold leading-tight text-purple-100">
-              Refer &amp;<br />Earn
-            </span>
-          </button>
-
-          {/* Buy Elite */}
-          <button
-            type="button"
-            onClick={() => setIsEliteModalOpen(true)}
-            className="flex flex-col items-center justify-center bg-[#1e1035] text-white px-2.5 h-[26px] rounded-full border border-purple-800/40 active:scale-95 transition-transform min-w-[38px] cursor-pointer"
-          >
-            <span className="text-[7.5px] text-purple-300 font-normal leading-none">Buy</span>
-            <span className="text-[11px] font-serif font-bold text-[#e1b670] leading-none mt-0.5">Elite</span>
-          </button>
-
-          {/* Cart Icon (if items in cart) */}
-          {cartItems.length > 0 && (
+          {/* Action Badges (Notifications, Refer & Earn, Buy Elite, Cart Indicator) */}
+          <div className="flex items-center gap-1.5 shrink-0" data-purpose="reward-actions">
+            {/* Notification Bell */}
             <button
               type="button"
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-1 bg-brand-maroon text-white rounded-full shadow-xs active:scale-95 transition-transform cursor-pointer"
+              onClick={() => setIsNotifOpen(true)}
+              className="relative p-1.5 rounded-full bg-purple-100/70 hover:bg-purple-200/80 text-stone-700 active:scale-95 transition-transform cursor-pointer"
+              title="Notifications"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-brand-maroon text-white text-[8px] font-bold flex items-center justify-center animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Refer & Earn */}
+            <button
+              type="button"
+              onClick={() => setIsReferModalOpen(true)}
+              className="flex items-center gap-1 bg-[#2e1065] text-white px-2 py-0.5 h-[26px] rounded-full text-left active:scale-95 transition-transform cursor-pointer"
+            >
+              <div className="w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center text-[8px] text-stone-900 font-bold shrink-0">
+                👑
+              </div>
+              <span className="text-[8px] font-semibold leading-tight text-purple-100">
+                Refer &amp;<br />Earn
+              </span>
+            </button>
+
+            {/* Buy Elite */}
+            <button
+              type="button"
+              onClick={() => setIsEliteModalOpen(true)}
+              className="flex flex-col items-center justify-center bg-[#1e1035] text-white px-2.5 h-[26px] rounded-full border border-purple-800/40 active:scale-95 transition-transform min-w-[38px] cursor-pointer"
+            >
+              <span className="text-[7.5px] text-purple-300 font-normal leading-none">Buy</span>
+              <span className="text-[11px] font-serif font-bold text-[#e1b670] leading-none mt-0.5">Elite</span>
+            </button>
+
+            {/* Cart Icon (if items in cart) */}
+            {cartItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-1 bg-brand-maroon text-white rounded-full shadow-xs active:scale-95 transition-transform cursor-pointer"
               title="View Cart"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
@@ -105,5 +132,10 @@ export const TopBar = ({ onSearchClick }) => {
         />
       </form>
     </header>
+    <CustomerNotificationsSheet
+      isOpen={isNotifOpen}
+      onClose={() => setIsNotifOpen(false)}
+    />
+  </>
   );
 };

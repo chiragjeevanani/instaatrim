@@ -236,6 +236,127 @@ export const SalonProvider = ({ children }) => {
   const staff = useMemo(() => state.staff.filter((s) => s.salonId === salonId), [state.staff, salonId]);
   const stations = useMemo(() => state.stations.filter((s) => s.salonId === salonId), [state.stations, salonId]);
 
+  const addStaff = useCallback(
+    (data) => {
+      api.staff
+        .add(salonId, data)
+        .then((st) => showToast(`Stylist "${st.name}" added to salon team`))
+        .catch(() => showToast('Could not add staff member', 'error'));
+    },
+    [salonId, showToast]
+  );
+
+  const updateStaff = useCallback(
+    (staffId, patch) => {
+      api.staff
+        .update(staffId, patch)
+        .then(() => showToast('Staff details updated'))
+        .catch(() => showToast('Could not update staff member', 'error'));
+    },
+    [showToast]
+  );
+
+  const removeStaff = useCallback(
+    (staffId) => {
+      api.staff
+        .remove(staffId)
+        .then(() => showToast('Staff member removed'))
+        .catch(() => showToast('Could not remove staff member', 'error'));
+    },
+    [showToast]
+  );
+
+  // ---------------- Payouts & Settlements ----------------
+  const payouts = useMemo(() => (state.payouts || []).filter((p) => p.salonId === salonId), [state.payouts, salonId]);
+
+  const requestPayout = useCallback(
+    async (amount, notes = '') => {
+      try {
+        const commRate = salonProfile.commissionRate || '12%';
+        const rateNum = Number(commRate.replace(/\D/g, '')) || 12;
+        const commDeducted = Math.round((Number(amount) * rateNum) / 100);
+        const net = Number(amount) - commDeducted;
+
+        await api.payouts.request({
+          salonId,
+          salonName: salonProfile.name,
+          bankAccount: salonProfile.accountNumber || '•••• •••• 4892 (HDFC)',
+          ifsc: salonProfile.ifscCode || 'HDFC0001032',
+          grossAmount: Number(amount),
+          commissionRate: commRate,
+          commissionDeducted: commDeducted,
+          netAmount: net,
+          notes: notes || 'Partner withdrawal request'
+        });
+        showToast(`Payout request for ₹${Number(amount).toLocaleString('en-IN')} submitted to Admin!`);
+      } catch (e) {
+        showToast(e.message || 'Could not request payout', 'error');
+      }
+    },
+    [salonId, salonProfile, showToast]
+  );
+
+  // ---------------- Customer Reviews & Partner Replies ----------------
+  const reviews = useMemo(() => (state.reviews || []).filter((r) => r.salonId === salonId), [state.reviews, salonId]);
+
+  const replyReview = useCallback(
+    (reviewId, replyText) => {
+      api.reviews
+        .reply(reviewId, replyText)
+        .then(() => showToast('Your reply was posted to customer review!'))
+        .catch(() => showToast('Could not post reply', 'error'));
+    },
+    [showToast]
+  );
+
+  // ---------------- Notifications & Broadcasts ----------------
+  const notifications = useMemo(
+    () =>
+      (state.notifications || []).filter(
+        (n) => n.audience === 'all' || (n.audience === 'salon' && (!n.audienceId || n.audienceId === salonId))
+      ),
+    [state.notifications, salonId]
+  );
+
+  const markNotificationRead = useCallback((notificationId) => {
+    api.notifications.markRead(notificationId).catch(() => {});
+  }, []);
+
+  // ---------------- Support Tickets ----------------
+  const tickets = useMemo(
+    () => (state.tickets || []).filter((t) => t.salonId === salonId || t.userId === salonId),
+    [state.tickets, salonId]
+  );
+
+  const createSupportTicket = useCallback(
+    async (subject, category, messageText) => {
+      try {
+        await api.tickets.create({
+          userId: salonId,
+          userName: `${salonProfile.ownerName || 'Owner'} (${salonProfile.name})`,
+          userRole: 'salon',
+          userContact: salonProfile.mobile || '+91 98765 43210',
+          salonId,
+          salonName: salonProfile.name,
+          category: category || 'Partner Query',
+          subject: subject || 'Partner Assistance Request',
+          messages: [
+            {
+              sender: 'salon',
+              senderName: salonProfile.ownerName || salonProfile.name,
+              text: messageText,
+              timestamp: new Date().toISOString()
+            }
+          ]
+        });
+        showToast('Support ticket submitted to Admin Desk!');
+      } catch (e) {
+        showToast(e.message || 'Could not submit support ticket', 'error');
+      }
+    },
+    [salonId, salonProfile, showToast]
+  );
+
   // ---------------- Modal-open counter (unrelated to shared store) ----------------
   const [activeModalCount, setActiveModalCount] = useState(0);
   const openModal = useCallback(() => setActiveModalCount((prev) => prev + 1), []);
@@ -252,7 +373,8 @@ export const SalonProvider = ({ children }) => {
     const cancelledToday = todayBookings.filter((b) => b.status === BOOKING_STATUS.CANCELLED);
 
     const totalRevenueToday =
-      completedToday.reduce((acc, b) => acc + b.totalAmount, 0) + inServiceToday.reduce((acc, b) => acc + b.totalAmount, 0);
+      completedToday.reduce((acc, b) => acc + (b.finalPaid || b.totalAmount), 0) +
+      inServiceToday.reduce((acc, b) => acc + (b.finalPaid || b.totalAmount), 0);
 
     const instantBookingsCount = todayBookings.filter((b) => b.bookingMode === 'Instant').length;
     const scheduledBookingsCount = todayBookings.filter((b) => b.bookingMode === 'Scheduled').length;
@@ -261,6 +383,13 @@ export const SalonProvider = ({ children }) => {
     const allTimeCancelled = bookings.filter((b) => b.status === BOOKING_STATUS.CANCELLED);
     const totalTerminal = allTimeCompleted.length + allTimeCancelled.length;
     const cancellationRate = totalTerminal > 0 ? Math.round((allTimeCancelled.length / totalTerminal) * 1000) / 10 : 0;
+
+    const totalGmv = allTimeCompleted.reduce((sum, b) => sum + (b.finalPaid || b.totalAmount), 0);
+    const totalPayoutsSettledOrPending = payouts
+      .filter((p) => p.status === 'Transferred' || p.status === 'Pending' || p.status === 'Approved')
+      .reduce((sum, p) => sum + p.grossAmount, 0);
+
+    const availablePayout = Math.max(0, totalGmv - totalPayoutsSettledOrPending + 15000);
 
     const customerCounts = {};
     bookings.forEach((b) => {
@@ -287,11 +416,11 @@ export const SalonProvider = ({ children }) => {
       completionRate: totalTerminal > 0 ? Math.round((allTimeCompleted.length / totalTerminal) * 1000) / 10 : 100,
       repeatCustomers,
       newCustomersToday,
-      monthGmv: 142850,
-      availablePayout: 28450,
-      nextPayoutDate: 'Tomorrow'
+      monthGmv: totalGmv > 0 ? totalGmv : 142850,
+      availablePayout,
+      nextPayoutDate: 'Weekly Batch (Monday)'
     };
-  }, [bookings, occupiedChairs, salonProfile.totalChairs]);
+  }, [bookings, occupiedChairs, salonProfile.totalChairs, payouts]);
 
   return (
     <SalonContext.Provider
@@ -315,6 +444,10 @@ export const SalonProvider = ({ children }) => {
         offers,
         staff,
         stations,
+        payouts,
+        reviews,
+        notifications,
+        tickets,
         metrics,
         toast,
         showToast,
@@ -334,7 +467,14 @@ export const SalonProvider = ({ children }) => {
         toggleServiceActive,
         toggleInstantEligible,
         addOffer,
-        toggleOfferActive
+        toggleOfferActive,
+        addStaff,
+        updateStaff,
+        removeStaff,
+        requestPayout,
+        replyReview,
+        markNotificationRead,
+        createSupportTicket
       }}
     >
       {children}

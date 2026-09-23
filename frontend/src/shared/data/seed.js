@@ -1041,3 +1041,254 @@ export const ADMIN_CREDENTIALS = {
   role: 'super_admin'
 };
 
+// ---------------------------------------------------------------------------
+// Payouts / Financial settlements
+// ---------------------------------------------------------------------------
+export const DEFAULT_PAYOUTS = [
+  {
+    id: 'pay-101',
+    salonId: 'sal-1',
+    salonName: 'Luxe Glow Salon & Spa',
+    bankAccount: '•••• •••• 4892 (HDFC)',
+    ifsc: 'HDFC0001234',
+    grossAmount: 18500,
+    commissionRate: '12%',
+    commissionDeducted: 2220,
+    netAmount: 16280,
+    status: 'Pending',
+    requestedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    settledAt: null,
+    utr: null,
+    notes: 'Weekly booking settlement payout request'
+  },
+  {
+    id: 'pay-100',
+    salonId: 'sal-1',
+    salonName: 'Luxe Glow Salon & Spa',
+    bankAccount: '•••• •••• 4892 (HDFC)',
+    ifsc: 'HDFC0001234',
+    grossAmount: 24000,
+    commissionRate: '12%',
+    commissionDeducted: 2880,
+    netAmount: 21120,
+    status: 'Transferred',
+    requestedAt: new Date(Date.now() - 86400000 * 8).toISOString(),
+    settledAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+    utr: 'UTR84920491024',
+    notes: 'Fortnightly settlement processed'
+  },
+  {
+    id: 'pay-102',
+    salonId: 'sal-2',
+    salonName: 'Enrich Glamour Studio',
+    bankAccount: '•••• •••• 9921 (ICICI)',
+    ifsc: 'ICIC0000452',
+    grossAmount: 14200,
+    commissionRate: '10%',
+    commissionDeducted: 1420,
+    netAmount: 12780,
+    status: 'Approved',
+    requestedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    settledAt: null,
+    utr: null,
+    notes: 'Salon festival rush payout'
+  }
+];
+
+// ---------------------------------------------------------------------------
+// Platform global commercial & operational settings
+// ---------------------------------------------------------------------------
+export const DEFAULT_PLATFORM_SETTINGS = {
+  convenienceFee: 15,
+  taxRatePercent: 5,
+  defaultCommissionRatePercent: 12,
+  referralBonusCustomer: 50,
+  referralBonusReferee: 100,
+  minPayoutThreshold: 1000,
+  cancellationFreeHours: 1,
+  supportPhone: '1800-200-8811',
+  supportEmail: 'support@instaatrim.com'
+};
+
+// ---------------------------------------------------------------------------
+// Elite membership pass configurations
+// ---------------------------------------------------------------------------
+export const DEFAULT_ELITE_PLAN = {
+  id: 'elite-pass-3m',
+  name: 'InstaaTrim Elite Club',
+  tagline: 'VIP Membership & Priority Beauty Access',
+  price: 299,
+  originalPrice: 999,
+  validityDays: 90,
+  discountPercent: 10,
+  perks: [
+    'Flat 10% Extra Discount on all bookings across all salons',
+    'Free cancellation up to 1 hour before scheduled time',
+    'Priority slot access & zero convenience charges',
+    'Free Safety & Sanitized Kit on every visit'
+  ],
+  isActive: true
+};
+
+// ---------------------------------------------------------------------------
+// Curated Skincare Studio & Beauty Trends items
+// ---------------------------------------------------------------------------
+export const DEFAULT_EDITORIAL_SKINCARE = [
+  {
+    id: 'skin-1',
+    title: 'Korean Rice Milk Gentle Cleansing Scrub',
+    subtitle: 'Micro-exfoliating powder for silky pore detox',
+    price: 649,
+    originalPrice: 999,
+    rating: 4.9,
+    category: 'Cleanser',
+    salonId: 'sal-1',
+    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80',
+    isActive: true
+  },
+  {
+    id: 'skin-2',
+    title: 'Centella & Green Tea Calming Mask Therapy',
+    subtitle: 'Instant redness soothe & skin barrier repair',
+    price: 899,
+    originalPrice: 1399,
+    rating: 4.8,
+    category: 'Mask & Therapy',
+    salonId: 'sal-1',
+    image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80',
+    isActive: true
+  },
+  {
+    id: 'skin-3',
+    title: 'Hydra-Infusion Hyaluronic Glass Skin Serum',
+    subtitle: 'Deep dermal hydration with botanical peptides',
+    price: 1199,
+    originalPrice: 1899,
+    rating: 5.0,
+    category: 'Serum',
+    salonId: 'sal-1',
+    image: 'https://images.unsplash.com/photo-1608248597359-2e06915cf505?auto=format&fit=crop&w=600&q=80',
+    isActive: true
+  }
+];
+
+export const DEFAULT_EDITORIAL_TRENDS = [
+  {
+    id: 'trend-1',
+    title: 'Korean Glass Skin Facials',
+    tag: 'Trending Now',
+    description: 'Deep hydra-peel infusion with botanical serums for the translucent celebrity glow.',
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80',
+    startingPrice: 1299,
+    category: 'Facial',
+    salonId: 'sal-1',
+    isActive: true
+  },
+  {
+    id: 'trend-2',
+    title: 'Balayage & Pastel Color Melts',
+    tag: 'Celebrity Pick',
+    description: 'Custom sun-kissed hand-painted highlights tailored to Asian hair tones.',
+    image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=600&q=80',
+    startingPrice: 2499,
+    category: 'Hair Studio',
+    salonId: 'sal-2',
+    isActive: true
+  },
+  {
+    id: 'trend-3',
+    title: 'Russian Manicure & Chrome Nails',
+    tag: 'Hot in Indore',
+    description: 'Precision e-file cuticle detailing with mirror chrome glaze finish.',
+    image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80',
+    startingPrice: 799,
+    category: 'Nails',
+    salonId: 'sal-2',
+    isActive: true
+  }
+];
+
+export const DEFAULT_TICKETS = [
+  {
+    id: 'TCK-201',
+    userId: 'cust-1',
+    userName: 'Ananya Sharma',
+    userRole: 'customer',
+    userContact: '+91 70007 92773',
+    salonId: 'sal-1',
+    salonName: 'Luxe Glow Salon & Spa',
+    category: 'Booking & Slot',
+    subject: 'Request to reschedule Sunday slot by 30 mins',
+    status: 'Open',
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    messages: [
+      {
+        sender: 'customer',
+        senderName: 'Ananya Sharma',
+        text: 'Hi, I got caught up in traffic and might reach 30 minutes late for my 11 AM appointment. Can salon please hold the station?',
+        timestamp: new Date(Date.now() - 7200000).toISOString()
+      },
+      {
+        sender: 'admin',
+        senderName: 'InstaaTrim HQ Support',
+        text: 'Hello Ananya, we have coordinated with Luxe Glow Salon. Chair 2 is reserved and your appointment window has been extended.',
+        timestamp: new Date(Date.now() - 3600000).toISOString()
+      }
+    ]
+  },
+  {
+    id: 'TCK-202',
+    userId: 'sal-1',
+    userName: 'Shalini Verma (Luxe Glow)',
+    userRole: 'salon',
+    userContact: '+91 98765 43210',
+    salonId: 'sal-1',
+    salonName: 'Luxe Glow Salon & Spa',
+    category: 'Payout & Billing',
+    subject: 'Query on commission deduction for festive package',
+    status: 'In Progress',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    messages: [
+      {
+        sender: 'salon',
+        senderName: 'Shalini Verma',
+        text: 'Our payout request PAY-101 has 12% deduction instead of promotional 10%. Please verify.',
+        timestamp: new Date(Date.now() - 86400000).toISOString()
+      }
+    ]
+  }
+];
+
+export const DEFAULT_NOTIFICATIONS = [
+  {
+    id: 'notif-1',
+    title: 'Weekend Flash Glow Sale!',
+    message: 'Get Flat 20% OFF on all Korean facials and Rica waxing at verified salons.',
+    audience: 'all',
+    audienceId: null,
+    isRead: false,
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    type: 'broadcast'
+  },
+  {
+    id: 'notif-2',
+    title: 'Booking Confirmed!',
+    message: 'Your booking at Luxe Glow Salon & Spa is confirmed for today.',
+    audience: 'customer',
+    audienceId: 'cust-1',
+    isRead: false,
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    type: 'booking'
+  },
+  {
+    id: 'notif-3',
+    title: 'Payout Processed',
+    message: 'Payout PAY-100 of ₹21,120 has been transferred to your HDFC bank account.',
+    audience: 'salon',
+    audienceId: 'sal-1',
+    isRead: false,
+    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+    type: 'payout'
+  }
+];
+

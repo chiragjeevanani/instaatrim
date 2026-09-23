@@ -976,6 +976,117 @@ const promotions = {
     })
 };
 
+// =============================================================================
+// Payouts & Settlements
+// =============================================================================
+const payouts = {
+  listAll: () => withLatency(() => clone(getState().payouts || [])),
+
+  listBySalon: (salonId) =>
+    withLatency(() => clone((getState().payouts || []).filter((p) => p.salonId === salonId))),
+
+  request: (data) =>
+    withLatency(() => {
+      const payout = {
+        id: `pay-${Date.now()}`,
+        status: 'Pending',
+        requestedAt: new Date().toISOString(),
+        settledAt: null,
+        utr: null,
+        notes: '',
+        ...data
+      };
+      dispatch({ type: 'REQUEST_PAYOUT', payload: payout });
+      return clone(payout);
+    }),
+
+  updateStatus: (payoutId, status, extra = {}) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_PAYOUT_STATUS', payload: { payoutId, status, extra } });
+      const updated = (getState().payouts || []).find((p) => p.id === payoutId);
+      return clone(updated);
+    }),
+
+  delete: (payoutId) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_PAYOUT', payload: { payoutId } });
+      return true;
+    })
+};
+
+// =============================================================================
+// Platform Commercial & Operational Settings
+// =============================================================================
+const platformSettings = {
+  get: () => withLatency(() => clone(getState().platformSettings)),
+
+  update: (patch) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_PLATFORM_SETTINGS', payload: patch });
+      return clone(getState().platformSettings);
+    })
+};
+
+// =============================================================================
+// Elite Membership Plan
+// =============================================================================
+const elitePlan = {
+  get: () => withLatency(() => clone(getState().elitePlan)),
+
+  update: (patch) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_ELITE_PLAN', payload: patch });
+      return clone(getState().elitePlan);
+    })
+};
+
+// =============================================================================
+// Editorial Content (Skincare Studio & Beauty Trends)
+// =============================================================================
+const editorial = {
+  getSkincare: () => withLatency(() => clone(getState().skincareItems || [])),
+
+  addSkincare: (data) =>
+    withLatency(() => {
+      const item = { id: `skin-${Date.now()}`, isActive: true, ...data };
+      dispatch({ type: 'ADD_EDITORIAL_SKINCARE', payload: item });
+      return clone(item);
+    }),
+
+  updateSkincare: (id, patch) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_EDITORIAL_SKINCARE', payload: { id, patch } });
+      return clone((getState().skincareItems || []).find((i) => i.id === id));
+    }),
+
+  deleteSkincare: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_EDITORIAL_SKINCARE', payload: { id } });
+      return true;
+    }),
+
+  getTrends: () => withLatency(() => clone(getState().trendsItems || [])),
+
+  addTrend: (data) =>
+    withLatency(() => {
+      const item = { id: `trend-${Date.now()}`, isActive: true, ...data };
+      dispatch({ type: 'ADD_EDITORIAL_TREND', payload: item });
+      return clone(item);
+    }),
+
+  updateTrend: (id, patch) =>
+    withLatency(() => {
+      dispatch({ type: 'UPDATE_EDITORIAL_TREND', payload: { id, patch } });
+      return clone((getState().trendsItems || []).find((i) => i.id === id));
+    }),
+
+  deleteTrend: (id) =>
+    withLatency(() => {
+      dispatch({ type: 'DELETE_EDITORIAL_TREND', payload: { id } });
+      return true;
+    })
+};
+
 export const api = {
   categories,
   promotions,
@@ -993,7 +1104,11 @@ export const api = {
   tickets,
   customers,
   admin,
-  ads
+  ads,
+  payouts,
+  platformSettings,
+  elitePlan,
+  editorial
 };
 
 export { ApiError };

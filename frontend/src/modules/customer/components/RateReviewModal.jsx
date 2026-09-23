@@ -31,7 +31,8 @@ export const RateReviewModal = ({ isOpen, onClose, booking }) => {
     const fullReview = selectedTags.length > 0
       ? `${review ? review + ' ' : ''}[${selectedTags.join(', ')}]`
       : review;
-    rateBooking(booking.id, rating, fullReview);
+    const serviceName = booking.services?.[0]?.name || 'Salon Treatment';
+    rateBooking(booking.id, rating, fullReview, booking.salonId, serviceName);
     onClose();
   };
 

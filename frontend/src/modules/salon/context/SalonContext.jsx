@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { BOOKING_STATUS } from '../../../shared/lib/bookingStatus';
@@ -20,10 +20,30 @@ import { dateKey, minutesToClock, nowMinutesOfDay } from '../../../shared/lib/ti
 const SalonContext = createContext();
 
 export const SalonProvider = ({ children }) => {
-  const { state } = useAppData();
+  const { state, dispatch } = useAppData();
 
   const isAuthenticated = Boolean(state.partnerSession);
   const salonId = state.partnerSession?.salonId || 'sal-1';
+
+  // Make sure salon profile always syncs directly from the backend DB 
+  // on every refresh so we never lose details like 'name', 'ownerName'.
+  useEffect(() => {
+    if (isAuthenticated && salonId && salonId !== 'sal-1') {
+      fetch(`http://localhost:6200/api/salons/${salonId}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && json.data) {
+            const exists = state.salons.find(s => s.id === json.data.id);
+            if (!exists) {
+              dispatch({ type: 'ADD_SALON', payload: json.data });
+            } else {
+              dispatch({ type: 'PATCH_SALON', payload: { salonId: json.data.id, patch: json.data } });
+            }
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isAuthenticated, salonId, state.salons, dispatch]);
 
   const logout = useCallback(() => api.salons.logout(), []);
 

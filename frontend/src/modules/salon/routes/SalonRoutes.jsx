@@ -25,7 +25,7 @@ const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding', '/salon/register'];
 
 export const SalonRoutes = () => {
   const location = useLocation();
-  const { toast, isAuthenticated } = useSalon();
+  const { toast, isAuthenticated, salonProfile } = useSalon();
 
   const isPublicPath = PUBLIC_PATHS.some((p) => location.pathname.startsWith(p));
 
@@ -38,6 +38,18 @@ export const SalonRoutes = () => {
   }
   if (isAuthenticated && (location.pathname.startsWith('/salon/login') || location.pathname.startsWith('/salon/register'))) {
     return <Navigate to="/salon" replace />;
+  }
+
+  // Prevent ANY authenticated page from crashing while DB fetch in SalonContext is still resolving
+  if (isAuthenticated && (!salonProfile || !salonProfile.name) && !isPublicPath) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f4fb] font-sans w-full">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-purple-200 border-t-purple-600 animate-spin" />
+          <p className="text-purple-900/60 font-medium text-xs tracking-wide">Syncing with database...</p>
+        </div>
+      </div>
+    );
   }
 
   const isFullscreenSubpage =

@@ -20,19 +20,6 @@ import {
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 
-const PRESET_IMAGES = [
-  { label: 'Hair Studio', url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Facial & Skin', url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Spa & Wellness', url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Waxing & RICA', url: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Body Polishing', url: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Makeup & Styling', url: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Mani-Pedi', url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Mehandi Art', url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Beard Grooming', url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80' },
-  { label: "Men's Styling", url: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=400&q=80' }
-];
-
 export const AdminCategoriesPage = () => {
   const {
     categories = [],
@@ -49,19 +36,66 @@ export const AdminCategoriesPage = () => {
   const [search, setSearch] = useState('');
   const [filterGender, setFilterGender] = useState('all'); // all | unisex | women | men | inactive
 
-  // Modal State
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    shortName: '',
-    slug: '',
-    gender: 'unisex',
-    serviceCategoriesText: '',
-    image: '',
-    description: '',
-    isActive: true
+  React.useEffect(() => {
+    import('../../../shared/services/api').then(({ api }) => {
+      api.categories.list();
+      api.services.listAll();
+    });
+  }, []);
+
+  // Modal State (Persisted to sessionStorage so it survives refresh)
+  const [modalOpen, setModalOpen] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('adminCategoryModalState');
+      return saved ? JSON.parse(saved).modalOpen : false;
+    } catch {
+      return false;
+    }
   });
+
+  const [editingCategory, setEditingCategory] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('adminCategoryModalState');
+      return saved ? JSON.parse(saved).editingCategory : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('adminCategoryModalState');
+      if (saved) {
+        const parsed = JSON.parse(saved).formData;
+        if (parsed) return parsed;
+      }
+    } catch {}
+    return {
+      name: '',
+      shortName: '',
+      slug: '',
+      gender: 'unisex',
+      serviceCategoriesText: '',
+      image: '',
+      description: '',
+      isActive: true
+    };
+  });
+
+  React.useEffect(() => {
+    try {
+      // Exclude imageFile since File objects cannot be JSON stringified
+      const { imageFile, ...restFormData } = formData;
+      sessionStorage.setItem('adminCategoryModalState', JSON.stringify({
+        modalOpen,
+        editingCategory,
+        formData: restFormData
+      }));
+    } catch (e) {
+      console.error('Failed to save modal state', e);
+    }
+  }, [modalOpen, editingCategory, formData]);
+
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -125,7 +159,7 @@ export const AdminCategoriesPage = () => {
       slug: '',
       gender: 'unisex',
       serviceCategoriesText: '',
-      image: PRESET_IMAGES[0].url,
+      image: '',
       description: '',
       isActive: true
     });
@@ -144,7 +178,7 @@ export const AdminCategoriesPage = () => {
       serviceCategoriesText: Array.isArray(category.serviceCategories)
         ? category.serviceCategories.join(', ')
         : category.serviceCategories || '',
-      image: category.image || PRESET_IMAGES[0].url,
+      image: category.image || '',
       description: category.description || '',
       isActive: category.isActive !== false
     });
@@ -152,26 +186,12 @@ export const AdminCategoriesPage = () => {
     setModalOpen(true);
   };
 
-  // Auto slug generation on name change if not manually changed
+  // Name change handler
   const handleNameChange = (val) => {
-    setFormData((prev) => {
-      const shouldAutoSlug = !editingCategory || !prev.slug || prev.slug === prev.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const nextSlug = shouldAutoSlug
-        ? val
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '')
-        : prev.slug;
-
-      const nextShort = !editingCategory && !prev.shortName ? val : prev.shortName;
-
-      return {
-        ...prev,
-        name: val,
-        slug: nextSlug,
-        shortName: nextShort
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      name: val
+    }));
   };
 
   // Submit Modal
@@ -187,18 +207,26 @@ export const AdminCategoriesPage = () => {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const payload = {
-      name: formData.name.trim(),
-      shortName: formData.shortName.trim() || formData.name.trim(),
-      slug:
-        formData.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') ||
-        formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      gender: formData.gender,
-      serviceCategories: rawServices.length ? rawServices : [formData.name.trim()],
-      image: formData.image.trim() || PRESET_IMAGES[0].url,
-      description: formData.description.trim(),
-      isActive: formData.isActive
-    };
+    const payload = new FormData();
+    payload.append('name', formData.name.trim());
+    payload.append('shortName', formData.shortName.trim() || formData.name.trim());
+    
+    const slug = formData.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') ||
+        formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    payload.append('slug', slug);
+    payload.append('gender', formData.gender);
+    
+    const serviceCategories = rawServices.length ? rawServices : [formData.name.trim()];
+    payload.append('serviceCategories', JSON.stringify(serviceCategories));
+    
+    payload.append('description', formData.description.trim());
+    payload.append('isActive', formData.isActive);
+
+    if (formData.imageFile) {
+        payload.append('image', formData.imageFile);
+    } else if (formData.image) {
+        payload.append('image', formData.image.trim());
+    }
 
     setIsSubmitting(true);
     try {
@@ -374,11 +402,11 @@ export const AdminCategoriesPage = () => {
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-xl overflow-hidden bg-purple-950/40 border border-[#2d2d42] shrink-0">
                               <img
-                                src={cat.image || PRESET_IMAGES[0].url}
+                                src={cat.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80'}
                                 alt={cat.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  e.target.src = PRESET_IMAGES[0].url;
+                                  e.target.src = 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80';
                                 }}
                               />
                             </div>
@@ -618,46 +646,33 @@ export const AdminCategoriesPage = () => {
                 </p>
               </div>
 
-              {/* Image URL & Preset Selection */}
+              {/* Image File & Preset Selection */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
-                  Category Banner / Thumbnail Image URL
+                  Category Banner / Thumbnail Image
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="url"
-                    placeholder="https://images.unsplash.com/photo-..."
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    className="flex-1 bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setFormData({ ...formData, imageFile: e.target.files[0], image: '' });
+                      }
+                    }}
+                    className="flex-1 bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500"
                   />
-                  {formData.image && (
+                  {(formData.imageFile || formData.image) && (
                     <div className="w-10 h-10 rounded-xl overflow-hidden border border-[#3d3d52] shrink-0 bg-black">
-                      <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                      <img 
+                        src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : formData.image} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
                   )}
                 </div>
 
-                {/* Presets */}
-                <div className="mt-2.5">
-                  <span className="text-[10px] text-stone-400 block mb-1.5">Quick Presets:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {PRESET_IMAGES.map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, image: preset.url })}
-                        className={`px-2 py-1 rounded-lg text-[10px] border transition-all cursor-pointer ${
-                          formData.image === preset.url
-                            ? 'bg-purple-600/30 text-purple-300 border-purple-500'
-                            : 'bg-[#181824] text-stone-400 border-[#2b2b3d] hover:text-white'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Description */}

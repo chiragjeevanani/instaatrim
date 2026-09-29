@@ -18,14 +18,14 @@ export const CustomerProvider = ({ children }) => {
   const { state } = useAppData();
 
   const user = useMemo(
-    () => state.customers.find((c) => c.id === state.currentCustomerId) || state.customers[0],
+    () => state.customers.find((c) => c.id === state.currentCustomerId) || state.customers[0] || null,
     [state.customers, state.currentCustomerId]
   );
 
   // ---------------- Locations (shared store) ----------------
   const savedLocations = useMemo(
-    () => state.locations.filter((l) => l.userId === user.id),
-    [state.locations, user.id]
+    () => user ? state.locations.filter((l) => l.userId === user.id) : [],
+    [state.locations, user?.id]
   );
   const currentLocation = useMemo(
     () => savedLocations.find((l) => l.isCurrent) || savedLocations[0],
@@ -38,11 +38,12 @@ export const CustomerProvider = ({ children }) => {
 
   const addLocation = useCallback(
     async (data) => {
+      if (!user) throw new Error('Not logged in');
       const loc = await api.locations.add(user.id, data);
       await api.locations.setCurrent(loc.id);
       return loc;
     },
-    [user.id]
+    [user?.id]
   );
 
   // ---------------- Cart (transient, local to this checkout session) ----------------
@@ -146,7 +147,7 @@ export const CustomerProvider = ({ children }) => {
       showToast('Invalid coupon code');
       return { success: false, message: 'Invalid or expired coupon' };
     },
-    [showToast, state, user.id]
+    [showToast, state, user?.id]
   );
 
   const removeCoupon = useCallback(() => {
@@ -167,10 +168,11 @@ export const CustomerProvider = ({ children }) => {
   }, [cartItems, appliedCoupon]);
 
   // ---------------- Bookings (shared store) ----------------
-  const bookings = useMemo(() => state.bookings.filter((b) => b.customerId === user.id), [state.bookings, user.id]);
+  const bookings = useMemo(() => user ? state.bookings.filter((b) => b.customerId === user.id) : [], [state.bookings, user?.id]);
 
   const createBooking = useCallback(
     async (bookingData) => {
+      if (!user) throw new Error('Not logged in');
       const booking = await api.bookings.create({
         customerId: user.id,
         customerName: user.name || 'Customer',
@@ -197,7 +199,7 @@ export const CustomerProvider = ({ children }) => {
       clearCart();
       return booking;
     },
-    [user.id, user.name, user.phone, currentLocation, bookingSlot, cartItems, cartSummary, appliedCoupon, preferredProduct, clearCart]
+    [user?.id, user?.name, user?.phone, currentLocation, bookingSlot, cartItems, cartSummary, appliedCoupon, preferredProduct, clearCart]
   );
 
   const cancelBooking = useCallback(
@@ -242,16 +244,15 @@ export const CustomerProvider = ({ children }) => {
         showToast('Could not submit review');
       }
     },
-    [user.name, showToast]
+    [user?.name, showToast]
   );
 
   // ---------------- Notifications & Broadcasts ----------------
   const notifications = useMemo(
-    () =>
-      (state.notifications || []).filter(
+    () => user ? (state.notifications || []).filter(
         (n) => n.audience === 'all' || (n.audience === 'customer' && (!n.audienceId || n.audienceId === user.id))
-      ),
-    [state.notifications, user.id]
+      ) : [],
+    [state.notifications, user?.id]
   );
 
   const markNotificationRead = useCallback((notificationId) => {
@@ -261,6 +262,7 @@ export const CustomerProvider = ({ children }) => {
   // ---------------- Support Tickets ----------------
   const createSupportTicket = useCallback(
     async (subject, category, messageText) => {
+      if (!user) throw new Error('Not logged in');
       try {
         await api.tickets.create({
           userId: user.id,
@@ -294,7 +296,7 @@ export const CustomerProvider = ({ children }) => {
   const elitePlan = state.elitePlan || {};
 
   // ---------------- Favourites (persisted on the customer profile) ----------------
-  const favoriteSalonIds = user.favoriteSalonIds || [];
+  const favoriteSalonIds = user?.favoriteSalonIds || [];
 
   const toggleFavorite = useCallback(
     (salonId) => {
@@ -328,7 +330,7 @@ export const CustomerProvider = ({ children }) => {
   );
 
   const logout = useCallback(() => {
-    api.customers
+    return api.customers
       .logout()
       .then(() => showToast('Logged out'))
       .catch(() => {});
@@ -348,6 +350,14 @@ export const CustomerProvider = ({ children }) => {
     [showToast]
   );
 
+  const fetchMyProfile = useCallback(async () => {
+    try {
+      await api.customers.fetchMyProfile();
+    } catch (e) {
+      // Ignore errors silently
+    }
+  }, []);
+
   return (
     <CustomerContext.Provider
       value={{
@@ -356,6 +366,7 @@ export const CustomerProvider = ({ children }) => {
         loginWithProvider,
         logout,
         updateProfile,
+        fetchMyProfile,
         currentLocation,
         setCurrentLocation,
         savedLocations,

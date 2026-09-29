@@ -6,10 +6,46 @@ import { ADMIN_CREDENTIALS } from '../../../shared/data/seed';
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
-  const { state } = useAppData();
+  const { state, dispatch } = useAppData();
 
   const isAuthenticated = Boolean(state.adminSession);
   const adminSession = state.adminSession;
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetch('http://localhost:6200/api/salons')
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            dispatch({ type: 'SET_SALONS', payload: json.data });
+          }
+        })
+        .catch(console.error);
+
+      // Fetch rituals
+      api.editorial.getSkincare().then((data) => {
+        dispatch({ type: 'SET_SKINCARE_ITEMS', payload: data });
+      });
+      api.editorial.getTrends().then((data) => {
+        dispatch({ type: 'SET_TRENDS_ITEMS', payload: data });
+      });
+      
+      // Fetch coupons
+      api.coupons.list().then((data) => {
+        dispatch({ type: 'SET_COUPONS', payload: data });
+      });
+
+      // Fetch customers from DB
+      fetch('http://localhost:6200/api/customers/all')
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            dispatch({ type: 'SET_CUSTOMERS', payload: json.data });
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isAuthenticated]);
 
   // Theme state: 'dark' | 'light' (defaults to 'dark', persists to localStorage)
   const [theme, setTheme] = useState(() => {
@@ -171,6 +207,7 @@ export const AdminProvider = ({ children }) => {
   const createCoupon = useCallback(async (data) => {
     try {
       const c = await api.coupons.create(data);
+      dispatch({ type: 'ADD_COUPON', payload: c });
       showToast(`Coupon ${c.code} created successfully`, 'success');
       return c;
     } catch (err) {
@@ -181,7 +218,8 @@ export const AdminProvider = ({ children }) => {
 
   const updateCoupon = useCallback(async (couponId, patch) => {
     try {
-      await api.coupons.update(couponId, patch);
+      const updated = await api.coupons.update(couponId, patch);
+      dispatch({ type: 'UPDATE_COUPON', payload: { couponId, patch: updated } });
       showToast('Coupon updated', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to update coupon', 'error');
@@ -191,6 +229,7 @@ export const AdminProvider = ({ children }) => {
   const deleteCoupon = useCallback(async (couponId) => {
     try {
       await api.coupons.remove(couponId);
+      dispatch({ type: 'DELETE_COUPON', payload: { couponId } });
       showToast('Coupon deleted', 'info');
     } catch (err) {
       showToast(err.message || 'Failed to delete coupon', 'error');
@@ -576,60 +615,66 @@ export const AdminProvider = ({ children }) => {
   const addSkincareItem = useCallback(async (data) => {
     try {
       const item = await api.editorial.addSkincare(data);
+      dispatch({ type: 'ADD_EDITORIAL_SKINCARE', payload: item });
       showToast(`Added skincare item "${item.title}"`, 'success');
       return item;
     } catch (err) {
       showToast(err.message || 'Failed to add skincare item', 'error');
     }
-  }, [showToast]);
+  }, [dispatch, showToast]);
 
   const updateSkincareItem = useCallback(async (id, patch) => {
     try {
       const updated = await api.editorial.updateSkincare(id, patch);
+      dispatch({ type: 'UPDATE_EDITORIAL_SKINCARE', payload: { id, patch: updated } });
       showToast('Skincare item updated', 'success');
       return updated;
     } catch (err) {
       showToast(err.message || 'Failed to update skincare item', 'error');
     }
-  }, [showToast]);
+  }, [dispatch, showToast]);
 
   const deleteSkincareItem = useCallback(async (id) => {
     try {
       await api.editorial.deleteSkincare(id);
+      dispatch({ type: 'DELETE_EDITORIAL_SKINCARE', payload: { id } });
       showToast('Skincare item deleted', 'info');
     } catch (err) {
       showToast(err.message || 'Failed to delete skincare item', 'error');
     }
-  }, [showToast]);
+  }, [dispatch, showToast]);
 
   const addTrendItem = useCallback(async (data) => {
     try {
       const item = await api.editorial.addTrend(data);
+      dispatch({ type: 'ADD_EDITORIAL_TREND', payload: item });
       showToast(`Added trend "${item.title}"`, 'success');
       return item;
     } catch (err) {
       showToast(err.message || 'Failed to add trend', 'error');
     }
-  }, [showToast]);
+  }, [dispatch, showToast]);
 
   const updateTrendItem = useCallback(async (id, patch) => {
     try {
       const updated = await api.editorial.updateTrend(id, patch);
+      dispatch({ type: 'UPDATE_EDITORIAL_TREND', payload: { id, patch: updated } });
       showToast('Trend updated', 'success');
       return updated;
     } catch (err) {
       showToast(err.message || 'Failed to update trend', 'error');
     }
-  }, [showToast]);
+  }, [dispatch, showToast]);
 
   const deleteTrendItem = useCallback(async (id) => {
     try {
       await api.editorial.deleteTrend(id);
+      dispatch({ type: 'DELETE_EDITORIAL_TREND', payload: { id } });
       showToast('Trend deleted', 'info');
     } catch (err) {
       showToast(err.message || 'Failed to delete trend', 'error');
     }
-  }, [showToast]);
+  }, [dispatch, showToast]);
 
   const value = useMemo(
     () => ({

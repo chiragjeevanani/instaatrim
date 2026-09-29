@@ -16,7 +16,7 @@ import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 
 export const AdminSalonsPage = () => {
-  const { salons, verifySalon, rejectSalon, toggleSalonActive, setSalonCommission } = useAdmin();
+  const { salons, categories, verifySalon, rejectSalon, toggleSalonActive, setSalonCommission } = useAdmin();
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All'); // All | Pending | Live | Rejected
@@ -123,7 +123,6 @@ export const AdminSalonsPage = () => {
                           <div>
                             <div className="font-bold text-white text-sm flex items-center gap-2">
                               {salon.name}
-                              <span className="font-mono text-[10px] text-purple-400 font-normal">({salon.id})</span>
                             </div>
                             <div className="text-[11px] text-stone-400">
                               Owner: <span className="text-stone-200">{salon.ownerName || 'Partner'}</span> • {salon.phone || salon.mobile}
@@ -134,7 +133,9 @@ export const AdminSalonsPage = () => {
 
                       {/* Category & City */}
                       <td className="py-4 px-4">
-                        <div className="font-medium text-stone-200">{salon.category}</div>
+                        <div className="font-medium text-stone-200">
+                          {categories?.find(c => c.id === salon.category || c._id === salon.category)?.name || salon.category || 'Unisex'}
+                        </div>
                         <div className="text-[11px] text-stone-400">{salon.area || salon.locationCity}</div>
                       </td>
 
@@ -200,38 +201,40 @@ export const AdminSalonsPage = () => {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-4 px-5 text-right space-x-2">
-                        {isPending && (
-                          <>
+                      <td className="py-4 px-5">
+                        <div className="flex flex-row flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+                          {isPending && (
+                            <>
+                              <button
+                                onClick={() => verifySalon(salon.id, 'Live')}
+                                className="admin-btn-approve px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer border border-transparent flex-shrink-0"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => rejectSalon(salon.id, 'Documents not matching')}
+                                className="admin-btn-reject px-2.5 py-1 bg-red-950/50 hover:bg-red-900/60 text-red-300 border border-red-800/50 rounded-lg text-xs font-medium transition-colors cursor-pointer flex-shrink-0"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {isLive && (
                             <button
-                              onClick={() => verifySalon(salon.id, 'Live')}
-                              className="admin-btn-approve px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer border border-transparent"
+                              onClick={() => verifySalon(salon.id, 'Pending')}
+                              className="admin-btn-revert px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-transparent flex-shrink-0"
                             >
-                              Approve
+                              Revert
                             </button>
-                            <button
-                              onClick={() => rejectSalon(salon.id, 'Documents not matching')}
-                              className="admin-btn-reject px-2.5 py-1 bg-red-950/50 hover:bg-red-900/60 text-red-300 border border-red-800/50 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {isLive && (
-                          <button
-                            onClick={() => verifySalon(salon.id, 'Pending')}
-                            className="admin-btn-revert px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-transparent"
+                          )}
+                          <Link
+                            to={`/admin/salons/${salon.id}`}
+                            className="admin-btn-details inline-flex items-center gap-1 px-3 py-1 bg-[#232333] hover:bg-purple-600 text-white rounded-lg text-xs font-medium transition-colors border border-transparent flex-shrink-0"
                           >
-                            Revert
-                          </button>
-                        )}
-                        <Link
-                          to={`/admin/salons/${salon.id}`}
-                          className="admin-btn-details inline-flex items-center gap-1 px-3 py-1 bg-[#232333] hover:bg-purple-600 text-white rounded-lg text-xs font-medium transition-colors border border-transparent"
-                        >
-                          <span>Details</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
+                            <span>Details</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );

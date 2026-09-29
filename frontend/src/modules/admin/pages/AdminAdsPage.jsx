@@ -32,6 +32,7 @@ export const AdminAdsPage = () => {
     midPageCampaign = {},
     salons = [],
     services = [],
+    categories = [],
     createAd,
     updateAd,
     deleteAd,
@@ -53,34 +54,48 @@ export const AdminAdsPage = () => {
 
   const isLight = theme === 'light';
 
-  // Active Tab: 'top-ads' | 'hero-banners' | 'mid-campaign' | 'brand-partners'
   const [activeTab, setActiveTab] = useState('top-ads');
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    import('../../../shared/services/api').then(({ api }) => {
+      api.ads.getAll();
+    });
+  }, []);
+
+  const getInitialState = (key, defaultVal) => {
+    try {
+      const stored = sessionStorage.getItem(key);
+      if (stored) return JSON.parse(stored);
+    } catch (e) { }
+    return defaultVal;
+  };
+
   // ---------------- Modal States ----------------
   // 1. Spotlight Ad Modal
-  const [adModalOpen, setAdModalOpen] = useState(false);
-  const [editingAd, setEditingAd] = useState(null);
-  const [adFormData, setAdFormData] = useState({
+  const [adModalOpen, setAdModalOpen] = useState(() => getInitialState('ads_adModalOpen', false));
+  const [editingAd, setEditingAd] = useState(() => getInitialState('ads_editingAd', null));
+  const [adFormData, setAdFormData] = useState(() => getInitialState('ads_adFormData', {
     brand: '',
-    sponsorBadge: 'Sponsored',
+    sponsorBadge: '',
     title: '',
     subtitle: '',
     description: '',
     discountBadge: '',
     couponCode: '',
-    ctaText: 'Claim Deal',
+    ctaText: '',
     image: '',
     salonId: '',
-    category: 'facial',
-    validTill: 'Limited Time Offer',
-    isActive: true
-  });
+    category: 'all',
+    validTill: '',
+    isActive: true,
+    imageFiles: []
+  }));
 
   // 2. Hero Package Banner Modal
-  const [heroModalOpen, setHeroModalOpen] = useState(false);
-  const [editingHeroBanner, setEditingHeroBanner] = useState(null);
-  const [heroFormData, setHeroFormData] = useState({
+  const [heroModalOpen, setHeroModalOpen] = useState(() => getInitialState('ads_heroModalOpen', false));
+  const [editingHeroBanner, setEditingHeroBanner] = useState(() => getInitialState('ads_editingHeroBanner', null));
+  const [heroFormData, setHeroFormData] = useState(() => getInitialState('ads_heroFormData', {
     title: '',
     subtitle: '',
     desc: '',
@@ -91,12 +106,12 @@ export const AdminAdsPage = () => {
     serviceId: '',
     link: '',
     isActive: true
-  });
+  }));
 
   // 3. Mid-Page Deal Campaign Modal
-  const [midModalOpen, setMidModalOpen] = useState(false);
-  const [editingMidCampaign, setEditingMidCampaign] = useState(null);
-  const [midFormData, setMidFormData] = useState({
+  const [midModalOpen, setMidModalOpen] = useState(() => getInitialState('ads_midModalOpen', false));
+  const [editingMidCampaign, setEditingMidCampaign] = useState(() => getInitialState('ads_editingMidCampaign', null));
+  const [midFormData, setMidFormData] = useState(() => getInitialState('ads_midFormData', {
     badge: 'Sponsored Campaign',
     title: '',
     subtitle: '',
@@ -106,12 +121,12 @@ export const AdminAdsPage = () => {
     bannerImage: '',
     link: '',
     isActive: true
-  });
+  }));
 
   // 4. Partner Modal
-  const [partnerModalOpen, setPartnerModalOpen] = useState(false);
-  const [editingPartner, setEditingPartner] = useState(null);
-  const [partnerFormData, setPartnerFormData] = useState({
+  const [partnerModalOpen, setPartnerModalOpen] = useState(() => getInitialState('ads_partnerModalOpen', false));
+  const [editingPartner, setEditingPartner] = useState(() => getInitialState('ads_editingPartner', null));
+  const [partnerFormData, setPartnerFormData] = useState(() => getInitialState('ads_partnerFormData', {
     name: '',
     fullName: '',
     tagline: '',
@@ -120,28 +135,51 @@ export const AdminAdsPage = () => {
     logo: '💎',
     description: '',
     isActive: true
-  });
+  }));
 
   // Delete Confirm Modal
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: 'ad'|'hero'|'mid'|'partner', id, title }
+
+  // Sync state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('ads_activeTab', JSON.stringify(activeTab));
+    sessionStorage.setItem('ads_adModalOpen', JSON.stringify(adModalOpen));
+    sessionStorage.setItem('ads_editingAd', JSON.stringify(editingAd));
+    sessionStorage.setItem('ads_adFormData', JSON.stringify(adFormData));
+    sessionStorage.setItem('ads_heroModalOpen', JSON.stringify(heroModalOpen));
+    sessionStorage.setItem('ads_editingHeroBanner', JSON.stringify(editingHeroBanner));
+    sessionStorage.setItem('ads_heroFormData', JSON.stringify(heroFormData));
+    sessionStorage.setItem('ads_midModalOpen', JSON.stringify(midModalOpen));
+    sessionStorage.setItem('ads_editingMidCampaign', JSON.stringify(editingMidCampaign));
+    sessionStorage.setItem('ads_midFormData', JSON.stringify(midFormData));
+    sessionStorage.setItem('ads_partnerModalOpen', JSON.stringify(partnerModalOpen));
+    sessionStorage.setItem('ads_editingPartner', JSON.stringify(editingPartner));
+    sessionStorage.setItem('ads_partnerFormData', JSON.stringify(partnerFormData));
+  }, [
+    activeTab, adModalOpen, editingAd, adFormData,
+    heroModalOpen, editingHeroBanner, heroFormData,
+    midModalOpen, editingMidCampaign, midFormData,
+    partnerModalOpen, editingPartner, partnerFormData
+  ]);
 
   // ---------------- Handlers: Top Ads ----------------
   const handleOpenCreateAd = () => {
     setEditingAd(null);
     setAdFormData({
       brand: '',
-      sponsorBadge: 'Sponsored Spotlight',
+      sponsorBadge: '',
       title: '',
       subtitle: '',
       description: '',
-      discountBadge: 'Flat ₹200 OFF',
+      discountBadge: '',
       couponCode: '',
-      ctaText: 'Claim Deal',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
-      salonId: salons[0]?.id || '',
-      category: 'facial',
-      validTill: 'Limited Time Offer',
-      isActive: true
+      ctaText: '',
+      image: '',
+      salonId: '',
+      category: 'all',
+      validTill: '',
+      isActive: true,
+      imageFiles: []
     });
     setAdModalOpen(true);
   };
@@ -159,26 +197,44 @@ export const AdminAdsPage = () => {
       ctaText: ad.ctaText || 'Claim Deal',
       image: ad.image || '',
       salonId: ad.salonId || '',
-      category: ad.category || 'facial',
+      category: ad.category || 'all',
       validTill: ad.validTill || 'Limited Time Offer',
-      isActive: ad.isActive !== false
+      isActive: ad.isActive !== false,
+      imageFiles: []
     });
     setAdModalOpen(true);
   };
 
   const handleSubmitAd = async (e) => {
     e.preventDefault();
-    const payload = {
-      ...adFormData,
-      brand: adFormData.brand.trim(),
-      title: adFormData.title.trim(),
-      couponCode: adFormData.couponCode.trim().toUpperCase()
-    };
+    const formData = new FormData();
+    formData.append('brand', adFormData.brand.trim());
+    formData.append('sponsorBadge', adFormData.sponsorBadge);
+    formData.append('title', adFormData.title.trim());
+    formData.append('subtitle', adFormData.subtitle);
+    formData.append('description', adFormData.description);
+    formData.append('discountBadge', adFormData.discountBadge);
+    formData.append('couponCode', adFormData.couponCode.trim().toUpperCase());
+    formData.append('ctaText', adFormData.ctaText);
+    formData.append('salonId', adFormData.salonId);
+    formData.append('category', adFormData.category);
+    formData.append('validTill', adFormData.validTill);
+    formData.append('isActive', adFormData.isActive);
+    formData.append('campaignType', 'top_carousel');
+
+    if (adFormData.imageFiles && adFormData.imageFiles.length > 0) {
+      adFormData.imageFiles.forEach(file => {
+        formData.append('images', file);
+      });
+    } else {
+      // fallback if no new file is uploaded
+      formData.append('image', adFormData.image);
+    }
 
     if (editingAd) {
-      await updateAd(editingAd.id, payload);
+      await updateAd(editingAd.id, formData);
     } else {
-      await createAd(payload);
+      await createAd(formData);
     }
     setAdModalOpen(false);
   };
@@ -374,8 +430,8 @@ export const AdminAdsPage = () => {
     midPageCampaigns && midPageCampaigns.length > 0
       ? midPageCampaigns
       : midPageCampaign && midPageCampaign.title
-      ? [midPageCampaign]
-      : [];
+        ? [midPageCampaign]
+        : [];
 
   const filteredMidCampaigns = resolvedMidCampaigns.filter((cmp) => {
     if (!searchQuery) return true;
@@ -466,24 +522,22 @@ export const AdminAdsPage = () => {
                 setActiveTab('hero-banners');
                 setSearchQuery('');
               }}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'hero-banners'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : isLight
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'hero-banners'
+                ? 'bg-purple-600 text-white shadow-md'
+                : isLight
                   ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-[#1a1a24]'
-              }`}
+                }`}
             >
               <ImageIcon className="w-3.5 h-3.5" />
               <span>Hero Package Carousel</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  activeTab === 'hero-banners'
-                    ? 'bg-white/20 text-white'
-                    : isLight
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'hero-banners'
+                  ? 'bg-white/20 text-white'
+                  : isLight
                     ? 'bg-slate-200 text-slate-700'
                     : 'bg-stone-800 text-stone-400'
-                }`}
+                  }`}
               >
                 {activeHeroCount}/{heroBanners.length}
               </span>
@@ -496,24 +550,22 @@ export const AdminAdsPage = () => {
                 setActiveTab('mid-campaign');
                 setSearchQuery('');
               }}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'mid-campaign'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : isLight
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'mid-campaign'
+                ? 'bg-purple-600 text-white shadow-md'
+                : isLight
                   ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-[#1a1a24]'
-              }`}
+                }`}
             >
               <Flame className="w-3.5 h-3.5" />
               <span>Mid-Page Deals Carousel</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  activeTab === 'mid-campaign'
-                    ? 'bg-white/20 text-white'
-                    : isLight
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'mid-campaign'
+                  ? 'bg-white/20 text-white'
+                  : isLight
                     ? 'bg-slate-200 text-slate-700'
                     : 'bg-stone-800 text-stone-400'
-                }`}
+                  }`}
               >
                 {activeMidCount}/{resolvedMidCampaigns.length}
               </span>
@@ -526,24 +578,22 @@ export const AdminAdsPage = () => {
                 setActiveTab('top-ads');
                 setSearchQuery('');
               }}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'top-ads'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : isLight
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'top-ads'
+                ? 'bg-purple-600 text-white shadow-md'
+                : isLight
                   ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-[#1a1a24]'
-              }`}
+                }`}
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Top Spotlight Carousel</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  activeTab === 'top-ads'
-                    ? 'bg-white/20 text-white'
-                    : isLight
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'top-ads'
+                  ? 'bg-white/20 text-white'
+                  : isLight
                     ? 'bg-slate-200 text-slate-700'
                     : 'bg-stone-800 text-stone-400'
-                }`}
+                  }`}
               >
                 {activeAdsCount}/{advertisements.length}
               </span>
@@ -556,24 +606,22 @@ export const AdminAdsPage = () => {
                 setActiveTab('brand-partners');
                 setSearchQuery('');
               }}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === 'brand-partners'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : isLight
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'brand-partners'
+                ? 'bg-purple-600 text-white shadow-md'
+                : isLight
                   ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-[#1a1a24]'
-              }`}
+                }`}
             >
               <Award className="w-3.5 h-3.5" />
               <span>Brand Partners</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  activeTab === 'brand-partners'
-                    ? 'bg-white/20 text-white'
-                    : isLight
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'brand-partners'
+                  ? 'bg-white/20 text-white'
+                  : isLight
                     ? 'bg-slate-200 text-slate-700'
                     : 'bg-stone-800 text-stone-400'
-                }`}
+                  }`}
               >
                 {activePartnersCount}/{brandPartners.length}
               </span>
@@ -606,16 +654,14 @@ export const AdminAdsPage = () => {
         {activeTab === 'hero-banners' && (
           <div className="space-y-4">
             <div
-              className={`border rounded-2xl overflow-hidden shadow-xl ${
-                isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
-              }`}
+              className={`border rounded-2xl overflow-hidden shadow-xl ${isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
+                }`}
             >
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className={`border-b text-[11px] uppercase tracking-wider font-semibold ${
-                      isLight ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-[#181824] border-[#262638] text-stone-400'
-                    }`}>
+                    <tr className={`border-b text-[11px] uppercase tracking-wider font-semibold ${isLight ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-[#181824] border-[#262638] text-stone-400'
+                      }`}>
                       <th className="py-3 px-4">Banner Slide</th>
                       <th className="py-3 px-4">Headline & Description</th>
                       <th className="py-3 px-4">Destination Target</th>
@@ -643,9 +689,8 @@ export const AdminAdsPage = () => {
                         return (
                           <tr
                             key={banner.id}
-                            className={`transition-colors ${
-                              isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
-                            }`}
+                            className={`transition-colors ${isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
+                              }`}
                           >
                             {/* Banner Slide Preview */}
                             <td className="py-3.5 px-4 whitespace-nowrap">
@@ -673,9 +718,8 @@ export const AdminAdsPage = () => {
                               <div className="text-[10px] font-semibold text-purple-400">
                                 {banner.subtitle}
                               </div>
-                              <div className={`font-bold text-xs mt-0.5 whitespace-pre-line leading-tight ${
-                                isLight ? 'text-slate-900' : 'text-white'
-                              }`}>
+                              <div className={`font-bold text-xs mt-0.5 whitespace-pre-line leading-tight ${isLight ? 'text-slate-900' : 'text-white'
+                                }`}>
                                 {banner.title}
                               </div>
                               <p className={`text-[10.5px] truncate mt-1 ${isLight ? 'text-slate-500 font-medium' : 'text-stone-400'}`}>
@@ -705,15 +749,14 @@ export const AdminAdsPage = () => {
                               <button
                                 type="button"
                                 onClick={() => toggleHeroBannerActive(banner.id)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
-                                  isActive
-                                    ? isLight
-                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                    : isLight
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${isActive
+                                  ? isLight
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                  : isLight
                                     ? 'bg-slate-100 text-slate-600 border border-slate-300'
                                     : 'bg-stone-800 text-stone-400 border border-stone-700'
-                                }`}
+                                  }`}
                               >
                                 {isActive ? (
                                   <>
@@ -735,11 +778,10 @@ export const AdminAdsPage = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditHeroBanner(banner)}
-                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
-                                    isLight
-                                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
-                                      : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
-                                  }`}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${isLight
+                                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
+                                    : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
+                                    }`}
                                   title="Edit Banner Image & Text"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
@@ -753,11 +795,10 @@ export const AdminAdsPage = () => {
                                       title: banner.title?.replace(/\n/g, ' ') || 'Hero Banner'
                                     })
                                   }
-                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
-                                    isLight
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
-                                      : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
-                                  }`}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${isLight
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
+                                    : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
+                                    }`}
                                   title="Delete Banner"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -779,16 +820,14 @@ export const AdminAdsPage = () => {
         {activeTab === 'mid-campaign' && (
           <div className="space-y-6">
             <div
-              className={`border rounded-2xl overflow-hidden shadow-xl ${
-                isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
-              }`}
+              className={`border rounded-2xl overflow-hidden shadow-xl ${isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
+                }`}
             >
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className={`border-b text-[11px] uppercase tracking-wider font-semibold ${
-                      isLight ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-[#181824] border-[#262638] text-stone-400'
-                    }`}>
+                    <tr className={`border-b text-[11px] uppercase tracking-wider font-semibold ${isLight ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-[#181824] border-[#262638] text-stone-400'
+                      }`}>
                       <th className="py-3 px-4">Deal Slide Image</th>
                       <th className="py-3 px-4">Campaign Title & Highlight</th>
                       <th className="py-3 px-4">Coupon Code</th>
@@ -815,9 +854,8 @@ export const AdminAdsPage = () => {
                         return (
                           <tr
                             key={cmp.id || cmp.title}
-                            className={`transition-colors ${
-                              isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
-                            }`}
+                            className={`transition-colors ${isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
+                              }`}
                           >
                             {/* Slide Background Image Preview */}
                             <td className="py-3.5 px-4 whitespace-nowrap">
@@ -876,15 +914,14 @@ export const AdminAdsPage = () => {
                               <button
                                 type="button"
                                 onClick={() => toggleMidCampaignActive(cmp.id)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
-                                  isActive
-                                    ? isLight
-                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                    : isLight
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${isActive
+                                  ? isLight
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                  : isLight
                                     ? 'bg-slate-100 text-slate-600 border border-slate-300'
                                     : 'bg-stone-800 text-stone-400 border border-stone-700'
-                                }`}
+                                  }`}
                               >
                                 {isActive ? (
                                   <>
@@ -906,11 +943,10 @@ export const AdminAdsPage = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditMidCampaign(cmp)}
-                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
-                                    isLight
-                                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
-                                      : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
-                                  }`}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${isLight
+                                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
+                                    : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
+                                    }`}
                                   title="Edit Deal Slide"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
@@ -924,11 +960,10 @@ export const AdminAdsPage = () => {
                                       title: cmp.title || 'Mid Campaign Deal'
                                     })
                                   }
-                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
-                                    isLight
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
-                                      : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
-                                  }`}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${isLight
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
+                                    : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
+                                    }`}
                                   title="Delete Deal Slide"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -950,19 +985,17 @@ export const AdminAdsPage = () => {
         {activeTab === 'top-ads' && (
           <div className="space-y-4">
             <div
-              className={`border rounded-2xl overflow-hidden shadow-xl ${
-                isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
-              }`}
+              className={`border rounded-2xl overflow-hidden shadow-xl ${isLight ? 'bg-white border-slate-200' : 'bg-[#14141e] border-[#262638]'
+                }`}
             >
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr
-                      className={`border-b text-[11px] uppercase tracking-wider font-semibold ${
-                        isLight
-                          ? 'bg-slate-50 border-slate-200 text-slate-500'
-                          : 'bg-[#181824] border-[#262638] text-stone-400'
-                      }`}
+                      className={`border-b text-[11px] uppercase tracking-wider font-semibold ${isLight
+                        ? 'bg-slate-50 border-slate-200 text-slate-500'
+                        : 'bg-[#181824] border-[#262638] text-stone-400'
+                        }`}
                     >
                       <th className="py-3 px-4">Ad Image & Brand</th>
                       <th className="py-3 px-4">Headline / Offer</th>
@@ -991,9 +1024,8 @@ export const AdminAdsPage = () => {
                         return (
                           <tr
                             key={ad.id}
-                            className={`transition-colors ${
-                              isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
-                            }`}
+                            className={`transition-colors ${isLight ? 'hover:bg-slate-50/80' : 'hover:bg-[#1a1a26]'
+                              }`}
                           >
                             {/* Ad Image & Brand */}
                             <td className="py-3.5 px-4 whitespace-nowrap">
@@ -1055,15 +1087,14 @@ export const AdminAdsPage = () => {
                               <button
                                 type="button"
                                 onClick={() => toggleAdActive(ad.id)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
-                                  isActive
-                                    ? isLight
-                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                    : isLight
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${isActive
+                                  ? isLight
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                  : isLight
                                     ? 'bg-slate-100 text-slate-600 border border-slate-300'
                                     : 'bg-stone-800 text-stone-400 border border-stone-700'
-                                }`}
+                                  }`}
                               >
                                 {isActive ? (
                                   <>
@@ -1085,11 +1116,10 @@ export const AdminAdsPage = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditAd(ad)}
-                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
-                                    isLight
-                                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
-                                      : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
-                                  }`}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${isLight
+                                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
+                                    : 'bg-[#222230] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
+                                    }`}
                                   title="Edit Ad"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />
@@ -1103,11 +1133,10 @@ export const AdminAdsPage = () => {
                                       title: `${ad.brand} - ${ad.title?.replace(/\n/g, ' ')}`
                                     })
                                   }
-                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${
-                                    isLight
-                                      ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
-                                      : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
-                                  }`}
+                                  className={`p-1.5 rounded-lg transition-colors cursor-pointer border ${isLight
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
+                                    : 'bg-[#222230] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
+                                    }`}
                                   title="Delete Ad"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1144,20 +1173,18 @@ export const AdminAdsPage = () => {
                   return (
                     <div
                       key={bp.id}
-                      className={`rounded-2xl p-5 flex flex-col justify-between border transition-all relative overflow-hidden group ${
-                        isLight
-                          ? 'bg-white border-slate-200 shadow-sm hover:border-purple-300 hover:shadow-md'
-                          : 'bg-[#14141e] border-[#262638] shadow-md hover:border-purple-500/40'
-                      }`}
+                      className={`rounded-2xl p-5 flex flex-col justify-between border transition-all relative overflow-hidden group ${isLight
+                        ? 'bg-white border-slate-200 shadow-sm hover:border-purple-300 hover:shadow-md'
+                        : 'bg-[#14141e] border-[#262638] shadow-md hover:border-purple-500/40'
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 border ${
-                              isLight
-                                ? 'bg-purple-50 border-purple-200 shadow-inner'
-                                : 'bg-[#20202e] border-[#303042] shadow-inner'
-                            }`}
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 border ${isLight
+                              ? 'bg-purple-50 border-purple-200 shadow-inner'
+                              : 'bg-[#20202e] border-[#303042] shadow-inner'
+                              }`}
                           >
                             {bp.logo || '✨'}
                           </div>
@@ -1174,15 +1201,14 @@ export const AdminAdsPage = () => {
                         <button
                           type="button"
                           onClick={() => toggleBrandPartnerActive(bp.id)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer shrink-0 border ${
-                            isActive
-                              ? isLight
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                              : isLight
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer shrink-0 border ${isActive
+                            ? isLight
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                            : isLight
                               ? 'bg-slate-100 text-slate-600 border-slate-300'
                               : 'bg-stone-800 text-stone-400 border-stone-700'
-                          }`}
+                            }`}
                         >
                           {isActive ? 'Active' : 'Paused'}
                         </button>
@@ -1196,11 +1222,10 @@ export const AdminAdsPage = () => {
                         <div className={`flex items-center justify-between pt-2.5 border-t ${isLight ? 'border-slate-200' : 'border-[#222230]'}`}>
                           <div className="flex items-center gap-1.5">
                             <span
-                              className={`text-[10.5px] font-extrabold px-2 py-0.5 rounded-md border ${
-                                isLight
-                                  ? 'bg-rose-100 text-rose-800 border-rose-300'
-                                  : 'bg-rose-950/60 text-rose-400 border-rose-800/40'
-                              }`}
+                              className={`text-[10.5px] font-extrabold px-2 py-0.5 rounded-md border ${isLight
+                                ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                : 'bg-rose-950/60 text-rose-400 border-rose-800/40'
+                                }`}
                             >
                               {bp.offer || 'Partner Offer'}
                             </span>
@@ -1208,11 +1233,10 @@ export const AdminAdsPage = () => {
 
                           {bp.couponCode && (
                             <div
-                              className={`flex items-center gap-1 font-mono text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
-                                isLight
-                                  ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                  : 'bg-amber-950/60 text-amber-300 border-amber-800/40'
-                              }`}
+                              className={`flex items-center gap-1 font-mono text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${isLight
+                                ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                : 'bg-amber-950/60 text-amber-300 border-amber-800/40'
+                                }`}
                             >
                               <Tag className={`w-3 h-3 ${isLight ? 'text-amber-700' : 'text-amber-400'}`} />
                               <span>{bp.couponCode}</span>
@@ -1225,11 +1249,10 @@ export const AdminAdsPage = () => {
                         <button
                           type="button"
                           onClick={() => handleOpenEditPartner(bp)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${
-                            isLight
-                              ? 'bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200'
-                              : 'bg-[#20202e] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${isLight
+                            ? 'bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200'
+                            : 'bg-[#20202e] hover:bg-purple-950/70 hover:text-purple-300 text-stone-300 border-transparent'
+                            }`}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                           <span>Edit</span>
@@ -1243,11 +1266,10 @@ export const AdminAdsPage = () => {
                               title: bp.name
                             })
                           }
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${
-                            isLight
-                              ? 'bg-red-100 hover:bg-red-200 text-red-700 border-red-200'
-                              : 'bg-[#20202e] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${isLight
+                            ? 'bg-red-100 hover:bg-red-200 text-red-700 border-red-200'
+                            : 'bg-[#20202e] hover:bg-red-950/70 hover:text-red-300 text-stone-300 border-transparent'
+                            }`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>Delete</span>
@@ -1266,9 +1288,8 @@ export const AdminAdsPage = () => {
       {heroModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div
-            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${
-              isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
-            }`}
+            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
+              }`}
           >
             <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
               <h3 className={`text-base font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -1295,11 +1316,10 @@ export const AdminAdsPage = () => {
                     value={heroFormData.tag}
                     onChange={(e) => setHeroFormData({ ...heroFormData, tag: e.target.value })}
                     placeholder="e.g. Trending Ritual, 40% OFF"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1311,11 +1331,10 @@ export const AdminAdsPage = () => {
                     value={heroFormData.subtitle}
                     onChange={(e) => setHeroFormData({ ...heroFormData, subtitle: e.target.value })}
                     placeholder="e.g. Precision Beard & Hair Craft"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -1330,11 +1349,10 @@ export const AdminAdsPage = () => {
                   value={heroFormData.title}
                   onChange={(e) => setHeroFormData({ ...heroFormData, title: e.target.value })}
                   placeholder="Executive Beard\n& Fade Sculpting"
-                  className={`w-full rounded-xl px-3 py-2 outline-none border font-bold text-sm ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 outline-none border font-bold text-sm ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -1347,11 +1365,10 @@ export const AdminAdsPage = () => {
                   value={heroFormData.desc}
                   onChange={(e) => setHeroFormData({ ...heroFormData, desc: e.target.value })}
                   placeholder="Short ritual description shown on the hero banner card..."
-                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -1365,11 +1382,10 @@ export const AdminAdsPage = () => {
                     value={heroFormData.ctaText}
                     onChange={(e) => setHeroFormData({ ...heroFormData, ctaText: e.target.value })}
                     placeholder="e.g. Book Chair, Explore"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1379,11 +1395,10 @@ export const AdminAdsPage = () => {
                   <select
                     value={heroFormData.salonId}
                     onChange={(e) => setHeroFormData({ ...heroFormData, salonId: e.target.value })}
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   >
                     <option value="">All Salons Overview</option>
                     {salons.map((s) => (
@@ -1406,11 +1421,10 @@ export const AdminAdsPage = () => {
                     value={heroFormData.image}
                     onChange={(e) => setHeroFormData({ ...heroFormData, image: e.target.value })}
                     placeholder="https://images.unsplash.com/photo-..."
-                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                   {heroFormData.image && (
                     <div className="w-16 h-10 rounded-lg overflow-hidden border border-purple-500/40 shrink-0 bg-stone-900">
@@ -1440,9 +1454,8 @@ export const AdminAdsPage = () => {
                 <button
                   type="button"
                   onClick={() => setHeroModalOpen(false)}
-                  className={`px-4 py-2 rounded-xl cursor-pointer ${
-                    isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
-                  }`}
+                  className={`px-4 py-2 rounded-xl cursor-pointer ${isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
+                    }`}
                 >
                   Cancel
                 </button>
@@ -1462,9 +1475,8 @@ export const AdminAdsPage = () => {
       {midModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div
-            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${
-              isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
-            }`}
+            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
+              }`}
           >
             <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
               <h3 className={`text-base font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -1492,11 +1504,10 @@ export const AdminAdsPage = () => {
                     value={midFormData.badge}
                     onChange={(e) => setMidFormData({ ...midFormData, badge: e.target.value })}
                     placeholder="e.g. Sponsored Campaign"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1509,11 +1520,10 @@ export const AdminAdsPage = () => {
                     value={midFormData.ctaText}
                     onChange={(e) => setMidFormData({ ...midFormData, ctaText: e.target.value })}
                     placeholder="e.g. Claim Pass"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -1528,11 +1538,10 @@ export const AdminAdsPage = () => {
                   value={midFormData.title}
                   onChange={(e) => setMidFormData({ ...midFormData, title: e.target.value })}
                   placeholder="e.g. InstaaTrim Gold Glow Carnival"
-                  className={`w-full rounded-xl px-3 py-2 font-bold outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 font-bold outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -1545,11 +1554,10 @@ export const AdminAdsPage = () => {
                   value={midFormData.subtitle}
                   onChange={(e) => setMidFormData({ ...midFormData, subtitle: e.target.value })}
                   placeholder="e.g. Co-sponsored by Lakmé & O3+ Pro"
-                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -1564,11 +1572,10 @@ export const AdminAdsPage = () => {
                     value={midFormData.highlight}
                     onChange={(e) => setMidFormData({ ...midFormData, highlight: e.target.value })}
                     placeholder="e.g. Book 2 Services • Get Free De-Tan"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
 
@@ -1581,11 +1588,10 @@ export const AdminAdsPage = () => {
                     value={midFormData.coupon}
                     onChange={(e) => setMidFormData({ ...midFormData, coupon: e.target.value.toUpperCase() })}
                     placeholder="e.g. CARNIVAL50"
-                    className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -1601,11 +1607,10 @@ export const AdminAdsPage = () => {
                     value={midFormData.bannerImage}
                     onChange={(e) => setMidFormData({ ...midFormData, bannerImage: e.target.value })}
                     placeholder="https://images.unsplash.com/..."
-                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                   {midFormData.bannerImage && (
                     <div className="w-16 h-10 rounded-lg overflow-hidden border border-purple-500/40 shrink-0 bg-stone-900">
@@ -1635,9 +1640,8 @@ export const AdminAdsPage = () => {
                 <button
                   type="button"
                   onClick={() => setMidModalOpen(false)}
-                  className={`px-4 py-2 rounded-xl cursor-pointer ${
-                    isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
-                  }`}
+                  className={`px-4 py-2 rounded-xl cursor-pointer ${isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
+                    }`}
                 >
                   Cancel
                 </button>
@@ -1657,9 +1661,8 @@ export const AdminAdsPage = () => {
       {adModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div
-            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${
-              isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
-            }`}
+            className={`border rounded-2xl w-full max-w-xl p-6 shadow-2xl relative my-8 ${isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
+              }`}
           >
             <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
               <h3 className={`text-base font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -1687,11 +1690,10 @@ export const AdminAdsPage = () => {
                     value={adFormData.brand}
                     onChange={(e) => setAdFormData({ ...adFormData, brand: e.target.value })}
                     placeholder="e.g. L'Oréal Paris"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1704,11 +1706,10 @@ export const AdminAdsPage = () => {
                     value={adFormData.sponsorBadge}
                     onChange={(e) => setAdFormData({ ...adFormData, sponsorBadge: e.target.value })}
                     placeholder="e.g. Official Brand Partner"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -1723,11 +1724,10 @@ export const AdminAdsPage = () => {
                   value={adFormData.title}
                   onChange={(e) => setAdFormData({ ...adFormData, title: e.target.value })}
                   placeholder="Parisian Glow &\nHyaluronic Care"
-                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -1741,11 +1741,10 @@ export const AdminAdsPage = () => {
                     value={adFormData.subtitle}
                     onChange={(e) => setAdFormData({ ...adFormData, subtitle: e.target.value })}
                     placeholder="e.g. Exclusive Salon Collaboration"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1757,11 +1756,10 @@ export const AdminAdsPage = () => {
                     value={adFormData.discountBadge}
                     onChange={(e) => setAdFormData({ ...adFormData, discountBadge: e.target.value })}
                     placeholder="e.g. Flat ₹400 OFF"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -1775,11 +1773,10 @@ export const AdminAdsPage = () => {
                   value={adFormData.description}
                   onChange={(e) => setAdFormData({ ...adFormData, description: e.target.value })}
                   placeholder="Short marketing description shown under title on carousel card..."
-                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -1795,11 +1792,10 @@ export const AdminAdsPage = () => {
                       setAdFormData({ ...adFormData, couponCode: e.target.value.toUpperCase() })
                     }
                     placeholder="e.g. LOREAL400"
-                    className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1811,11 +1807,10 @@ export const AdminAdsPage = () => {
                     value={adFormData.ctaText}
                     onChange={(e) => setAdFormData({ ...adFormData, ctaText: e.target.value })}
                     placeholder="e.g. Claim Deal"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1825,18 +1820,17 @@ export const AdminAdsPage = () => {
                   <select
                     value={adFormData.category}
                     onChange={(e) => setAdFormData({ ...adFormData, category: e.target.value })}
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   >
-                    <option value="facial">Facial</option>
-                    <option value="hair">Hair</option>
-                    <option value="spa">Spa</option>
-                    <option value="makeup">Makeup</option>
-                    <option value="nails">Nails</option>
                     <option value="all">All Services</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.slug}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1849,11 +1843,10 @@ export const AdminAdsPage = () => {
                   <select
                     value={adFormData.salonId}
                     onChange={(e) => setAdFormData({ ...adFormData, salonId: e.target.value })}
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   >
                     <option value="">None (Platform-wide)</option>
                     {salons.map((s) => (
@@ -1872,33 +1865,47 @@ export const AdminAdsPage = () => {
                     value={adFormData.validTill}
                     onChange={(e) => setAdFormData({ ...adFormData, validTill: e.target.value })}
                     placeholder="e.g. Limited Time Offer"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
 
               <div>
                 <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
-                  Image URL *
+                  Banner Images * (Max 4)
                 </label>
                 <div className="flex items-center gap-3">
                   <input
-                    type="url"
-                    required
-                    value={adFormData.image}
-                    onChange={(e) => setAdFormData({ ...adFormData, image: e.target.value })}
-                    placeholder="https://images.unsplash.com/..."
-                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files).slice(0, 4);
+                      setAdFormData({ ...adFormData, imageFiles: files });
+                    }}
+                    className={`flex-1 rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
-                  {adFormData.image && (
+                  {adFormData.imageFiles && adFormData.imageFiles.length > 0 && (
+                    <div className="flex gap-2">
+                      {adFormData.imageFiles.map((file, idx) => (
+                        <div key={idx} className={`w-12 h-9 rounded-lg overflow-hidden border shrink-0 ${isLight ? 'border-slate-300 bg-slate-100' : 'border-[#2d2d40] bg-stone-900'}`}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Fallback for existing image when editing */}
+                  {!adFormData.imageFiles?.length && adFormData.image && (
                     <div className={`w-12 h-9 rounded-lg overflow-hidden border shrink-0 ${isLight ? 'border-slate-300 bg-slate-100' : 'border-[#2d2d40] bg-stone-900'}`}>
                       <img
                         src={adFormData.image}
@@ -1926,9 +1933,8 @@ export const AdminAdsPage = () => {
                 <button
                   type="button"
                   onClick={() => setAdModalOpen(false)}
-                  className={`px-4 py-2 rounded-xl cursor-pointer ${
-                    isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
-                  }`}
+                  className={`px-4 py-2 rounded-xl cursor-pointer ${isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
+                    }`}
                 >
                   Cancel
                 </button>
@@ -1948,9 +1954,8 @@ export const AdminAdsPage = () => {
       {partnerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div
-            className={`border rounded-2xl w-full max-w-lg p-6 shadow-2xl relative my-8 ${
-              isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
-            }`}
+            className={`border rounded-2xl w-full max-w-lg p-6 shadow-2xl relative my-8 ${isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
+              }`}
           >
             <div className={`flex items-center justify-between pb-4 border-b ${isLight ? 'border-slate-200' : 'border-[#242433]'}`}>
               <h3 className={`text-base font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -1978,11 +1983,10 @@ export const AdminAdsPage = () => {
                     value={partnerFormData.name}
                     onChange={(e) => setPartnerFormData({ ...partnerFormData, name: e.target.value })}
                     placeholder="e.g. L'Oréal"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1995,11 +1999,10 @@ export const AdminAdsPage = () => {
                     value={partnerFormData.logo}
                     onChange={(e) => setPartnerFormData({ ...partnerFormData, logo: e.target.value })}
                     placeholder="e.g. 💎 or ✨"
-                    className={`w-full rounded-xl px-3 py-2 text-center text-base outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 text-center text-base outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -2015,11 +2018,10 @@ export const AdminAdsPage = () => {
                     setPartnerFormData({ ...partnerFormData, fullName: e.target.value })
                   }
                   placeholder="e.g. L'Oréal Paris Professional"
-                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -2036,11 +2038,10 @@ export const AdminAdsPage = () => {
                       setPartnerFormData({ ...partnerFormData, tagline: e.target.value })
                     }
                     placeholder="e.g. Parisian Hair Expert"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
                 <div>
@@ -2055,11 +2056,10 @@ export const AdminAdsPage = () => {
                       setPartnerFormData({ ...partnerFormData, offer: e.target.value })
                     }
                     placeholder="e.g. Flat ₹400 OFF"
-                    className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                      isLight
-                        ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                        : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                    }`}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
                   />
                 </div>
               </div>
@@ -2078,11 +2078,10 @@ export const AdminAdsPage = () => {
                     })
                   }
                   placeholder="e.g. LOREALPRO"
-                  className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 font-mono font-bold outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -2097,11 +2096,10 @@ export const AdminAdsPage = () => {
                     setPartnerFormData({ ...partnerFormData, description: e.target.value })
                   }
                   placeholder="Details on what products or services this partner collaborates on..."
-                  className={`w-full rounded-xl px-3 py-2 outline-none border ${
-                    isLight
-                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
-                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
-                  }`}
+                  className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                    ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                    : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                    }`}
                 />
               </div>
 
@@ -2123,9 +2121,8 @@ export const AdminAdsPage = () => {
                 <button
                   type="button"
                   onClick={() => setPartnerModalOpen(false)}
-                  className={`px-4 py-2 rounded-xl cursor-pointer ${
-                    isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
-                  }`}
+                  className={`px-4 py-2 rounded-xl cursor-pointer ${isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-stone-400 hover:text-white'
+                    }`}
                 >
                   Cancel
                 </button>
@@ -2145,9 +2142,8 @@ export const AdminAdsPage = () => {
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div
-            className={`border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 ${
-              isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
-            }`}
+            className={`border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 ${isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-[#14141e] border-[#262638] text-white'
+              }`}
           >
             <div className="w-10 h-10 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-600 mx-auto">
               <AlertCircle className="w-5 h-5" />
@@ -2170,11 +2166,10 @@ export const AdminAdsPage = () => {
               <button
                 type="button"
                 onClick={() => setDeleteConfirm(null)}
-                className={`flex-1 py-2 rounded-xl border text-xs font-semibold cursor-pointer ${
-                  isLight
-                    ? 'border-slate-300 text-slate-700 hover:bg-slate-100'
-                    : 'border-stone-700 text-stone-300 hover:bg-stone-800'
-                }`}
+                className={`flex-1 py-2 rounded-xl border text-xs font-semibold cursor-pointer ${isLight
+                  ? 'border-slate-300 text-slate-700 hover:bg-slate-100'
+                  : 'border-stone-700 text-stone-300 hover:bg-stone-800'
+                  }`}
               >
                 Cancel
               </button>

@@ -41,7 +41,7 @@ export const AdminCustomersPage = () => {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="admin-table-header border-b border-[#232333] bg-[#111119] text-stone-400 uppercase tracking-wider">
-                  <th className="py-3.5 px-5 font-semibold">Customer ID</th>
+                  <th className="py-3.5 px-5 font-semibold">Customer Name</th>
                   <th className="py-3.5 px-4 font-semibold">Name & Tier</th>
                   <th className="py-3.5 px-4 font-semibold">Contact Info</th>
                   <th className="py-3.5 px-4 font-semibold">Auth Method</th>
@@ -57,7 +57,7 @@ export const AdminCustomersPage = () => {
 
                   return (
                     <tr key={c.id} className="admin-table-row hover:bg-[#191924] transition-colors">
-                      <td className="py-4 px-5 font-mono text-purple-300 font-semibold">{c.id}</td>
+                      <td className="py-4 px-5 font-semibold text-white">{c.name || 'Anonymous User'}</td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-white text-sm">{c.name || 'Anonymous User'}</span>

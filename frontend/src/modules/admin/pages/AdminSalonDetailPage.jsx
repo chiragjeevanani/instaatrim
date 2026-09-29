@@ -23,7 +23,7 @@ import { useAdmin } from '../context/AdminContext';
 export const AdminSalonDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { salons, services, staff, bookings, reviews, verifySalon, rejectSalon, setSalonCommission } = useAdmin();
+  const { salons, categories, services, staff, bookings, reviews, verifySalon, rejectSalon, setSalonCommission } = useAdmin();
 
   const salon = salons.find((s) => s.id === id);
 
@@ -62,16 +62,8 @@ export const AdminSalonDetailPage = () => {
     <div className="flex-1 flex flex-col bg-[#0d0d12]">
       <AdminTopBar
         title={salon.name}
-        subtitle={`Partner Salon ID: ${salon.id} • Registered under ${salon.ownerName || 'Partner'}`}
-        action={
-          <Link
-            to="/admin/salons"
-            className="px-3 py-1.5 bg-[#181824] hover:bg-[#232333] border border-[#2d2d42] text-stone-300 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to directory</span>
-          </Link>
-        }
+        subtitle={`Registered under ${salon.ownerName || 'Partner'}`}
+        backTo="/admin/salons"
       />
 
       <div className="p-8 space-y-8 flex-1 overflow-y-auto">
@@ -139,7 +131,9 @@ export const AdminSalonDetailPage = () => {
               </div>
               <div>
                 <span className="text-stone-500 block">Category</span>
-                <span className="text-white font-medium">{salon.category}</span>
+                <span className="text-white font-medium">
+                  {categories?.find(c => c.id === salon.category || c._id === salon.category)?.name || salon.category || 'Unisex'}
+                </span>
               </div>
               <div>
                 <span className="text-stone-500 block">Email</span>
@@ -230,7 +224,7 @@ export const AdminSalonDetailPage = () => {
                   <span className="text-stone-500">Customer Rating</span>
                   <span className="text-amber-300 font-semibold flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                    {salon.rating || 4.8} ({salonReviews.length} reviews)
+                    {salon.rating || '0.0'} ({salonReviews.length} reviews)
                   </span>
                 </div>
               </div>

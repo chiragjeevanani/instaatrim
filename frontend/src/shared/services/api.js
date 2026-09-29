@@ -49,22 +49,28 @@ const salons = {
       return clone(updated);
     }),
 
-  login: (loginId, password) =>
-    withLatency(() => {
-      const trimmedLogin = String(loginId || '').trim().toLowerCase();
-      const cleanDigits = String(loginId || '').replace(/\D/g, '');
-      const salon = getState().salons.find(
-        (s) =>
-          s.partnerLoginId?.toLowerCase() === trimmedLogin ||
-          s.email?.toLowerCase() === trimmedLogin ||
-          (cleanDigits.length >= 10 && s.mobile?.replace(/\D/g, '').endsWith(cleanDigits.slice(-10)))
-      );
-      if (!salon || salon.partnerPassword !== password) {
-        throw new ApiError('Incorrect email/mobile or password.', 'AUTH_FAILED');
-      }
-      dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: salon.id } });
-      return clone(salon);
-    }),
+  login: async (loginId, password) => {
+    const res = await fetch(`${API_BASE}/salons/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ loginId, password })
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || 'Incorrect email/mobile or password.');
+    }
+    
+    // Upsert the real salon data into the frontend mock store so the UI can find it
+    const existing = getState().salons.find(s => s.id === json.data.id);
+    if (!existing) {
+      dispatch({ type: 'ADD_SALON', payload: json.data });
+    } else {
+      dispatch({ type: 'PATCH_SALON', payload: { salonId: json.data.id, patch: json.data } });
+    }
+    
+    dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: json.data.id } });
+    return json.data;
+  },
 
   loginWithOtp: (phoneOrEmail) =>
     withLatency(() => {
@@ -84,9 +90,21 @@ const salons = {
       return clone(salon);
     }),
 
-  register: (data) =>
-    withLatency(() => {
-      const id = `sal-${Date.now()}`;
+  register: async (data) => {
+    try {
+      const res = await fetch(`${API_BASE}/salons/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || 'Registration failed');
+      }
+      
+      const savedId = json.data?.id || `sal-${Date.now()}`;
+
+      // Still create a mock object for frontend state consistency for now
       const openTime = data.openTime || '09:30 AM';
       const closeTime = data.closeTime || '08:30 PM';
       const defaultHours = {
@@ -100,7 +118,8 @@ const salons = {
       };
 
       const newSalon = {
-        id,
+        id: savedId,
+        _id: savedId,
         name: data.name || 'My Salon & Spa',
         ownerName: data.ownerName || 'Partner Owner',
         mobile: data.mobile?.startsWith('+91') ? data.mobile : `+91 ${data.mobile || '98765 43210'}`,
@@ -117,12 +136,9 @@ const salons = {
         area: data.area || 'Indore Central',
         locationCity: data.city || 'Indore',
         startingPrice: Number(data.startingPrice) || 299,
-        coverImage:
-          data.coverImage ||
-          'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+        coverImage: data.coverImage || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
         images: [
-          data.coverImage ||
-            'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+          data.coverImage || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
           'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
         ],
         offer: '15% OFF Launch Special',
@@ -154,7 +170,11 @@ const salons = {
       dispatch({ type: 'ADD_SALON', payload: newSalon });
       dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: newSalon.id } });
       return clone(newSalon);
-    }),
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  },
 
   logout: () =>
     withLatency(() => {
@@ -165,31 +185,45 @@ const salons = {
   currentSession: () => clone(getState().partnerSession),
 
   // Admin extensions
-  verify: (salonId, verificationStatus = 'Live') =>
-    withLatency(() => {
-      const isVerified = verificationStatus === 'Live';
-      dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: { verificationStatus, isVerified } } });
-      const updated = getState().salons.find((s) => s.id === salonId);
-      return clone(updated);
-    }),
+  verify: async (salonId, verificationStatus = 'Live') => {
+    const isVerified = verificationStatus === 'Live';
+    const res = await fetch(`${API_BASE}/salons/${salonId}/verify`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: verificationStatus })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to verify salon');
+    
+    dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
+    return clone(json.data);
+  },
 
-  reject: (salonId, reason = 'Application rejected by administrator') =>
-    withLatency(() => {
-      dispatch({
-        type: 'PATCH_SALON',
-        payload: { salonId, patch: { verificationStatus: 'Rejected', isVerified: false, rejectionReason: reason } }
-      });
-      const updated = getState().salons.find((s) => s.id === salonId);
-      return clone(updated);
-    }),
+  reject: async (salonId, reason = 'Application rejected by administrator') => {
+    const res = await fetch(`${API_BASE}/salons/${salonId}/reject`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to reject salon');
+    
+    dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
+    return clone(json.data);
+  },
 
-  setCommission: (salonId, commissionRate) =>
-    withLatency(() => {
-      dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: { commissionRate } } });
-      const updated = getState().salons.find((s) => s.id === salonId);
-      return clone(updated);
-    }),
-
+  setCommission: async (salonId, commissionRate) => {
+    const res = await fetch(`${API_BASE}/salons/${salonId}/commission`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commissionRate })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to update commission');
+    
+    dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
+    return clone(json.data);
+  },
   toggleActive: (salonId) =>
     withLatency(() => {
       const salon = getState().salons.find((s) => s.id === salonId);
@@ -206,7 +240,21 @@ const services = {
   listBySalon: (salonId) =>
     withLatency(() => clone(getState().services.filter((s) => s.salonId === salonId))),
 
-  listAll: () => withLatency(() => clone(getState().services)),
+  listAll: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/services`);
+      if (res.ok) {
+        const json = await res.json();
+        // We only use the id instead of _id here for UI mapping
+        const mapped = json.data.map(s => ({ ...s, id: s._id }));
+        dispatch({ type: 'SET_SERVICES', payload: mapped });
+        return clone(mapped);
+      }
+    } catch(e) {
+      console.error(e);
+    }
+    return clone(getState().services || []);
+  },
 
   add: (salonId, data) =>
     withLatency(() => {
@@ -403,46 +451,52 @@ const offers = {
 };
 
 const coupons = {
-  list: () => withLatency(() => clone(getState().coupons)),
+  list: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/coupons`);
+      const json = await res.json();
+      return json.data || [];
+    } catch (e) {
+      console.error('Error fetching coupons:', e);
+      return [];
+    }
+  },
 
-  findByCode: (code) =>
-    withLatency(() => {
-      const found = getState().coupons.find((c) => c.code.toLowerCase() === String(code).trim().toLowerCase());
-      return found ? clone(found) : null;
-    }),
+  findByCode: async (code) => {
+    try {
+      const res = await fetch(`${API_BASE}/coupons`);
+      const json = await res.json();
+      return json.data?.find((c) => c.code.toLowerCase() === String(code).trim().toLowerCase()) || null;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  },
 
-  create: (data) =>
-    withLatency(() => {
-      const coupon = {
-        id: `cpn-${Date.now()}`,
-        code: String(data.code || '').toUpperCase().trim(),
-        description: data.description || '',
-        scope: data.scope || 'platform',
-        discountPercent: data.discountPercent ? Number(data.discountPercent) : null,
-        flatDiscount: data.flatDiscount ? Number(data.flatDiscount) : null,
-        maxDiscount: data.maxDiscount ? Number(data.maxDiscount) : null,
-        minOrder: Number(data.minOrder) || 0,
-        firstBookingOnly: Boolean(data.firstBookingOnly),
-        isActive: data.isActive ?? true,
-        expiryDate: data.expiryDate || null,
-        usageCount: 0,
-        ...data
-      };
-      dispatch({ type: 'ADD_COUPON', payload: coupon });
-      return clone(coupon);
-    }),
+  create: async (data) => {
+    const res = await fetch(`${API_BASE}/coupons`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    return json.data;
+  },
 
-  update: (couponId, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_COUPON', payload: { couponId, patch } });
-      return clone(getState().coupons.find((c) => c.id === couponId || c.code === couponId));
-    }),
+  update: async (couponId, patch) => {
+    const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch)
+    });
+    const json = await res.json();
+    return json.data;
+  },
 
-  remove: (couponId) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_COUPON', payload: { couponId } });
-      return true;
-    })
+  remove: async (couponId) => {
+    await fetch(`${API_BASE}/coupons/${couponId}`, { method: 'DELETE' });
+    return true;
+  }
 };
 
 // =============================================================================
@@ -615,6 +669,24 @@ const tickets = {
 // =============================================================================
 // Customers / Auth
 // =============================================================================
+
+// Helper: get stored JWT token from localStorage, or mock admin token if admin is logged in
+const getAuthToken = () => {
+  const state = getState();
+  if (state && state.adminSession) {
+    return 'mock-jwt-token-7a8b9c0d1e2f3g4h5i6j';
+  }
+  return localStorage.getItem('instaatrim_token');
+};
+
+// Helper: build auth headers with Bearer JWT
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${getAuthToken()}`,
+});
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 const customers = {
   list: () => withLatency(() => clone(getState().customers)),
 
@@ -624,23 +696,52 @@ const customers = {
       return clone(state.customers.find((c) => c.id === state.currentCustomerId));
     }),
 
-  loginWithPhone: (phone, name) =>
-    withLatency(() => {
-      const id = getState().currentCustomerId || 'cust-1';
-      const record = {
-        id,
-        isLoggedIn: true,
-        name: name || 'Customer',
-        phone,
-        email: `${phone}@instaatrim.com`,
-        isElite: true,
-        referralCode: `TRIM${String(phone).slice(-4)}`,
-        authProvider: 'otp',
-        notificationPrefs: { push: true, sms: true, email: true, whatsapp: false, marketing: false }
-      };
-      dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
-      return clone(record);
-    }),
+  // Called after OTP verified — syncs real DB profile into the local store
+  loginWithPhone: async (phone, name) => {
+    try {
+      const token = getAuthToken();
+      if (token) {
+        // Fetch real profile from backend
+        const res = await fetch(`${API_BASE}/customers/me`, {
+          headers: authHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const dbCustomer = data.customer;
+          const record = {
+            id: String(dbCustomer.id),
+            isLoggedIn: true,
+            name: dbCustomer.name || name || 'Customer',
+            phone: dbCustomer.phone || phone,
+            email: dbCustomer.email || `${phone}@instaatrim.com`,
+            gender: dbCustomer.gender || 'female',
+            is_elite: dbCustomer.is_elite || false,
+            referral_code: dbCustomer.referral_code || null,
+            authProvider: 'otp',
+            notificationPrefs: { push: true, sms: true, email: true, whatsapp: false, marketing: false },
+          };
+          dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
+          return clone(record);
+        }
+      }
+    } catch (_) {
+      // Fallback to local mock if backend unavailable
+    }
+    // Fallback: local mock record
+    const id = getState().currentCustomerId || 'cust-1';
+    const record = {
+      id,
+      isLoggedIn: true,
+      name: name || 'Customer',
+      phone,
+      email: `${phone}@instaatrim.com`,
+      is_elite: false,
+      authProvider: 'otp',
+      notificationPrefs: { push: true, sms: true, email: true, whatsapp: false, marketing: false },
+    };
+    dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
+    return clone(record);
+  },
 
   loginWithProvider: (provider, profile) =>
     withLatency(() => {
@@ -648,27 +749,89 @@ const customers = {
       const record = {
         id,
         isLoggedIn: true,
-        isElite: true,
+        is_elite: false,
         authProvider: provider,
         notificationPrefs: { push: true, sms: true, email: true, whatsapp: false, marketing: false },
-        ...profile
+        ...profile,
       };
       dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
       return clone(record);
     }),
 
-  logout: () =>
-    withLatency(() => {
-      dispatch({ type: 'LOGOUT_CUSTOMER' });
-      return true;
-    }),
+  logout: async () => {
+    try {
+      const token = getAuthToken();
+      if (token) {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: authHeaders(),
+        });
+      }
+    } catch (_) {
+      // Ignore network errors, proceed with local logout
+    }
+    // Clear JWT + stored customer from localStorage
+    localStorage.removeItem('instaatrim_token');
+    localStorage.removeItem('instaatrim_customer');
+    
+    // Clear Auth Page session state so they start at the phone screen
+    sessionStorage.removeItem('instaatrim_auth_step');
+    sessionStorage.removeItem('instaatrim_auth_phone');
+    sessionStorage.removeItem('instaatrim_auth_countdown');
+    sessionStorage.removeItem('instaatrim_auth_isNewUser');
+    sessionStorage.removeItem('instaatrim_auth_token');
 
-  updateProfile: (patch) =>
-    withLatency(() => {
-      dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: patch });
-      const state = getState();
-      return clone(state.customers.find((c) => c.id === state.currentCustomerId));
-    })
+    dispatch({ type: 'LOGOUT_CUSTOMER' });
+    return true;
+  },
+
+  updateProfile: async (patch) => {
+    try {
+      const token = getAuthToken();
+      if (token) {
+        // Update on real backend
+        const res = await fetch(`${API_BASE}/customers/me`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify(patch),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Sync updated profile into local store
+          dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: { ...patch, ...data.customer } });
+          const state = getState();
+          return clone(state.customers.find((c) => c.id === state.currentCustomerId));
+        }
+      }
+    } catch (_) {
+      // Fallback to local mock
+    }
+    // Fallback: local mock update
+    dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: patch });
+    const state = getState();
+    return clone(state.customers.find((c) => c.id === state.currentCustomerId));
+  },
+
+  fetchMyProfile: async () => {
+    try {
+      const token = getAuthToken();
+      if (token) {
+        const res = await fetch(`${API_BASE}/customers/me`, {
+          headers: authHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: data.customer });
+          const state = getState();
+          return clone(state.customers.find((c) => c.id === state.currentCustomerId));
+        }
+      }
+    } catch (_) {
+      // Fallback
+    }
+    const state = getState();
+    return clone(state.customers.find((c) => c.id === state.currentCustomerId));
+  },
 };
 
 // =============================================================================
@@ -704,48 +867,163 @@ const admin = {
 // Advertisements & Banners
 // =============================================================================
 const ads = {
-  getAll: () =>
-    withLatency(() => {
-      const s = getState();
-      return {
-        advertisements: clone(s.advertisements || []),
-        brandPartners: clone(s.brandPartners || []),
-        heroBanners: clone(s.heroBanners || []),
-        midPageCampaigns: clone(s.midPageCampaigns || []),
-        midPageCampaign: clone(s.midPageCampaign || {})
-      };
-    }),
+  getAll: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/ads`, { headers: authHeaders() });
+      if (res.ok) {
+        const json = await res.json();
+        const apiAds = json.data.map(ad => ({
+          ...ad,
+          id: ad._id,
+          // Extract the first image to display in the UI as 'image' property
+          image: (ad.images && ad.images.length > 0) ? ad.images[0] : ad.image
+        }));
+        // Update local state directly using an implicit or explicit reducer action
+        dispatch({ type: 'SET_ADVERTISEMENTS', payload: apiAds });
+        const s = getState();
+        return {
+          advertisements: apiAds,
+          brandPartners: clone(s.brandPartners || []),
+          heroBanners: clone(s.heroBanners || []),
+          midPageCampaigns: clone(s.midPageCampaigns || []),
+          midPageCampaign: clone(s.midPageCampaign || {})
+        };
+      }
+    } catch (e) {
+      console.error('Failed to fetch ads from backend:', e);
+    }
+    const s = getState();
+    return {
+      advertisements: clone(s.advertisements || []),
+      brandPartners: clone(s.brandPartners || []),
+      heroBanners: clone(s.heroBanners || []),
+      midPageCampaigns: clone(s.midPageCampaigns || []),
+      midPageCampaign: clone(s.midPageCampaign || {})
+    };
+  },
 
-  createAd: (data) =>
-    withLatency(() => {
+  createAd: async (data) => {
+    try {
+      const isFormData = data instanceof FormData;
+      const headers = { ...authHeaders() };
+      if (isFormData) {
+        delete headers['Content-Type']; // Let browser set boundary
+      }
+      
+      const res = await fetch(`${API_BASE}/ads`, {
+        method: 'POST',
+        headers,
+        body: isFormData ? data : JSON.stringify(data)
+      });
+      
+      const json = await res.json();
+      if (!json.success) throw new ApiError(json.message || 'Error creating ad', 'AD_CREATE_FAILED');
+      
+      const item = {
+        ...json.data,
+        id: json.data._id
+      };
+      
+      if (item.images && item.images.length > 0) {
+        item.image = item.images[0];
+      }
+      
+      dispatch({ type: 'ADS_CREATE', payload: item });
+      return clone(item);
+    } catch (e) {
+      console.error('Fallback ad creation:', e);
+      // Fallback
       const item = {
         id: newAdId(),
         isActive: true,
-        ...data
+        ...(data instanceof FormData ? Object.fromEntries(data.entries()) : data)
       };
       dispatch({ type: 'ADS_CREATE', payload: item });
       return clone(item);
-    }),
+    }
+  },
 
-  updateAd: (id, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'ADS_UPDATE', payload: { id, patch } });
+  updateAd: async (id, patch) => {
+    try {
+      const isFormData = patch instanceof FormData;
+      const headers = { ...authHeaders() };
+      if (isFormData) {
+        delete headers['Content-Type'];
+      }
+      
+      const res = await fetch(`${API_BASE}/ads/${id}`, {
+        method: 'PUT',
+        headers,
+        body: isFormData ? patch : JSON.stringify(patch)
+      });
+      
+      const json = await res.json();
+      if (!json.success) throw new ApiError(json.message || 'Error updating ad', 'AD_UPDATE_FAILED');
+      
+      const item = {
+        ...json.data,
+        id: json.data._id
+      };
+      
+      if (item.images && item.images.length > 0) {
+        item.image = item.images[0];
+      }
+      
+      dispatch({ type: 'ADS_UPDATE', payload: { id, patch: item } });
+      return clone(item);
+    } catch (e) {
+      console.error('Fallback ad update:', e);
+      // Fallback
+      dispatch({ type: 'ADS_UPDATE', payload: { id, patch: (patch instanceof FormData ? Object.fromEntries(patch.entries()) : patch) } });
       const updated = getState().advertisements.find((a) => a.id === id);
       return clone(updated);
-    }),
+    }
+  },
 
-  deleteAd: (id) =>
-    withLatency(() => {
+  deleteAd: async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/ads/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      const json = await res.json();
+      if (!json.success) throw new ApiError(json.message || 'Error deleting ad');
+      
       dispatch({ type: 'ADS_DELETE', payload: id });
       return true;
-    }),
+    } catch (e) {
+      console.error('Fallback ad delete:', e);
+      dispatch({ type: 'ADS_DELETE', payload: id });
+      return true;
+    }
+  },
 
-  toggleAdActive: (id) =>
-    withLatency(() => {
+  toggleAdActive: async (id) => {
+    try {
+      // Find current ad
+      const ad = getState().advertisements.find(a => a.id === id);
+      if (!ad) throw new Error('Ad not found');
+      
+      const newActive = !ad.isActive;
+      const res = await fetch(`${API_BASE}/ads/${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ isActive: newActive })
+      });
+      
+      const json = await res.json();
+      if (!json.success) throw new ApiError(json.message);
+      
       dispatch({ type: 'ADS_TOGGLE_ACTIVE', payload: id });
       const updated = getState().advertisements.find((a) => a.id === id);
       return clone(updated);
-    }),
+    } catch (e) {
+      console.error('Fallback ad toggle:', e);
+      dispatch({ type: 'ADS_TOGGLE_ACTIVE', payload: id });
+      const updated = getState().advertisements.find((a) => a.id === id);
+      return clone(updated);
+    }
+  },
 
   createBrandPartner: (data) =>
     withLatency(() => {
@@ -853,94 +1131,117 @@ const ads = {
 // Categories (Admin-defined, salon & customer accessible)
 // =============================================================================
 const categories = {
-  list: (filters = {}) =>
-    withLatency(() => {
-      let result = getState().categories || [];
-      if (filters.onlyActive) {
-        result = result.filter((c) => c.isActive !== false);
+  list: async (filters = {}) => {
+    try {
+      const res = await fetch(`${API_BASE}/categories`, { headers: authHeaders() });
+      if (res.ok) {
+        const json = await res.json();
+        const mapped = json.data.map(cat => ({ ...cat, id: cat._id }));
+        dispatch({ type: 'SET_CATEGORIES', payload: mapped });
+        let result = mapped;
+        if (filters.onlyActive) result = result.filter(c => c.isActive !== false);
+        if (filters.gender && filters.gender !== 'all') {
+          result = result.filter(c => c.gender === 'unisex' || c.gender === filters.gender);
+        }
+        return result;
       }
-      if (filters.gender && filters.gender !== 'all') {
-        result = result.filter(
-          (c) => c.gender === 'unisex' || c.gender === filters.gender
-        );
-      }
-      return clone(result);
-    }),
+    } catch(e) {
+      console.error('Failed to fetch categories:', e);
+    }
+    // Fallback
+    let result = clone(getState().categories || []);
+    if (filters.onlyActive) result = result.filter(c => c.isActive !== false);
+    if (filters.gender && filters.gender !== 'all') {
+      result = result.filter(c => c.gender === 'unisex' || c.gender === filters.gender);
+    }
+    return result;
+  },
 
-  get: (categoryId) =>
-    withLatency(() => {
-      const cat = (getState().categories || []).find(
-        (c) => c.id === categoryId || c.slug === categoryId
-      );
-      if (!cat) throw new ApiError(`Category ${categoryId} not found`, 'NOT_FOUND');
-      return clone(cat);
-    }),
+  get: async (categoryId) => {
+    // Relying on state since list fetches it
+    const cat = (getState().categories || []).find((c) => c.id === categoryId || c.slug === categoryId);
+    if (!cat) throw new ApiError(`Category ${categoryId} not found`, 'NOT_FOUND');
+    return clone(cat);
+  },
 
-  create: (data) =>
-    withLatency(() => {
-      const id = newCategoryId();
-      const slug =
-        (data.slug || data.name || 'category')
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '') || `cat-${Date.now()}`;
+  create: async (data) => {
+    try {
+      const isFormData = data instanceof FormData;
+      const headers = { ...authHeaders() };
+      if (isFormData) delete headers['Content-Type'];
 
-      const rawServiceCategories = Array.isArray(data.serviceCategories)
-        ? data.serviceCategories
-        : typeof data.serviceCategories === 'string'
-        ? data.serviceCategories.split(',').map((s) => s.trim()).filter(Boolean)
-        : [data.name];
-
-      const newCategory = {
-        id,
-        slug,
-        name: data.name?.trim() || 'New Category',
-        shortName: data.shortName?.trim() || data.name?.trim() || 'Category',
-        serviceCategories: rawServiceCategories.length ? rawServiceCategories : [data.name?.trim() || 'General'],
-        gender: data.gender || 'unisex',
-        image:
-          data.image?.trim() ||
-          'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
-        description: data.description?.trim() || '',
-        isActive: data.isActive !== false,
-        colSpan: Number(data.colSpan) || 1,
-        createdAt: new Date().toISOString()
-      };
-
+      const res = await fetch(`${API_BASE}/categories`, {
+        method: 'POST',
+        headers,
+        body: isFormData ? data : JSON.stringify(data)
+      });
+      const json = await res.json();
+      if(!json.success) throw new ApiError(json.message);
+      
+      const newCategory = { ...json.data, id: json.data._id };
       dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
       return clone(newCategory);
-    }),
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  },
 
-  update: (categoryId, patch) =>
-    withLatency(() => {
-      const category = (getState().categories || []).find((c) => c.id === categoryId);
-      if (!category) throw new ApiError(`Category ${categoryId} not found`, 'NOT_FOUND');
+  update: async (categoryId, patch) => {
+    try {
+      const isFormData = patch instanceof FormData;
+      const headers = { ...authHeaders() };
+      if (isFormData) delete headers['Content-Type'];
 
-      let updatedPatch = { ...patch };
-      if (patch.serviceCategories && typeof patch.serviceCategories === 'string') {
-        updatedPatch.serviceCategories = patch.serviceCategories
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
-      }
+      const res = await fetch(`${API_BASE}/categories/${categoryId}`, {
+        method: 'PUT',
+        headers,
+        body: isFormData ? patch : JSON.stringify(patch)
+      });
+      const json = await res.json();
+      if(!json.success) throw new ApiError(json.message);
 
-      dispatch({ type: 'UPDATE_CATEGORY', payload: { categoryId, patch: updatedPatch } });
-      const updated = (getState().categories || []).find((c) => c.id === categoryId);
+      const updated = { ...json.data, id: json.data._id };
+      dispatch({ type: 'UPDATE_CATEGORY', payload: { categoryId, patch: updated } });
       return clone(updated);
-    }),
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  },
 
-  remove: (categoryId) =>
-    withLatency(() => {
+  remove: async (categoryId) => {
+    try {
+      await fetch(`${API_BASE}/categories/${categoryId}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
       dispatch({ type: 'DELETE_CATEGORY', payload: { categoryId } });
       return true;
-    }),
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  },
 
-  toggleActive: (categoryId) =>
-    withLatency(() => {
-      dispatch({ type: 'TOGGLE_CATEGORY_ACTIVE', payload: { categoryId } });
-      const updated = (getState().categories || []).find((c) => c.id === categoryId);
-      return clone(updated);
-    })
+  toggleActive: async (categoryId) => {
+    try {
+      const res = await fetch(`${API_BASE}/categories/${categoryId}/toggle`, {
+        method: 'PATCH',
+        headers: authHeaders()
+      });
+      const json = await res.json();
+      if(json.success) {
+        dispatch({ type: 'TOGGLE_CATEGORY_ACTIVE', payload: { categoryId } });
+        const updated = (getState().categories || []).find((c) => c.id === categoryId);
+        return clone(updated);
+      }
+      throw new Error();
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  }
 };
 
 // =============================================================================
@@ -1044,47 +1345,95 @@ const elitePlan = {
 // Editorial Content (Skincare Studio & Beauty Trends)
 // =============================================================================
 const editorial = {
-  getSkincare: () => withLatency(() => clone(getState().skincareItems || [])),
+  getSkincare: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/rituals?type=skincare`);
+      const json = await res.json();
+      return json.data || [];
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
 
-  addSkincare: (data) =>
-    withLatency(() => {
-      const item = { id: `skin-${Date.now()}`, isActive: true, ...data };
-      dispatch({ type: 'ADD_EDITORIAL_SKINCARE', payload: item });
-      return clone(item);
-    }),
+  addSkincare: async (data) => {
+    const formData = new FormData();
+    formData.append('type', 'skincare');
+    Object.keys(data).forEach(key => {
+      formData.append(key, data[key]);
+    });
+    
+    const res = await fetch(`${API_BASE}/rituals`, {
+      method: 'POST',
+      body: formData
+    });
+    const json = await res.json();
+    return json.data;
+  },
 
-  updateSkincare: (id, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_EDITORIAL_SKINCARE', payload: { id, patch } });
-      return clone((getState().skincareItems || []).find((i) => i.id === id));
-    }),
+  updateSkincare: async (id, data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+      formData.append(key, data[key]);
+    });
 
-  deleteSkincare: (id) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_EDITORIAL_SKINCARE', payload: { id } });
-      return true;
-    }),
+    const res = await fetch(`${API_BASE}/rituals/${id}`, {
+      method: 'PUT',
+      body: formData
+    });
+    const json = await res.json();
+    return json.data;
+  },
 
-  getTrends: () => withLatency(() => clone(getState().trendsItems || [])),
+  deleteSkincare: async (id) => {
+    await fetch(`${API_BASE}/rituals/${id}`, { method: 'DELETE' });
+    return true;
+  },
 
-  addTrend: (data) =>
-    withLatency(() => {
-      const item = { id: `trend-${Date.now()}`, isActive: true, ...data };
-      dispatch({ type: 'ADD_EDITORIAL_TREND', payload: item });
-      return clone(item);
-    }),
+  getTrends: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/rituals?type=trend`);
+      const json = await res.json();
+      return json.data || [];
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
 
-  updateTrend: (id, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_EDITORIAL_TREND', payload: { id, patch } });
-      return clone((getState().trendsItems || []).find((i) => i.id === id));
-    }),
+  addTrend: async (data) => {
+    const formData = new FormData();
+    formData.append('type', 'trend');
+    Object.keys(data).forEach(key => {
+      formData.append(key, data[key]);
+    });
 
-  deleteTrend: (id) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_EDITORIAL_TREND', payload: { id } });
-      return true;
-    })
+    const res = await fetch(`${API_BASE}/rituals`, {
+      method: 'POST',
+      body: formData
+    });
+    const json = await res.json();
+    return json.data;
+  },
+
+  updateTrend: async (id, data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+      formData.append(key, data[key]);
+    });
+
+    const res = await fetch(`${API_BASE}/rituals/${id}`, {
+      method: 'PUT',
+      body: formData
+    });
+    const json = await res.json();
+    return json.data;
+  },
+
+  deleteTrend: async (id) => {
+    await fetch(`${API_BASE}/rituals/${id}`, { method: 'DELETE' });
+    return true;
+  }
 };
 
 export const api = {

@@ -56,13 +56,13 @@ export const buildInitialState = () => ({
   payouts: DEFAULT_PAYOUTS,
   platformSettings: DEFAULT_PLATFORM_SETTINGS,
   elitePlan: DEFAULT_ELITE_PLAN,
-  skincareItems: DEFAULT_EDITORIAL_SKINCARE,
-  trendsItems: DEFAULT_EDITORIAL_TRENDS,
+  skincareItems: [],
+  trendsItems: [],
   holds: [],
   notifications: DEFAULT_NOTIFICATIONS,
   tickets: DEFAULT_TICKETS,
-  customers: [{ ...DEFAULT_CUSTOMER }],
-  currentCustomerId: 'cust-1',
+  customers: [],
+  currentCustomerId: null,
   partnerSession: null, // { salonId } once a partner logs in
   adminSession: null // { email, name, role } once an admin logs in
 });
@@ -74,6 +74,39 @@ export function appReducer(state, action) {
       // added to seed.js in a later release still shows up for returning
       // users instead of being silently missing.
       return { ...buildInitialState(), ...action.payload };
+    }
+
+    // ---------------- Salons ----------------
+    case 'SET_SALONS': {
+      return { ...state, salons: action.payload };
+    }
+
+    // ---------------- Customers ----------------
+    case 'SET_CUSTOMERS': {
+      return { ...state, customers: action.payload };
+    }
+    case 'UPSERT_CUSTOMER': {
+      const exists = (state.customers || []).find(c => c.id === action.payload.id);
+      if (exists) {
+        return { ...state, customers: state.customers.map(c => c.id === action.payload.id ? { ...c, ...action.payload } : c) };
+      }
+      return { ...state, customers: [action.payload, ...(state.customers || [])] };
+    }
+    case 'PATCH_CURRENT_CUSTOMER': {
+      return { ...state, customers: (state.customers || []).map(c => c.id === state.currentCustomerId ? { ...c, ...action.payload } : c) };
+    }
+    case 'LOGOUT_CUSTOMER': {
+      return { ...state, currentCustomerId: null };
+    }
+    case 'ADD_SALON': {
+      return { ...state, salons: [action.payload, ...state.salons] };
+    }
+    case 'PATCH_SALON': {
+      const { salonId, patch } = action.payload;
+      return {
+        ...state,
+        salons: state.salons.map((s) => (s.id === salonId ? { ...s, ...patch } : s))
+      };
     }
 
     // ---------------- Bookings ----------------
@@ -127,9 +160,12 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Categories (Admin Defined) ----------------
+    case 'SET_CATEGORIES': {
+      return { ...state, categories: action.payload };
+    }
     case 'ADD_CATEGORY':
     case 'CATEGORY_CREATE': {
-      return { ...state, categories: [action.payload, ...state.categories] };
+      return { ...state, categories: [action.payload, ...(state.categories || [])] };
     }
     case 'UPDATE_CATEGORY':
     case 'CATEGORY_UPDATE': {
@@ -179,15 +215,35 @@ export function appReducer(state, action) {
         salons: state.salons.map((s) =>
           s.id === salonId
             ? {
-                ...s,
-                isBoosted: boostData.isBoosted !== false,
-                isSponsored: boostData.isSponsored ?? true,
-                boostRank: Number(boostData.boostRank) || 1,
-                boostReason: boostData.boostReason || 'Featured Partner Spotlight',
-                sponsorBadge: boostData.sponsorBadge || 'SPONSORED'
-              }
+              ...s,
+              isBoosted: boostData.isBoosted !== false,
+              isSponsored: boostData.isSponsored ?? true,
+              boostRank: Number(boostData.boostRank) || 1,
+              boostReason: boostData.boostReason || 'Featured Partner Spotlight',
+              sponsorBadge: boostData.sponsorBadge || 'SPONSORED'
+            }
             : s
         )
+      };
+    }
+
+    // ---------------- Services ----------------
+    case 'SET_SERVICES': {
+      return { ...state, services: action.payload };
+    }
+    case 'ADD_SERVICE': {
+      return { ...state, services: [...state.services, action.payload] };
+    }
+    case 'UPDATE_SERVICE': {
+      return {
+        ...state,
+        services: state.services.map((s) => (s.id === action.payload.serviceId ? { ...s, ...action.payload.patch } : s))
+      };
+    }
+    case 'DELETE_SERVICE': {
+      return {
+        ...state,
+        services: state.services.filter((s) => s.id !== action.payload.serviceId)
       };
     }
     case 'REMOVE_SALON_BOOST': {
@@ -197,13 +253,13 @@ export function appReducer(state, action) {
         salons: state.salons.map((s) =>
           s.id === salonId
             ? {
-                ...s,
-                isBoosted: false,
-                isSponsored: false,
-                boostRank: null,
-                boostReason: null,
-                sponsorBadge: null
-              }
+              ...s,
+              isBoosted: false,
+              isSponsored: false,
+              boostRank: null,
+              boostReason: null,
+              sponsorBadge: null
+            }
             : s
         )
       };
@@ -215,13 +271,13 @@ export function appReducer(state, action) {
         services: state.services.map((srv) =>
           srv.id === serviceId
             ? {
-                ...srv,
-                isBoosted: boostData.isBoosted !== false,
-                isSponsored: boostData.isSponsored ?? true,
-                boostRank: Number(boostData.boostRank) || 1,
-                boostReason: boostData.boostReason || 'Top Trending Pick',
-                sponsorBadge: boostData.sponsorBadge || 'SPONSORED'
-              }
+              ...srv,
+              isBoosted: boostData.isBoosted !== false,
+              isSponsored: boostData.isSponsored ?? true,
+              boostRank: Number(boostData.boostRank) || 1,
+              boostReason: boostData.boostReason || 'Top Trending Pick',
+              sponsorBadge: boostData.sponsorBadge || 'SPONSORED'
+            }
             : srv
         )
       };
@@ -233,13 +289,13 @@ export function appReducer(state, action) {
         services: state.services.map((srv) =>
           srv.id === serviceId
             ? {
-                ...srv,
-                isBoosted: false,
-                isSponsored: false,
-                boostRank: null,
-                boostReason: null,
-                sponsorBadge: null
-              }
+              ...srv,
+              isBoosted: false,
+              isSponsored: false,
+              boostRank: null,
+              boostReason: null,
+              sponsorBadge: null
+            }
             : srv
         )
       };
@@ -284,15 +340,18 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Coupons ----------------
+    case 'SET_COUPONS': {
+      return { ...state, coupons: action.payload };
+    }
     case 'ADD_COUPON': {
-      return { ...state, coupons: [action.payload, ...state.coupons] };
+      return { ...state, coupons: [action.payload, ...(state.coupons || [])] };
     }
     case 'UPDATE_COUPON': {
       const { couponId, patch } = action.payload;
-      return { ...state, coupons: state.coupons.map((c) => (c.id === couponId ? { ...c, ...patch } : c)) };
+      return { ...state, coupons: (state.coupons || []).map((c) => (c.id === couponId ? { ...c, ...patch } : c)) };
     }
     case 'DELETE_COUPON': {
-      return { ...state, coupons: state.coupons.filter((c) => c.id !== action.payload.couponId) };
+      return { ...state, coupons: (state.coupons || []).filter((c) => c.id !== action.payload.couponId) };
     }
 
     // ---------------- Locations ----------------
@@ -314,9 +373,12 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Advertisements & Banners ----------------
+    case 'SET_ADVERTISEMENTS': {
+      return { ...state, advertisements: action.payload };
+    }
     case 'ADD_ADVERTISEMENT':
     case 'ADS_CREATE': {
-      return { ...state, advertisements: [action.payload, ...state.advertisements] };
+      return { ...state, advertisements: [action.payload, ...(state.advertisements || [])] };
     }
     case 'UPDATE_ADVERTISEMENT':
     case 'ADS_UPDATE': {
@@ -569,6 +631,12 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Editorial: Skincare & Trends ----------------
+    case 'SET_SKINCARE_ITEMS': {
+      return { ...state, skincareItems: action.payload };
+    }
+    case 'SET_TRENDS_ITEMS': {
+      return { ...state, trendsItems: action.payload };
+    }
     case 'ADD_EDITORIAL_SKINCARE': {
       return { ...state, skincareItems: [action.payload, ...(state.skincareItems || [])] };
     }

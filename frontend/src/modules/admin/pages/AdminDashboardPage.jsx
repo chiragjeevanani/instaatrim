@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DollarSign,
@@ -19,6 +19,17 @@ import { useAdmin } from '../context/AdminContext';
 export const AdminDashboardPage = () => {
   const { kpis, bookings, salons, offers, tickets, approveOffer, rejectOffer, verifySalon } = useAdmin();
 
+  const [dbStats, setDbStats] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:6200/api/admin/stats')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) setDbStats(json.data);
+      })
+      .catch(console.error);
+  }, []);
+
   // Recent 6 bookings
   const recentBookings = bookings.slice(0, 6);
 
@@ -27,6 +38,11 @@ export const AdminDashboardPage = () => {
 
   // Pending offers
   const pendingOffersList = offers.filter((o) => o.approvalStatus === 'pending');
+
+  // Use DB stats if available, else fallback to local kpis
+  const activeSalonsCount = dbStats ? dbStats.activeSalons : kpis.activeSalons;
+  const pendingSalonsCount = dbStats ? dbStats.pendingSalons : kpis.pendingSalons;
+  const totalCustomersCount = dbStats ? dbStats.totalCustomers : kpis.totalCustomers;
 
   return (
     <div className="flex-1 flex flex-col bg-[#0d0d12]">
@@ -38,51 +54,46 @@ export const AdminDashboardPage = () => {
       <div className="p-8 space-y-8 flex-1 overflow-y-auto">
         {/* Metric Cards Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* GMV */}
+          {/* Total Customers */}
           <div className="bg-[#14141d] border border-[#232333] rounded-2xl p-5 hover:border-purple-500/40 transition-all">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Total GMV</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Total Customers</span>
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                <DollarSign className="w-4 h-4" />
+                <Users className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white">₹{kpis.totalRevenue.toLocaleString()}</span>
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3" /> +18.4%
-              </span>
+              <span className="text-2xl font-bold text-white">{dbStats ? dbStats.totalCustomers : totalCustomersCount}</span>
             </div>
-            <p className="text-[11px] text-stone-500 mt-1">Gross Booking Value across network</p>
+            <p className="text-[11px] text-stone-500 mt-1">Registered customers in platform</p>
           </div>
 
-          {/* Platform Commission */}
+          {/* Total Salons */}
           <div className="bg-[#14141d] border border-[#232333] rounded-2xl p-5 hover:border-purple-500/40 transition-all">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Net Commission</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Total Salons</span>
               <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-                <Percent className="w-4 h-4" />
+                <Store className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white">₹{kpis.platformCommission.toLocaleString()}</span>
-              <span className="text-xs font-medium text-stone-400">12% avg rate</span>
+              <span className="text-2xl font-bold text-white">{dbStats ? dbStats.totalSalons : (activeSalonsCount + pendingSalonsCount)}</span>
             </div>
-            <p className="text-[11px] text-stone-500 mt-1">Platform retained earnings</p>
+            <p className="text-[11px] text-stone-500 mt-1">Total registered salon partners</p>
           </div>
 
-          {/* Bookings */}
+          {/* Active Salons */}
           <div className="bg-[#14141d] border border-[#232333] rounded-2xl p-5 hover:border-purple-500/40 transition-all">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Total Bookings</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Total Coupons</span>
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
-                <CalendarCheck2 className="w-4 h-4" />
+                <Tag className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white">{kpis.totalBookings}</span>
-              <span className="text-xs font-medium text-stone-400">{kpis.completedBookings} completed</span>
+              <span className="text-2xl font-bold text-white">{dbStats ? dbStats.totalCoupons : 0}</span>
             </div>
-            <p className="text-[11px] text-stone-500 mt-1">Scheduled + instant reservations</p>
+            <p className="text-[11px] text-stone-500 mt-1">Active platform promo codes</p>
           </div>
 
           {/* Salons Network */}
@@ -94,10 +105,10 @@ export const AdminDashboardPage = () => {
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white">{kpis.activeSalons}</span>
-              {kpis.pendingSalons > 0 && (
+              <span className="text-2xl font-bold text-white">{activeSalonsCount}</span>
+              {pendingSalonsCount > 0 && (
                 <span className="text-xs font-bold text-amber-400 px-2 py-0.5 rounded-full bg-amber-500/15">
-                  {kpis.pendingSalons} pending
+                  {pendingSalonsCount} pending
                 </span>
               )}
             </div>
@@ -234,7 +245,14 @@ export const AdminDashboardPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e1e2c]">
-                {recentBookings.map((b) => (
+                {recentBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center text-stone-500 text-sm">
+                      <CalendarCheck2 className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                      No bookings yet — they will appear here in real-time
+                    </td>
+                  </tr>
+                ) : recentBookings.map((b) => (
                   <tr key={b.id} className="admin-table-row hover:bg-[#191924] transition-colors">
                     <td className="py-4 px-6 font-mono font-bold text-purple-300">{b.id}</td>
                     <td className="py-4 px-4">

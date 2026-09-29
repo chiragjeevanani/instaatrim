@@ -41,9 +41,10 @@ export const AccountPage = () => {
   const [isSafetyOpen, setIsSafetyOpen] = useState(false);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
-  const handleLogoutOrLogin = () => {
+  const handleLogoutOrLogin = async () => {
     if (user.isLoggedIn) {
-      logout();
+      await logout();
+      navigate('/customer/auth');
     } else {
       navigate('/customer/auth');
     }

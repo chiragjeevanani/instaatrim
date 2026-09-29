@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TicketPercent, Plus, Trash2, Edit2, Search, CheckCircle2 } from 'lucide-react';
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
@@ -6,29 +6,43 @@ import { useAdmin } from '../context/AdminContext';
 export const AdminCouponsPage = () => {
   const { coupons, createCoupon, deleteCoupon, updateCoupon } = useAdmin();
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingCoupon, setEditingCoupon] = useState(null);
-
-  const [formData, setFormData] = useState({
-    code: '',
-    description: '',
-    discountPercent: '',
-    flatDiscount: '',
-    maxDiscount: '',
-    minOrder: '499',
-    scope: 'platform',
-    firstBookingOnly: false
+  const [showModal, setShowModal] = useState(() => {
+    return sessionStorage.getItem('adminCoupons_showModal') === 'true';
   });
+  const [editingCoupon, setEditingCoupon] = useState(() => {
+    const saved = sessionStorage.getItem('adminCoupons_editingCoupon');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem('adminCoupons_formData');
+    return saved ? JSON.parse(saved) : {
+      code: '',
+      description: '',
+      discountPercent: '',
+      flatDiscount: '',
+      maxDiscount: '',
+      minOrder: '',
+      scope: 'platform',
+      firstBookingOnly: false
+    };
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('adminCoupons_showModal', showModal);
+    sessionStorage.setItem('adminCoupons_editingCoupon', JSON.stringify(editingCoupon));
+    sessionStorage.setItem('adminCoupons_formData', JSON.stringify(formData));
+  }, [showModal, editingCoupon, formData]);
 
   const handleOpenCreate = () => {
     setEditingCoupon(null);
     setFormData({
       code: '',
       description: '',
-      discountPercent: '15',
+      discountPercent: '',
       flatDiscount: '',
-      maxDiscount: '250',
-      minOrder: '499',
+      maxDiscount: '',
+      minOrder: '',
       scope: 'platform',
       firstBookingOnly: false
     });

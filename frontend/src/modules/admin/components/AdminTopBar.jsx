@@ -1,18 +1,29 @@
 import React from 'react';
-import { Shield, Bell, HelpCircle, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Shield, Bell, HelpCircle, Sun, Moon } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-export const AdminTopBar = ({ title, subtitle, action }) => {
+export const AdminTopBar = ({ title, subtitle, action, backTo }) => {
   const { kpis, theme, toggleTheme } = useAdmin();
+  const navigate = useNavigate();
 
   const isLight = theme === 'light';
 
   return (
     <header className="sticky top-0 z-20 h-16 bg-[#121218]/90 backdrop-blur-md border-b border-[#262633] px-8 flex items-center justify-between">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight leading-tight">{title}</h1>
-        {subtitle && <p className="text-xs text-stone-400 mt-0.5">{subtitle}</p>}
+      <div className="flex items-center gap-4">
+        {backTo && (
+          <button
+            onClick={() => navigate(backTo)}
+            className="p-1.5 rounded-lg bg-[#181824] hover:bg-[#232333] border border-[#2d2d42] text-stone-300 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
+        <div>
+          <h1 className="text-xl font-bold text-white tracking-tight leading-tight">{title}</h1>
+          {subtitle && <p className="text-xs text-stone-400 mt-0.5">{subtitle}</p>}
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

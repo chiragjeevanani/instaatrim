@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 
 export const EditProfilePage = () => {
   const navigate = useNavigate();
-  const { user, updateProfile } = useCustomer();
+  const { user, updateProfile, fetchMyProfile } = useCustomer();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -29,6 +29,11 @@ export const EditProfilePage = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [successSaved, setSuccessSaved] = useState(false);
+
+  useEffect(() => {
+    // Fetch real profile from DB dynamically on mount
+    fetchMyProfile();
+  }, [fetchMyProfile]);
 
   useEffect(() => {
     if (user) {

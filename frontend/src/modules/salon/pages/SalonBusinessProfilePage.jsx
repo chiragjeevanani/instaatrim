@@ -30,7 +30,7 @@ export const SalonBusinessProfilePage = () => {
   const { state } = useAppData();
 
   const [isEditingHours, setIsEditingHours] = useState(false);
-  const [openHoursInput, setOpenHoursInput] = useState(salonProfile.openHours);
+  const [openHoursInput, setOpenHoursInput] = useState(salonProfile?.openHours || `${salonProfile?.openTime || '09:00 AM'} - ${salonProfile?.closeTime || '08:00 PM'}`);
   const [replyingToId, setReplyingToId] = useState(null);
   const [replyText, setReplyText] = useState('');
 
@@ -53,6 +53,14 @@ export const SalonBusinessProfilePage = () => {
     setReplyingToId(null);
     setReplyText('');
   };
+
+  if (!salonProfile || !salonProfile.name) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-stone-50 font-sans">
+        <p className="text-stone-500 font-medium text-sm animate-pulse">Loading business profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border">
@@ -146,7 +154,7 @@ export const SalonBusinessProfilePage = () => {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between flex-1">
-                    <span className="font-medium text-stone-800">{salonProfile.openHours}</span>
+                    <span className="font-medium text-stone-800">{salonProfile?.openHours || `${salonProfile?.openTime || '09:00 AM'} - ${salonProfile?.closeTime || '08:00 PM'}`}</span>
                     <button
                       onClick={() => setIsEditingHours(true)}
                       className="text-[10.5px] font-bold text-rose-900 hover:underline"
@@ -197,7 +205,7 @@ export const SalonBusinessProfilePage = () => {
             Salon Amenities &amp; Hygiene Standards
           </h3>
           <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {salonProfile.amenities.map((amenity, i) => (
+            {(salonProfile?.amenities || []).map((amenity, i) => (
               <span
                 key={i}
                 className="text-[9.5px] bg-purple-50 text-purple-950 font-normal px-2.5 py-0.5 rounded-full border border-purple-200 flex items-center gap-1"

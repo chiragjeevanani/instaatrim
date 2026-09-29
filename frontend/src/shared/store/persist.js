@@ -3,7 +3,7 @@
 // storage-full all throw, and none of them should crash the app.
 
 const STORAGE_KEY = 'instaatrim_store_v1';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 export const loadPersistedState = () => {
   try {

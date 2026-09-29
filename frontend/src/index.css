@@ -630,5 +630,9 @@ input[type="number"] {
   color: #0f172a !important;
 }
 
-
-
+/* Responsive override: make mobile layouts expand on desktop (web view) */
+@media (min-width: 768px) {
+  .max-w-\[480px\], .max-w-\[440px\] {
+    max-width: 100% !important;
+  }
+}

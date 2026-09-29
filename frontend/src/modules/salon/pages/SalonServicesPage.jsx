@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import { motion } from 'framer-motion';

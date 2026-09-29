@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -16,16 +16,13 @@ import {
   EyeOff,
   Loader2,
   AlertCircle,
-  BadgePercent
+  BadgePercent,
+  Camera,
+  Upload
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 
-const CATEGORY_OPTIONS = [
-  { id: 'Unisex', label: 'Unisex Salon & Spa', desc: 'Hair, beauty & spa for all genders', icon: '✨' },
-  { id: 'Women Only', label: 'Women Only Salon', desc: 'Exclusive hair, waxing & bridal', icon: '💇‍♀️' },
-  { id: 'Men Only', label: "Men's Grooming Lounge", desc: 'Haircut, beard styling & spa', icon: '💈' },
-  { id: 'Luxury Spa', label: 'Luxury Wellness Spa', desc: 'Aromatherapy, massage & rituals', icon: '💆' }
-];
+const CATEGORY_OPTIONS = [];
 
 const AMENITY_LIST = [
   'AC & Ambient Music',
@@ -42,37 +39,70 @@ const POPULAR_CITIES = ['Indore', 'Bhopal', 'Mumbai', 'Pune', 'Delhi NCR', 'Bang
 
 export const SalonRegistrationPage = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => {
+    const saved = sessionStorage.getItem('instaatrim_salon_reg_step');
+    return saved ? parseInt(saved, 10) : 1;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    import('../../../shared/services/api').then(({ api }) => {
+      api.categories.list().then((res) => {
+        const cats = res || [];
+        setDbCategories(cats);
+        if (cats.length > 0) {
+          setFormData((prev) => ({ ...prev, category: prev.category || cats[0]._id || cats[0].id || cats[0].name }));
+        }
+      });
+    });
+  }, []);
 
   // Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    category: 'Unisex',
-    ownerName: '',
-    mobile: '',
-    email: '',
-    password: '',
-    city: 'Indore',
-    area: '',
-    address: '',
-    openTime: '09:30 AM',
-    closeTime: '08:30 PM',
-    totalChairs: 4,
-    amenities: ['AC & Ambient Music', 'Sanitized Kits & Tools', 'Card/UPI/Contactless'],
-    businessType: 'Sole Proprietorship',
-    gstin: '',
-    shopActLicense: '',
-    coverImage: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
-    accountHolderName: '',
-    bankName: 'HDFC Bank',
-    accountNumber: '',
-    ifscCode: '',
-    payoutCycle: 'Daily Automated',
-    agreeTerms: true
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem('instaatrim_salon_reg_form');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      name: '',
+      category: 'Unisex',
+      ownerName: '',
+      mobile: '',
+      email: '',
+      password: '',
+      city: 'Indore',
+      area: '',
+      address: '',
+      openTime: '09:30 AM',
+      closeTime: '08:30 PM',
+      totalChairs: 4,
+      amenities: ['AC & Ambient Music', 'Sanitized Kits & Tools', 'Card/UPI/Contactless'],
+      businessType: 'Sole Proprietorship',
+      gstin: '',
+      shopActLicense: '',
+      coverImage: '',
+      accountHolderName: '',
+      bankName: 'HDFC Bank',
+      accountNumber: '',
+      ifscCode: '',
+      payoutCycle: 'Daily Automated',
+      agreeTerms: true
+    };
   });
+
+  useEffect(() => {
+    sessionStorage.setItem('instaatrim_salon_reg_step', step.toString());
+  }, [step]);
+
+  useEffect(() => {
+    sessionStorage.setItem('instaatrim_salon_reg_form', JSON.stringify(formData));
+  }, [formData]);
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -179,6 +209,9 @@ export const SalonRegistrationPage = () => {
         origin: { y: 0.6 },
         colors: ['#881337', '#e11d48', '#fb7185', '#d97706', '#9333ea']
       });
+
+      sessionStorage.removeItem('instaatrim_salon_reg_step');
+      sessionStorage.removeItem('instaatrim_salon_reg_form');
 
       setTimeout(() => {
         navigate('/salon');
@@ -315,24 +348,27 @@ export const SalonRegistrationPage = () => {
                       Business Category <span className="text-rose-600">*</span>
                     </label>
                     <div className="grid grid-cols-2 gap-2">
-                      {CATEGORY_OPTIONS.map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => updateField('category', cat.id)}
-                          className={`p-2.5 rounded-xl border text-left transition-all ${
-                            formData.category === cat.id
-                              ? 'border-brand-maroon bg-rose-50/70 ring-1 ring-brand-maroon'
-                              : 'border-stone-200 bg-white hover:border-stone-300'
-                          }`}
-                        >
-                          <span className="text-sm block mb-0.5">{cat.icon}</span>
-                          <span className="text-xs font-bold text-stone-900 block leading-tight">{cat.label}</span>
-                          <span className="text-[9.5px] text-stone-500 font-normal leading-snug mt-0.5 block">
-                            {cat.desc}
-                          </span>
-                        </button>
-                      ))}
+                      {dbCategories.map((cat) => {
+                        const catId = cat.id || cat._id || cat.name;
+                        return (
+                          <button
+                            key={catId}
+                            type="button"
+                            onClick={() => updateField('category', catId)}
+                            className={`p-2.5 rounded-xl border text-left transition-all ${
+                              formData.category === catId
+                                ? 'border-brand-maroon bg-rose-50/70 ring-1 ring-brand-maroon'
+                                : 'border-stone-200 bg-white hover:border-stone-300'
+                            }`}
+                          >
+                            <span className="text-sm block mb-0.5">{cat.name?.charAt(0) || '✨'}</span>
+                            <span className="text-xs font-bold text-stone-900 block leading-tight">{cat.name}</span>
+                            <span className="text-[9.5px] text-stone-500 font-normal leading-snug mt-0.5 block line-clamp-2">
+                              {cat.description || cat.name}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -597,49 +633,87 @@ export const SalonRegistrationPage = () => {
                     <label className="text-[11px] font-bold text-stone-700 block mb-1.5">
                       Salon Storefront &amp; Ambience Photo
                     </label>
-                    <div className="relative rounded-2xl overflow-hidden border border-stone-300 bg-stone-900 group">
-                      <img
-                        src={formData.coverImage}
-                        alt="Salon Cover Preview"
-                        className="w-full h-32 object-cover opacity-85 group-hover:opacity-100 transition-opacity"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent flex items-end justify-between p-3">
-                        <span className="text-white text-xs font-bold drop-shadow">
-                          {formData.name || 'Your Salon Front'}
-                        </span>
-                        <span className="text-[10px] bg-white/20 backdrop-blur-md text-white font-medium px-2 py-0.5 rounded-full border border-white/30">
-                          Cover Photo Active
-                        </span>
-                      </div>
+                    <div className="relative rounded-2xl overflow-hidden border border-stone-300 bg-stone-900 group h-32 flex items-center justify-center">
+                      {formData.coverImage ? (
+                        <>
+                          <img
+                            src={formData.coverImage}
+                            alt="Salon Cover Preview"
+                            className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent flex items-end justify-between p-3">
+                            <span className="text-white text-xs font-bold drop-shadow">
+                              {formData.name || 'Your Salon Front'}
+                            </span>
+                            <span className="text-[10px] bg-white/20 backdrop-blur-md text-white font-medium px-2 py-0.5 rounded-full border border-white/30">
+                              Cover Photo Active
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-stone-500">
+                          <Camera className="w-8 h-8 mb-2 opacity-50" />
+                          <span className="text-xs font-medium">No Image Selected</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2 mt-2">
-                      {[
-                        {
-                          label: 'Luxury Salon',
-                          url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80'
-                        },
-                        {
-                          label: 'Modern Studio',
-                          url: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=800&q=80'
-                        },
-                        {
-                          label: 'Wellness Spa',
-                          url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80'
-                        }
-                      ].map((preset) => (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() => updateField('coverImage', preset.url)}
-                          className={`flex-1 py-1 px-1.5 text-[10px] font-semibold rounded-lg border transition-all truncate ${
-                            formData.coverImage === preset.url
-                              ? 'bg-rose-100 text-brand-maroon border-brand-maroon'
-                              : 'bg-white text-stone-600 border-stone-200 hover:border-stone-300'
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                              const result = await window.flutter_inappwebview.callHandler('openCamera');
+                              if (result && result.success) {
+                                updateField('coverImage', `data:${result.mimeType};base64,${result.base64}`);
+                              }
+                            } else {
+                              // Fallback for standard web (using standard input capture)
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.capture = 'environment';
+                              input.onchange = (e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => updateField('coverImage', ev.target.result);
+                                  reader.readAsDataURL(file);
+                                }
+                              };
+                              input.click();
+                            }
+                          } catch (err) {
+                            console.error("Camera error:", err);
+                          }
+                        }}
+                        className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-brand-maroon bg-brand-maroon text-white flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        Take Photo
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => updateField('coverImage', ev.target.result);
+                              reader.readAsDataURL(file);
+                            }
+                          };
+                          input.click();
+                        }}
+                        className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-stone-300 bg-white text-stone-700 flex items-center justify-center gap-1.5 hover:bg-stone-50 transition-all"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        Upload Gallery
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -727,13 +801,22 @@ export const SalonRegistrationPage = () => {
                     <label className="text-[11px] font-bold text-stone-700 block mb-1">
                       Bank Account Number
                     </label>
-                    <input
-                      type="password"
-                      placeholder="Enter 9-18 digit account number"
-                      value={formData.accountNumber}
-                      onChange={(e) => updateField('accountNumber', e.target.value)}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs outline-none"
-                    />
+                    <div className="flex items-center border border-stone-300 focus-within:border-brand-maroon focus-within:ring-1 focus-within:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 transition-all">
+                      <input
+                        type={showAccount ? 'text' : 'password'}
+                        placeholder="Enter 9-18 digit account number"
+                        value={formData.accountNumber}
+                        onChange={(e) => updateField('accountNumber', e.target.value)}
+                        className="w-full bg-transparent border-0 p-0 text-stone-900 placeholder-stone-400 font-medium text-xs focus:ring-0 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAccount((v) => !v)}
+                        className="text-stone-400 hover:text-stone-700 shrink-0"
+                      >
+                        {showAccount ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div>

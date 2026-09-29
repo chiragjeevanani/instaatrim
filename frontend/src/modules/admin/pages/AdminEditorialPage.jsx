@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Flame,
@@ -34,26 +34,45 @@ export const AdminEditorialPage = () => {
 
   const isLight = theme === 'light';
 
-  // Active Tab: 'skincare' | 'trends'
-  const [activeTab, setActiveTab] = useState('skincare');
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('admin_editorial_active_tab') || 'skincare';
+  });
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modal States
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    subtitle: '',
-    description: '',
-    tag: 'Trending Now',
-    category: 'Facial',
-    price: 899,
-    originalPrice: 1299,
-    startingPrice: 899,
-    salonId: salons[0]?.id || 'sal-1',
-    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80',
-    isActive: true
+  const [isModalOpen, setIsModalOpen] = useState(() => {
+    return sessionStorage.getItem('admin_editorial_modal_open') === 'true';
   });
+  
+  const [editingItem, setEditingItem] = useState(() => {
+    const saved = sessionStorage.getItem('admin_editorial_editing_item');
+    return saved && saved !== 'null' ? JSON.parse(saved) : null;
+  });
+
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem('admin_editorial_form_data');
+    if (saved) return JSON.parse(saved);
+    return {
+      title: '',
+      subtitle: '',
+      description: '',
+      tag: 'Trending Now',
+      category: 'Facial',
+      price: '',
+      originalPrice: '',
+      startingPrice: '',
+      salonId: salons[0]?.id || 'sal-1',
+      image: '',
+      isActive: true
+    };
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('admin_editorial_modal_open', isModalOpen);
+    sessionStorage.setItem('admin_editorial_editing_item', JSON.stringify(editingItem));
+    sessionStorage.setItem('admin_editorial_form_data', JSON.stringify(formData));
+    sessionStorage.setItem('admin_editorial_active_tab', activeTab);
+  }, [isModalOpen, editingItem, formData, activeTab]);
 
   const handleOpenAddModal = () => {
     setEditingItem(null);
@@ -63,14 +82,11 @@ export const AdminEditorialPage = () => {
       description: '',
       tag: 'Hot in Indore',
       category: activeTab === 'skincare' ? 'Cleanser' : 'Facial',
-      price: 899,
-      originalPrice: 1299,
-      startingPrice: 899,
+      price: '',
+      originalPrice: '',
+      startingPrice: '',
       salonId: salons[0]?.id || 'sal-1',
-      image:
-        activeTab === 'skincare'
-          ? 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80'
-          : 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80',
+      image: '',
       isActive: true
     });
     setIsModalOpen(true);
@@ -288,8 +304,7 @@ export const AdminEditorialPage = () => {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-3 border-t border-stone-800/30 flex items-center justify-between bg-black/15">
-                  <span className="text-[10px] font-mono text-purple-400 font-bold">{item.id}</span>
+                <div className="p-3 border-t border-stone-800/30 flex items-center justify-end bg-black/15">
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
@@ -455,12 +470,16 @@ export const AdminEditorialPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-stone-400 font-semibold mb-1">Image URL</label>
+                  <label className="block text-stone-400 font-semibold mb-1">Image Upload (or URL)</label>
                   <input
-                    type="url"
-                    required
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setFormData({ ...formData, image: file });
+                      }
+                    }}
                     className={`w-full p-2.5 rounded-xl border outline-none ${
                       isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#101018] border-[#323248] text-white'
                     }`}

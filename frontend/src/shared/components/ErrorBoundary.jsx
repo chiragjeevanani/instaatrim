@@ -12,8 +12,8 @@ export class ErrorBoundary extends React.Component {
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, info) {
@@ -38,6 +38,11 @@ export class ErrorBoundary extends React.Component {
             <p className="text-xs text-stone-500 leading-relaxed">
               This screen hit an unexpected error. Your cart and bookings are safe — tap below to return home.
             </p>
+            {this.state.error && (
+              <pre className="text-left text-[10px] text-red-700 bg-red-50 p-2 overflow-auto max-h-[200px] border border-red-200">
+                {this.state.error.toString()}
+              </pre>
+            )}
             <button
               onClick={this.handleReset}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-maroon text-white font-bold text-xs rounded-xl shadow-sm active:scale-95 transition-transform"

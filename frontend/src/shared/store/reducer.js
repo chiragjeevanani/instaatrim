@@ -67,6 +67,7 @@ export const buildInitialState = () => ({
   adminSession: null // { email, name, role } once an admin logs in
 });
 
+
 export function appReducer(state, action) {
   switch (action.type) {
     case 'HYDRATE': {
@@ -637,6 +638,7 @@ export function appReducer(state, action) {
     case 'SET_TRENDS_ITEMS': {
       return { ...state, trendsItems: action.payload };
     }
+
     case 'ADD_EDITORIAL_SKINCARE': {
       return { ...state, skincareItems: [action.payload, ...(state.skincareItems || [])] };
     }

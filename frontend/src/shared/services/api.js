@@ -59,7 +59,7 @@ const salons = {
     if (!res.ok) {
       throw new Error(json.message || 'Incorrect email/mobile or password.');
     }
-    
+
     // Upsert the real salon data into the frontend mock store so the UI can find it
     const existing = getState().salons.find(s => s.id === json.data.id);
     if (!existing) {
@@ -67,7 +67,7 @@ const salons = {
     } else {
       dispatch({ type: 'PATCH_SALON', payload: { salonId: json.data.id, patch: json.data } });
     }
-    
+
     dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: json.data.id } });
     return json.data;
   },
@@ -101,7 +101,7 @@ const salons = {
       if (!res.ok) {
         throw new Error(json.message || 'Registration failed');
       }
-      
+
       const savedId = json.data?.id || `sal-${Date.now()}`;
 
       // Still create a mock object for frontend state consistency for now
@@ -194,7 +194,7 @@ const salons = {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Failed to verify salon');
-    
+
     dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
     return clone(json.data);
   },
@@ -207,7 +207,7 @@ const salons = {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Failed to reject salon');
-    
+
     dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
     return clone(json.data);
   },
@@ -220,7 +220,7 @@ const salons = {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Failed to update commission');
-    
+
     dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
     return clone(json.data);
   },
@@ -250,7 +250,7 @@ const services = {
         dispatch({ type: 'SET_SERVICES', payload: mapped });
         return clone(mapped);
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
     }
     return clone(getState().services || []);
@@ -773,7 +773,7 @@ const customers = {
     // Clear JWT + stored customer from localStorage
     localStorage.removeItem('instaatrim_token');
     localStorage.removeItem('instaatrim_customer');
-    
+
     // Clear Auth Page session state so they start at the phone screen
     sessionStorage.removeItem('instaatrim_auth_step');
     sessionStorage.removeItem('instaatrim_auth_phone');
@@ -909,25 +909,25 @@ const ads = {
       if (isFormData) {
         delete headers['Content-Type']; // Let browser set boundary
       }
-      
+
       const res = await fetch(`${API_BASE}/ads`, {
         method: 'POST',
         headers,
         body: isFormData ? data : JSON.stringify(data)
       });
-      
+
       const json = await res.json();
       if (!json.success) throw new ApiError(json.message || 'Error creating ad', 'AD_CREATE_FAILED');
-      
+
       const item = {
         ...json.data,
         id: json.data._id
       };
-      
+
       if (item.images && item.images.length > 0) {
         item.image = item.images[0];
       }
-      
+
       dispatch({ type: 'ADS_CREATE', payload: item });
       return clone(item);
     } catch (e) {
@@ -950,25 +950,25 @@ const ads = {
       if (isFormData) {
         delete headers['Content-Type'];
       }
-      
+
       const res = await fetch(`${API_BASE}/ads/${id}`, {
         method: 'PUT',
         headers,
         body: isFormData ? patch : JSON.stringify(patch)
       });
-      
+
       const json = await res.json();
       if (!json.success) throw new ApiError(json.message || 'Error updating ad', 'AD_UPDATE_FAILED');
-      
+
       const item = {
         ...json.data,
         id: json.data._id
       };
-      
+
       if (item.images && item.images.length > 0) {
         item.image = item.images[0];
       }
-      
+
       dispatch({ type: 'ADS_UPDATE', payload: { id, patch: item } });
       return clone(item);
     } catch (e) {
@@ -988,7 +988,7 @@ const ads = {
       });
       const json = await res.json();
       if (!json.success) throw new ApiError(json.message || 'Error deleting ad');
-      
+
       dispatch({ type: 'ADS_DELETE', payload: id });
       return true;
     } catch (e) {
@@ -1003,17 +1003,17 @@ const ads = {
       // Find current ad
       const ad = getState().advertisements.find(a => a.id === id);
       if (!ad) throw new Error('Ad not found');
-      
+
       const newActive = !ad.isActive;
       const res = await fetch(`${API_BASE}/ads/${id}`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify({ isActive: newActive })
       });
-      
+
       const json = await res.json();
       if (!json.success) throw new ApiError(json.message);
-      
+
       dispatch({ type: 'ADS_TOGGLE_ACTIVE', payload: id });
       const updated = getState().advertisements.find((a) => a.id === id);
       return clone(updated);
@@ -1145,7 +1145,7 @@ const categories = {
         }
         return result;
       }
-    } catch(e) {
+    } catch (e) {
       console.error('Failed to fetch categories:', e);
     }
     // Fallback
@@ -1176,8 +1176,8 @@ const categories = {
         body: isFormData ? data : JSON.stringify(data)
       });
       const json = await res.json();
-      if(!json.success) throw new ApiError(json.message);
-      
+      if (!json.success) throw new ApiError(json.message);
+
       const newCategory = { ...json.data, id: json.data._id };
       dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
       return clone(newCategory);
@@ -1199,7 +1199,7 @@ const categories = {
         body: isFormData ? patch : JSON.stringify(patch)
       });
       const json = await res.json();
-      if(!json.success) throw new ApiError(json.message);
+      if (!json.success) throw new ApiError(json.message);
 
       const updated = { ...json.data, id: json.data._id };
       dispatch({ type: 'UPDATE_CATEGORY', payload: { categoryId, patch: updated } });
@@ -1231,7 +1231,7 @@ const categories = {
         headers: authHeaders()
       });
       const json = await res.json();
-      if(json.success) {
+      if (json.success) {
         dispatch({ type: 'TOGGLE_CATEGORY_ACTIVE', payload: { categoryId } });
         const updated = (getState().categories || []).find((c) => c.id === categoryId);
         return clone(updated);
@@ -1362,7 +1362,7 @@ const editorial = {
     Object.keys(data).forEach(key => {
       formData.append(key, data[key]);
     });
-    
+
     const res = await fetch(`${API_BASE}/rituals`, {
       method: 'POST',
       body: formData
@@ -1459,6 +1459,7 @@ export const api = {
   elitePlan,
   editorial
 };
+
 
 export { ApiError };
 export default api;

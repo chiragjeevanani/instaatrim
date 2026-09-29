@@ -34,6 +34,7 @@ export const AdminEditorialPage = () => {
 
   const isLight = theme === 'light';
 
+
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('admin_editorial_active_tab') || 'skincare';
   });

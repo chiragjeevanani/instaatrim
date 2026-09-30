@@ -13,7 +13,9 @@ import {
   ChevronDown,
   Lock,
   ShieldAlert,
-  AlertCircle
+  AlertCircle,
+  Camera,
+  Upload
 } from 'lucide-react';
 
 export const AddServicePage = () => {
@@ -52,6 +54,7 @@ export const AddServicePage = () => {
   const [price, setPrice] = useState('');
   const [originalPrice, setOriginalPrice] = useState('');
   const [isInstantEligible, setIsInstantEligible] = useState(true);
+  const [image, setImage] = useState(null);
 
   useEffect(() => {
     if (existingService) {
@@ -62,10 +65,12 @@ export const AddServicePage = () => {
       setPrice(existingService.price || '');
       setOriginalPrice(existingService.originalPrice || '');
       setIsInstantEligible(existingService.isInstantEligible ?? true);
+      setImage(existingService.image || null);
     } else if (availableCategories.length > 0 && !category) {
       setCategory(availableCategories[0]);
     }
-  }, [existingService, availableCategories]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingService?.id]);
 
   const durations = [
     '20 mins',
@@ -99,6 +104,7 @@ export const AddServicePage = () => {
       originalPrice: originalPrice ? Number(originalPrice) : Math.round(Number(price) * 1.3),
       isInstantEligible,
       image:
+        image ||
         existingService?.image ||
         'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
     };
@@ -223,8 +229,94 @@ export const AddServicePage = () => {
       {/* Main Form Body */}
       <main className="p-3.5 pb-28 flex-1 space-y-3">
         <form id="service-form" onSubmit={handleSubmit} className="space-y-3">
-          {/* Card 1: Title & Category */}
+          {/* Card 1: Image & Title & Category */}
           <div className="bg-white rounded-2xl p-3.5 border border-purple-100/80 shadow-xs space-y-3">
+            {/* Image Upload Area */}
+            <div>
+              <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block mb-1">
+                Service Image
+              </label>
+              <div className="relative w-full h-32 rounded-xl overflow-hidden bg-stone-100 border-2 border-dashed border-stone-200 group">
+                {image ? (
+                  <>
+                    <img
+                      src={image}
+                      alt="Service Preview"
+                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => setImage(null)}
+                        className="text-xs font-semibold px-3 py-1 bg-white text-stone-800 rounded-full"
+                      >
+                        Change Image
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-stone-500">
+                    <Camera className="w-6 h-6 mb-2 opacity-50" />
+                    <span className="text-[10px] font-medium mb-2">No Image Selected</span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                              const result = await window.flutter_inappwebview.callHandler('openCamera');
+                              if (result && result.success) {
+                                setImage(`data:${result.mimeType};base64,${result.base64}`);
+                              }
+                            } else {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.capture = 'environment';
+                              input.onchange = (e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => setImage(ev.target.result);
+                                  reader.readAsDataURL(file);
+                                }
+                              };
+                              input.click();
+                            }
+                          } catch (err) {
+                            console.error("Camera error:", err);
+                          }
+                        }}
+                        className="px-2 py-1 bg-stone-200 text-stone-700 text-[10px] font-semibold rounded-md flex items-center gap-1 hover:bg-stone-300"
+                      >
+                        <Camera className="w-3 h-3" /> Camera
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => setImage(ev.target.result);
+                              reader.readAsDataURL(file);
+                            }
+                          };
+                          input.click();
+                        }}
+                        className="px-2 py-1 bg-stone-200 text-stone-700 text-[10px] font-semibold rounded-md flex items-center gap-1 hover:bg-stone-300"
+                      >
+                        <Upload className="w-3 h-3" /> Gallery
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block mb-1">
                 Service Title <span className="text-rose-600">*</span>

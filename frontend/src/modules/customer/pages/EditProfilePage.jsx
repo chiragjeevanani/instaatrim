@@ -204,11 +204,10 @@ export const EditProfilePage = () => {
                       key={g.id}
                       type="button"
                       onClick={() => setFormData({ ...formData, gender: g.id })}
-                      className={`py-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${
-                        formData.gender === g.id
-                          ? 'border-brand-maroon bg-purple-50 text-brand-maroon shadow-xs'
-                          : 'border-stone-200 bg-stone-50 text-stone-600 hover:bg-stone-100'
-                      }`}
+                      className={`py-2 rounded-xl border text-[11px] font-bold transition-all cursor-pointer ${formData.gender === g.id
+                        ? 'border-brand-maroon bg-purple-50 text-brand-maroon shadow-xs'
+                        : 'border-stone-200 bg-stone-50 text-stone-600 hover:bg-stone-100'
+                        }`}
                     >
                       {g.label}
                     </button>

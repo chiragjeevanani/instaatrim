@@ -34,7 +34,7 @@ export const AdminRoutes = () => {
         <Route path="payouts" element={<AdminPayoutsPage />} />
         <Route path="categories" element={<AdminCategoriesPage />} />
         <Route path="promotions" element={<AdminPromotionsPage />} />
-        <Route path="editorial" element={<AdminEditorialPage />} />
+        {/* <Route path="editorial" element={<AdminEditorialPage />} /> */}
         <Route path="offers" element={<AdminOffersPage />} />
         <Route path="bookings" element={<AdminBookingsPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />

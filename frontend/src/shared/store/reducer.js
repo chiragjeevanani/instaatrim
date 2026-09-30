@@ -203,10 +203,11 @@ export function appReducer(state, action) {
       };
     }
     case 'PATCH_SALON': {
-      const { salonId, patch } = action.payload;
+      const salonId = action.payload.salonId || action.payload.id;
+      const patch = action.payload.patch;
       return {
         ...state,
-        salons: state.salons.map((s) => (s.id === salonId ? { ...s, ...patch } : s))
+        salons: state.salons.map((s) => ((s.id || s._id) === salonId ? { ...s, ...patch } : s))
       };
     }
     case 'BOOST_SALON': {
@@ -236,9 +237,11 @@ export function appReducer(state, action) {
       return { ...state, services: [...state.services, action.payload] };
     }
     case 'UPDATE_SERVICE': {
+      const serviceId = action.payload.serviceId || action.payload.id;
+      const patch = action.payload.patch;
       return {
         ...state,
-        services: state.services.map((s) => (s.id === action.payload.serviceId ? { ...s, ...action.payload.patch } : s))
+        services: state.services.map((s) => ((s.id || s._id) === serviceId ? { ...s, ...patch } : s))
       };
     }
     case 'DELETE_SERVICE': {
@@ -246,6 +249,11 @@ export function appReducer(state, action) {
         ...state,
         services: state.services.filter((s) => s.id !== action.payload.serviceId)
       };
+    }
+    
+    // ---------------- Ads ----------------
+    case 'SET_ADS': {
+      return { ...state, advertisements: action.payload };
     }
     case 'REMOVE_SALON_BOOST': {
       const { salonId } = action.payload;

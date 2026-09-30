@@ -22,6 +22,16 @@ export const AdminProvider = ({ children }) => {
         })
         .catch(console.error);
 
+      // Fetch services for admin
+      fetch('http://localhost:6200/api/services')
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            dispatch({ type: 'SET_SERVICES', payload: json.data });
+          }
+        })
+        .catch(console.error);
+
       // Fetch rituals
       api.editorial.getSkincare().then((data) => {
         dispatch({ type: 'SET_SKINCARE_ITEMS', payload: data });

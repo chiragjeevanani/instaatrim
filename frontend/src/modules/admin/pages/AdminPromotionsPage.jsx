@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 
@@ -49,13 +50,42 @@ export const AdminPromotionsPage = () => {
   const isLight = theme === 'light';
 
   // Active Tab: 'salons' | 'services'
-  const [activeTab, setActiveTab] = useState('salons');
+  const [activeTab, setActiveTabState] = useState(() => {
+    return sessionStorage.getItem('admin_promotions_active_tab') || 'salons';
+  });
+
+  const setActiveTab = (tab) => {
+    sessionStorage.setItem('admin_promotions_active_tab', tab);
+    setActiveTabState(tab);
+  };
+
   const [search, setSearch] = useState('');
 
   // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('salon'); // 'salon' | 'service'
-  const [selectedEntityId, setSelectedEntityId] = useState('');
+  const [isModalOpen, setIsModalOpenState] = useState(() => {
+    return sessionStorage.getItem('admin_promotions_modal_open') === 'true';
+  });
+  const setIsModalOpen = (isOpen) => {
+    sessionStorage.setItem('admin_promotions_modal_open', isOpen);
+    setIsModalOpenState(isOpen);
+  };
+
+  const [modalType, setModalTypeState] = useState(() => {
+    return sessionStorage.getItem('admin_promotions_modal_type') || 'salon';
+  });
+  const setModalType = (type) => {
+    sessionStorage.setItem('admin_promotions_modal_type', type);
+    setModalTypeState(type);
+  };
+
+  const [selectedEntityId, setSelectedEntityIdState] = useState(() => {
+    return sessionStorage.getItem('admin_promotions_selected_entity') || '';
+  });
+  const setSelectedEntityId = (id) => {
+    sessionStorage.setItem('admin_promotions_selected_entity', id);
+    setSelectedEntityIdState(id);
+  };
+
   const [boostRank, setBoostRank] = useState(1);
   const [sponsorBadge, setSponsorBadge] = useState('SPONSORED • TOP PICK');
   const [boostReason, setBoostReason] = useState('Paid Sponsorship Campaign');
@@ -98,7 +128,7 @@ export const AdminPromotionsPage = () => {
     if (!q) return boostedServices;
     return boostedServices.filter(
       (srv) =>
-        srv.name.toLowerCase().includes(q) ||
+        (srv.name || srv.title || '').toLowerCase().includes(q) ||
         srv.category?.toLowerCase().includes(q) ||
         srv.boostReason?.toLowerCase().includes(q) ||
         srv.sponsorBadge?.toLowerCase().includes(q)
@@ -108,13 +138,31 @@ export const AdminPromotionsPage = () => {
   // Open Boost Modal
   const handleOpenBoostModal = (type = 'salon', presetId = '') => {
     setModalType(type);
-    setSelectedEntityId(presetId || (type === 'salon' ? salons[0]?.id : services[0]?.id));
+    
+    let entity = null;
     const currentList = type === 'salon' ? boostedSalons : boostedServices;
-    setBoostRank(currentList.length + 1);
-    setSponsorBadge(type === 'salon' ? 'SPONSORED • TOP PICK' : 'TRENDING #1');
-    setBoostReason('Paid Sponsorship Campaign');
-    setIsSponsored(true);
-    setIsBoosted(true);
+
+    if (presetId) {
+      entity = (type === 'salon' ? salons : services).find(e => (e._id || e.id) === presetId);
+      setSelectedEntityId(presetId);
+    } else {
+      setSelectedEntityId(type === 'salon' ? (salons[0]?._id || salons[0]?.id) : (services[0]?._id || services[0]?.id));
+    }
+
+    if (entity && entity.isBoosted) {
+      setBoostRank(entity.boostRank || 1);
+      setSponsorBadge(entity.sponsorBadge || (type === 'salon' ? 'SPONSORED • TOP PICK' : 'TRENDING #1'));
+      setBoostReason(entity.boostReason || (type === 'salon' ? 'Premium Partner Sponsorship' : 'Featured Service Campaign'));
+      setIsSponsored(entity.isSponsored ?? true);
+      setIsBoosted(entity.isBoosted ?? true);
+    } else {
+      setBoostRank(currentList.length + 1);
+      setSponsorBadge('');
+      setBoostReason('');
+      setIsSponsored(false);
+      setIsBoosted(true);
+    }
+
     setFormError('');
     setIsModalOpen(true);
   };
@@ -517,7 +565,7 @@ export const AdminPromotionsPage = () => {
                               </div>
                               <div className="min-w-0">
                                 <div className="text-white font-bold text-sm tracking-tight">
-                                  {srv.name}
+                                  {srv.name || srv.title}
                                 </div>
                                 <div className="text-[11px] text-stone-400 flex items-center gap-2 mt-0.5">
                                   <span className="text-purple-300 font-semibold">{salon?.name || 'Salon'}</span>
@@ -553,7 +601,7 @@ export const AdminPromotionsPage = () => {
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 type="button"
-                                onClick={() => handleOpenBoostModal('service', srv.id)}
+                                onClick={() => handleOpenBoostModal('service', srv._id || srv.id)}
                                 className="px-2.5 py-1 rounded-lg bg-[#1a1a26] border border-[#2b2b3d] text-stone-300 hover:text-white text-xs font-semibold hover:border-purple-500/50 transition-colors"
                               >
                                 Edit Boost
@@ -561,7 +609,7 @@ export const AdminPromotionsPage = () => {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setRemoveConfirm({ type: 'service', id: srv.id, name: srv.name })
+                                  setRemoveConfirm({ type: 'service', id: srv._id || srv.id, name: srv.name || srv.title })
                                 }
                                 title="Remove Boost"
                                 className="p-1.5 rounded-lg bg-[#1a1a26] border border-[#2b2b3d] text-stone-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
@@ -629,13 +677,13 @@ export const AdminPromotionsPage = () => {
                 >
                   {modalType === 'salon'
                     ? salons.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.area} • {s.category})
+                        <option key={s.id || s._id} value={s.id || s._id}>
+                          {s.name} {s.area ? `(${s.area})` : ''}
                         </option>
                       ))
                     : services.map((srv) => (
-                        <option key={srv.id} value={srv.id}>
-                          {srv.name} — ₹{srv.price} ({srv.category})
+                        <option key={srv.id || srv._id} value={srv.id || srv._id}>
+                          {srv.name || srv.title} — ₹{srv.price} ({srv.category})
                         </option>
                       ))}
                 </select>
@@ -757,39 +805,49 @@ export const AdminPromotionsPage = () => {
       )}
 
       {/* ---------------- REMOVE CONFIRM MODAL ---------------- */}
-      {removeConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-[#14141e] border border-red-800/60 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
-            <div className="w-12 h-12 rounded-2xl bg-red-950/60 border border-red-800/80 text-red-400 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white tracking-tight">
+      <AnimatePresence>
+        {removeConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setRemoveConfirm(null)}
+              className="absolute inset-0 bg-stone-950/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-[320px] bg-[#1a1b23] rounded-3xl p-6 shadow-2xl border border-stone-800"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-white text-center mb-2 leading-tight">
                 Remove Boost for "{removeConfirm.name}"?
               </h3>
-              <p className="text-xs text-stone-400 mt-1">
+              <p className="text-[13px] text-stone-400 text-center mb-6 leading-relaxed">
                 This entity will no longer be pushed to the top and will return to standard organic ranking.
               </p>
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setRemoveConfirm(null)}
-                className="flex-1 py-2.5 rounded-xl border border-[#2d2d42] text-stone-300 hover:text-white font-semibold text-xs transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmRemove}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold text-xs transition-all shadow-md shadow-red-950/40 cursor-pointer"
-              >
-                Remove Boost
-              </button>
-            </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRemoveConfirm(null)}
+                  className="flex-1 py-3 px-4 rounded-xl text-[13px] font-bold text-stone-300 border border-stone-700 hover:bg-stone-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmRemove}
+                  className="flex-1 py-3 px-4 rounded-xl text-[13px] font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors"
+                >
+                  Yes, Remove
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -22,8 +22,13 @@ const salonSchema = new mongoose.Schema({
     ifscCode: { type: String },
     isVerified: { type: Boolean, default: false },
     verificationStatus: { type: String, default: 'Pending' },
-    commissionRate: { type: String, default: '12% Flat' },
-    rating: { type: Number, default: 0.0 }
+    commissionRate: { type: String, default: 'Pending Admin Approval' },
+    rating: { type: Number, default: 0.0 },
+    isBoosted: { type: Boolean, default: false },
+    isSponsored: { type: Boolean, default: false },
+    boostRank: { type: Number },
+    sponsorBadge: { type: String },
+    boostReason: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Salon', salonSchema);

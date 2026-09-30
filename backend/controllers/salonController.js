@@ -203,3 +203,24 @@ exports.setSalonCommission = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+exports.updateSalon = async (req, res) => {
+    try {
+        const salonId = req.params.id;
+        const updates = req.body;
+        
+        const salon = await Salon.findByIdAndUpdate(salonId, updates, { new: true });
+        
+        if (!salon) {
+            return res.status(404).json({ success: false, message: 'Salon not found' });
+        }
+        
+        const salonData = salon.toObject();
+        salonData.id = salon._id.toString();
+        
+        res.status(200).json({ success: true, data: salonData });
+    } catch (error) {
+        console.error('Error updating salon:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};

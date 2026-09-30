@@ -21,6 +21,12 @@ const serviceSchema = new mongoose.Schema({
         required: true,
         default: 0
     },
+    originalPrice: {
+        type: Number
+    },
+    description: {
+        type: String
+    },
     duration: {
         type: Number,
         default: 30 // minutes
@@ -28,6 +34,30 @@ const serviceSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    isInstantEligible: {
+        type: Boolean,
+        default: true
+    },
+    image: {
+        type: String
+    },
+    isBoosted: {
+        type: Boolean,
+        default: false
+    },
+    isSponsored: {
+        type: Boolean,
+        default: false
+    },
+    boostRank: {
+        type: Number
+    },
+    sponsorBadge: {
+        type: String
+    },
+    boostReason: {
+        type: String
     }
 }, {
     timestamps: true

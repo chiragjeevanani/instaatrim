@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Scissors,
   Plus,
@@ -27,6 +27,7 @@ export const SalonServicesPage = () => {
   const isRejected = salonProfile?.verificationStatus === 'Rejected';
 
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [deleteModal, setDeleteModal] = useState(null);
 
   const categories = useMemo(() => {
     const fromAdmin = (dynamicCategories || []).map((c) => c.name || c.shortName);
@@ -230,7 +231,7 @@ export const SalonServicesPage = () => {
                           <Edit2 className="w-3.5 h-3.5 stroke-[1.8]" />
                         </button>
                         <button
-                          onClick={() => deleteService(service.id)}
+                          onClick={() => setDeleteModal(service)}
                           className="p-1 text-stone-400 hover:text-red-600 rounded active:scale-90"
                           title="Delete Service"
                         >
@@ -301,6 +302,55 @@ export const SalonServicesPage = () => {
           )}
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteModal(null)}
+              className="absolute inset-0 bg-stone-950/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-[320px] bg-[#1a1b23] rounded-3xl p-6 shadow-2xl border border-stone-800"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-white text-center mb-2 leading-tight">
+                Delete Service "{deleteModal.name}"?
+              </h3>
+              <p className="text-[13px] text-stone-400 text-center mb-6 leading-relaxed">
+                Are you sure you want to remove this service from your catalog? Customers will no longer be able to book it.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteModal(null)}
+                  className="flex-1 py-3 px-4 rounded-xl text-[13px] font-bold text-stone-300 border border-stone-700 hover:bg-stone-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await deleteService(deleteModal.id);
+                    setDeleteModal(null);
+                    showToast('Service deleted successfully');
+                  }}
+                  className="flex-1 py-3 px-4 rounded-xl text-[13px] font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors"
+                >
+                  Yes, Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

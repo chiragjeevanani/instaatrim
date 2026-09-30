@@ -42,8 +42,20 @@ export const SalonProvider = ({ children }) => {
           }
         })
         .catch(console.error);
+        
+      // Fetch services for this salon
+      fetch(`http://localhost:6200/api/services?salonId=${salonId}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && Array.isArray(json.data)) {
+            const mapped = json.data.map(s => ({ ...s, id: s._id, name: s.title || s.name }));
+            dispatch({ type: 'SET_SERVICES', payload: mapped });
+          }
+        })
+        .catch(console.error);
     }
-  }, [isAuthenticated, salonId, state.salons, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, salonId, dispatch]);
 
   const logout = useCallback(() => api.salons.logout(), []);
 

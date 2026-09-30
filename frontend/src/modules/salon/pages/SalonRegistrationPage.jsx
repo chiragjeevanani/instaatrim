@@ -88,7 +88,7 @@ export const SalonRegistrationPage = () => {
       shopActLicense: '',
       coverImage: '',
       accountHolderName: '',
-      bankName: 'HDFC Bank',
+      bankName: '',
       accountNumber: '',
       ifscCode: '',
       payoutCycle: 'Daily Automated',
@@ -120,6 +120,7 @@ export const SalonRegistrationPage = () => {
       };
     });
   };
+
 
   const isStep1Valid =
     formData.name.trim().length >= 3 &&
@@ -747,7 +748,10 @@ export const SalonRegistrationPage = () => {
                   <div className="mt-3.5 flex justify-between items-end">
                     <div>
                       <span className="text-[9px] text-rose-200/80 uppercase">Settlement Bank</span>
-                      <p className="text-xs font-semibold">{formData.bankName} ••••4892</p>
+                      <p className="text-xs font-semibold">
+                        {formData.bankName ? `${formData.bankName} ` : 'No Bank Selected'}
+                        {formData.accountNumber ? `••••${formData.accountNumber.slice(-4)}` : ''}
+                      </p>
                     </div>
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
                       Verified UPI / IMPS
@@ -777,6 +781,7 @@ export const SalonRegistrationPage = () => {
                         onChange={(e) => updateField('bankName', e.target.value)}
                         className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-medium text-xs outline-none"
                       >
+                        <option value="">Select Bank</option>
                         <option value="HDFC Bank">HDFC Bank</option>
                         <option value="ICICI Bank">ICICI Bank</option>
                         <option value="State Bank of India">State Bank of India</option>
@@ -894,7 +899,7 @@ export const SalonRegistrationPage = () => {
                     </div>
                     <div className="bg-stone-50 rounded-lg p-1.5">
                       <span className="text-[9px] text-stone-400 block">Commission</span>
-                      <span className="text-xs font-bold text-emerald-700">12% Flat</span>
+                      <span className="text-[9px] font-bold text-amber-600">Pending Admin</span>
                     </div>
                   </div>
                 </div>
@@ -907,7 +912,7 @@ export const SalonRegistrationPage = () => {
                   <ul className="text-[10.5px] text-stone-600 space-y-1 leading-snug pl-4 list-disc">
                     <li>Upon submission, your salon application is reviewed by the InstaaTrim Admin team.</li>
                     <li>First approval from the admin is required before your salon can list treatments.</li>
-                    <li>Flat 12% commission per completed appointment with daily automated payouts.</li>
+                    <li>Commission rate will be decided by Admin upon approval.</li>
                   </ul>
                 </div>
 

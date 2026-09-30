@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/store/selectors';
@@ -15,7 +15,64 @@ import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/stor
 const CustomerContext = createContext();
 
 export const CustomerProvider = ({ children }) => {
-  const { state } = useAppData();
+  const { state, dispatch } = useAppData();
+
+  // Make sure the customer app has the latest live DB data
+  useEffect(() => {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
+    // Fetch all active salons
+    fetch(`${API_BASE}/salons`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          // Add them to store
+          json.data.forEach(salon => {
+            const exists = state.salons.find(s => s.id === salon.id || s.id === salon._id);
+            if (!exists) {
+              dispatch({ type: 'ADD_SALON', payload: { ...salon, id: salon._id || salon.id } });
+            } else {
+              dispatch({ type: 'PATCH_SALON', payload: { salonId: salon._id || salon.id, patch: salon } });
+            }
+          });
+        }
+      })
+      .catch(console.error);
+
+    // Fetch all services
+    fetch(`${API_BASE}/services`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          const mapped = json.data.map(s => ({ ...s, id: s._id, name: s.title || s.name }));
+          dispatch({ type: 'SET_SERVICES', payload: mapped });
+        }
+      })
+      .catch(console.error);
+
+    // Fetch all ads
+    fetch(`${API_BASE}/ads`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          const mappedAds = json.data.map(a => ({ ...a, id: a._id }));
+          dispatch({ type: 'SET_ADS', payload: mappedAds });
+        }
+      })
+      .catch(console.error);
+      
+    // Fetch all categories
+    fetch(`${API_BASE}/categories`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          const mappedCats = json.data.map(c => ({ ...c, id: c._id }));
+          dispatch({ type: 'SET_CATEGORIES', payload: mappedCats });
+        }
+      })
+      .catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const user = useMemo(
     () => state.customers.find((c) => c.id === state.currentCustomerId) || state.customers[0] || null,
@@ -33,7 +90,7 @@ export const CustomerProvider = ({ children }) => {
   );
 
   const setCurrentLocation = useCallback((loc) => {
-    api.locations.setCurrent(loc.id).catch(() => {});
+    api.locations.setCurrent(loc.id).catch(() => { });
   }, []);
 
   const addLocation = useCallback(
@@ -250,13 +307,13 @@ export const CustomerProvider = ({ children }) => {
   // ---------------- Notifications & Broadcasts ----------------
   const notifications = useMemo(
     () => user ? (state.notifications || []).filter(
-        (n) => n.audience === 'all' || (n.audience === 'customer' && (!n.audienceId || n.audienceId === user.id))
-      ) : [],
+      (n) => n.audience === 'all' || (n.audience === 'customer' && (!n.audienceId || n.audienceId === user.id))
+    ) : [],
     [state.notifications, user?.id]
   );
 
   const markNotificationRead = useCallback((notificationId) => {
-    api.notifications.markRead(notificationId).catch(() => {});
+    api.notifications.markRead(notificationId).catch(() => { });
   }, []);
 
   // ---------------- Support Tickets ----------------
@@ -302,7 +359,7 @@ export const CustomerProvider = ({ children }) => {
     (salonId) => {
       const exists = favoriteSalonIds.includes(salonId);
       const next = exists ? favoriteSalonIds.filter((id) => id !== salonId) : [...favoriteSalonIds, salonId];
-      api.customers.updateProfile({ favoriteSalonIds: next }).catch(() => {});
+      api.customers.updateProfile({ favoriteSalonIds: next }).catch(() => { });
       showToast(exists ? 'Removed from favorites' : 'Saved to favorites');
     },
     [favoriteSalonIds, showToast]
@@ -333,7 +390,7 @@ export const CustomerProvider = ({ children }) => {
     return api.customers
       .logout()
       .then(() => showToast('Logged out'))
-      .catch(() => {});
+      .catch(() => { });
   }, [showToast]);
 
   const updateProfile = useCallback(

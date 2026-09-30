@@ -9,5 +9,6 @@ router.get('/:id', salonController.getSalonById);
 router.patch('/:id/verify', salonController.verifySalon);
 router.patch('/:id/reject', salonController.rejectSalon);
 router.patch('/:id/commission', salonController.setSalonCommission);
+router.put('/:id', salonController.updateSalon);
 
 module.exports = router;

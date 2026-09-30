@@ -68,6 +68,9 @@ const salons = {
       dispatch({ type: 'PATCH_SALON', payload: { salonId: json.data.id, patch: json.data } });
     }
 
+    if (json.token) {
+      localStorage.setItem('instaatrim_partner_token', json.token);
+    }
     dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: json.data.id } });
     return json.data;
   },
@@ -164,7 +167,7 @@ const salons = {
         bankName: data.bankName || 'HDFC Bank',
         accountNumber: data.accountNumber ? `••••${data.accountNumber.slice(-4)}` : '••••4892',
         ifscCode: data.ifscCode || 'HDFC0001032',
-        commissionRate: '12% Flat'
+        commissionRate: 'Pending Admin Approval'
       };
 
       dispatch({ type: 'ADD_SALON', payload: newSalon });
@@ -176,11 +179,25 @@ const salons = {
     }
   },
 
-  logout: () =>
-    withLatency(() => {
-      dispatch({ type: 'SET_PARTNER_SESSION', payload: null });
-      return true;
-    }),
+  logout: async () => {
+    try {
+      const token = localStorage.getItem('instaatrim_partner_token');
+      if (token) {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
+    } catch (_) {
+      // Ignore network errors
+    }
+    localStorage.removeItem('instaatrim_partner_token');
+    dispatch({ type: 'SET_PARTNER_SESSION', payload: null });
+    return true;
+  },
 
   currentSession: () => clone(getState().partnerSession),
 
@@ -256,39 +273,67 @@ const services = {
     return clone(getState().services || []);
   },
 
-  add: (salonId, data) =>
-    withLatency(() => {
-      const salon = getState().salons.find((s) => s.id === salonId);
-      if (salon && (!salon.isVerified || salon.verificationStatus !== 'Live')) {
-        throw new ApiError(
-          'Your salon application is pending admin approval. You can only list services after approval from the admin.',
-          'APPROVAL_REQUIRED'
-        );
-      }
-      const newService = {
-        id: newServiceId(),
-        salonId,
-        type: 'service',
-        isActive: true,
-        isInstantEligible: true,
-        image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80',
-        ...data
-      };
+  add: async (salonId, data) => {
+    const salon = getState().salons.find((s) => s.id === salonId);
+    if (salon && (!salon.isVerified || salon.verificationStatus !== 'Live')) {
+      throw new ApiError(
+        'Your salon application is pending admin approval. You can only list services after approval from the admin.',
+        'APPROVAL_REQUIRED'
+      );
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/services`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salonId, ...data })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to create service');
+      
+      const newService = { ...json.data, id: json.data._id, name: json.data.title || data.name };
       dispatch({ type: 'ADD_SERVICE', payload: newService });
       return clone(newService);
-    }),
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  },
 
-  update: (serviceId, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_SERVICE', payload: { serviceId, patch } });
-      return clone({ ...getState().services.find((s) => s.id === serviceId), ...patch });
-    }),
+  update: async (serviceId, patch) => {
+    try {
+      const res = await fetch(`${API_BASE}/services/${serviceId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to update service');
 
-  remove: (serviceId) =>
-    withLatency(() => {
+      const updatedService = { ...json.data, id: json.data._id, name: json.data.title || patch.name || json.data.name };
+      dispatch({ type: 'UPDATE_SERVICE', payload: { serviceId, patch: updatedService } });
+      return clone(updatedService);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  },
+
+  remove: async (serviceId) => {
+    try {
+      const res = await fetch(`${API_BASE}/services/${serviceId}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to delete service');
+
       dispatch({ type: 'DELETE_SERVICE', payload: { serviceId } });
       return true;
-    })
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  }
 };
 
 // =============================================================================
@@ -1248,33 +1293,73 @@ const categories = {
 // Promotions & Indexing Boost (Admin control for pushing salons/services on top)
 // =============================================================================
 const promotions = {
-  boostSalon: (salonId, boostData) =>
-    withLatency(() => {
-      dispatch({ type: 'BOOST_SALON', payload: { salonId, boostData } });
-      const updated = getState().salons.find((s) => s.id === salonId);
-      return clone(updated);
-    }),
+  boostSalon: async (salonId, boostData) => {
+    const patch = {
+      isBoosted: true,
+      ...boostData
+    };
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(patch)
+      });
+      const json = await res.json();
+      if (!json.success) throw new ApiError(json.message);
+      
+      dispatch({ type: 'PATCH_SALON', payload: { id: salonId, patch: json.data } });
+      return json.data;
+    } catch (e) {
+      console.error('Boost salon failed:', e);
+      throw e;
+    }
+  },
 
-  removeSalonBoost: (salonId) =>
-    withLatency(() => {
-      dispatch({ type: 'REMOVE_SALON_BOOST', payload: { salonId } });
-      const updated = getState().salons.find((s) => s.id === salonId);
-      return clone(updated);
-    }),
+  removeSalonBoost: async (salonId) => {
+    const patch = {
+      isBoosted: false,
+      isSponsored: false,
+      boostRank: null,
+      sponsorBadge: null,
+      boostReason: null
+    };
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(patch)
+      });
+      const json = await res.json();
+      if (!json.success) throw new ApiError(json.message);
+      
+      dispatch({ type: 'PATCH_SALON', payload: { id: salonId, patch: json.data } });
+      return json.data;
+    } catch (e) {
+      console.error('Remove salon boost failed:', e);
+      throw e;
+    }
+  },
 
-  boostService: (serviceId, boostData) =>
-    withLatency(() => {
-      dispatch({ type: 'BOOST_SERVICE', payload: { serviceId, boostData } });
-      const updated = getState().services.find((s) => s.id === serviceId);
-      return clone(updated);
-    }),
+  boostService: async (serviceId, boostData) => {
+    const patch = {
+      isBoosted: true,
+      ...boostData
+    };
+    const updated = await api.services.update(serviceId, patch);
+    return updated;
+  },
 
-  removeServiceBoost: (serviceId) =>
-    withLatency(() => {
-      dispatch({ type: 'REMOVE_SERVICE_BOOST', payload: { serviceId } });
-      const updated = getState().services.find((s) => s.id === serviceId);
-      return clone(updated);
-    })
+  removeServiceBoost: async (serviceId) => {
+    const patch = {
+      isBoosted: false,
+      isSponsored: false,
+      boostRank: null,
+      sponsorBadge: '',
+      boostReason: ''
+    };
+    const updated = await api.services.update(serviceId, patch);
+    return updated;
+  }
 };
 
 // =============================================================================

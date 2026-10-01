@@ -25,6 +25,9 @@ const salonRoutes = require('./routes/salonRoutes');
 const ritualRoutes = require('./routes/ritualRoutes');
 const couponRoutes = require('./routes/couponRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const staffRoutes = require('./routes/staffRoutes');
+const paymentRoutes = require('./routes/paymentRoutes'); // ADDED
+const bookingRoutes = require('./routes/bookingRoutes'); // ADDED
 
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
@@ -35,6 +38,9 @@ app.use('/api/salons', salonRoutes);
 app.use('/api/rituals', ritualRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/payments', paymentRoutes); // ADDED
+app.use('/api/bookings', bookingRoutes); // ADDED
 
 app.get('/', (req, res) => {
     res.send('InstaaTrim API is running...');

@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
-import { Clock, Check, Sparkles } from 'lucide-react';
+import { Clock, Check, Sparkles, Plus, Minus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const TrendingServices = ({ genderFilter = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const { cartItems, addToCart, setIsCartOpen, openServiceDetail } = useCustomer();
+  const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail } = useCustomer();
   const { state } = useAppData();
 
   const filterTabs = useMemo(() => {
@@ -147,20 +147,29 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                   </div>
                 </div>
 
-                {/* Action Button */}
-                {isInCart ? (
+              {/* Action Button */}
+              {isInCart ? (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-2.5 w-full h-[28px] border border-brand-maroon/50 text-brand-maroon bg-rose-50/30 font-bold text-[10.5px] rounded-lg flex items-center justify-between overflow-hidden shadow-2xs"
+                >
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsCartOpen(true);
-                    }}
-                    className="mt-2.5 w-full h-[28px] border border-emerald-600 text-emerald-800 bg-emerald-50 font-bold text-[10.5px] rounded-lg active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    onClick={() => removeFromCart(service.id)}
+                    className="h-full px-3 flex items-center justify-center hover:bg-rose-100 transition-colors cursor-pointer"
                   >
-                    <Check className="w-3 h-3 stroke-[2.5]" />
-                    <span>Added</span>
+                    <Minus className="w-3.5 h-3.5" />
                   </button>
-                ) : (
+                  <span className="font-semibold">{cartItems.find(item => item.id === service.id)?.quantity || 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => addToCart(service, { id: service.salonId, name: service.salonName })}
+                    className="h-full px-3 flex items-center justify-center hover:bg-rose-100 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
                   <button
                     type="button"
                     onClick={(e) => {

@@ -22,10 +22,11 @@ export const SalonStaffPage = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
+  const [staffToDelete, setStaffToDelete] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    role: 'Senior Stylist',
-    serviceCategories: ['Hair Studio'],
+    role: '',
+    serviceCategories: [],
     openTime: '09:30 AM',
     closeTime: '08:30 PM'
   });
@@ -44,8 +45,8 @@ export const SalonStaffPage = () => {
     setEditingStaff(null);
     setFormData({
       name: '',
-      role: 'Senior Stylist',
-      serviceCategories: ['Hair Studio'],
+      role: '',
+      serviceCategories: [],
       openTime: '09:30 AM',
       closeTime: '08:30 PM'
     });
@@ -56,8 +57,8 @@ export const SalonStaffPage = () => {
     setEditingStaff(st);
     setFormData({
       name: st.name || '',
-      role: st.role || 'Senior Stylist',
-      serviceCategories: st.serviceCategories || ['Hair Studio'],
+      role: st.role || '',
+      serviceCategories: st.serviceCategories || [],
       openTime: '09:30 AM',
       closeTime: '08:30 PM'
     });
@@ -189,7 +190,7 @@ export const SalonStaffPage = () => {
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => removeStaff(st.id)}
+                    onClick={() => setStaffToDelete(st)}
                     className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
                     title="Remove Staff"
                   >
@@ -247,17 +248,14 @@ export const SalonStaffPage = () => {
 
                 <div>
                   <label className="block text-stone-600 font-semibold mb-1">Professional Role</label>
-                  <select
+                  <input
+                    type="text"
+                    required
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    placeholder="e.g. Senior Stylist, Makeup Artist"
                     className="w-full p-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 outline-none focus:border-brand-maroon"
-                  >
-                    {availableRoles.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div>
@@ -265,7 +263,7 @@ export const SalonStaffPage = () => {
                     Skills &amp; Service Categories
                   </label>
                   <div className="flex flex-wrap gap-1.5">
-                    {['Hair Studio', 'Waxing', 'Facial', 'Spa', 'Body Polishing', 'Nails', 'Grooming'].map(
+                    {(categories.length > 0 ? categories.map(c => c.name) : ['Hair Studio', 'Nails']).map(
                       (cat) => {
                         const isSelected = formData.serviceCategories.includes(cat);
                         return (
@@ -299,6 +297,49 @@ export const SalonStaffPage = () => {
           </div>
         )}
       </AnimatePresence>
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {staffToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#111115] border border-stone-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative"
+            >
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center font-bold border border-red-500/20">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-white mb-2">Delete Team Member?</h3>
+                  <p className="text-xs text-stone-400">
+                    Are you sure you want to remove <span className="text-white font-semibold">{staffToDelete.name}</span>? They will no longer be listed and their assigned services will be unassigned.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 w-full mt-4">
+                  <button
+                    onClick={() => setStaffToDelete(null)}
+                    className="flex-1 p-2.5 rounded-xl border border-stone-700 text-stone-300 font-semibold hover:bg-stone-800 transition-colors text-sm cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      removeStaff(staffToDelete.id);
+                      setStaffToDelete(null);
+                    }}
+                    className="flex-1 p-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors text-sm cursor-pointer"
+                  >
+                    Yes, Delete
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </motion.div>
   );
 };

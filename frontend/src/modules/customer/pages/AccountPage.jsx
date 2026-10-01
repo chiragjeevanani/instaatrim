@@ -42,7 +42,7 @@ export const AccountPage = () => {
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
   const handleLogoutOrLogin = async () => {
-    if (user.isLoggedIn) {
+    if (user?.isLoggedIn) {
       await logout();
       navigate('/customer/auth');
     } else {
@@ -62,23 +62,23 @@ export const AccountPage = () => {
         <div className="relative z-10 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-200 text-stone-950 flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
-              {user.name ? user.name.charAt(0) : 'U'}
+              {user?.name ? user.name.charAt(0) : 'U'}
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <h1 className="text-sm font-bold tracking-tight truncate">
-                  {user.name || 'InstaaTrim Guest'}
+                  {user?.name || 'InstaaTrim Guest'}
                 </h1>
-                {user.isElite && (
+                {user?.isElite && (
                   <span className="bg-amber-400 text-stone-950 font-black text-[8.5px] px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
                     <Crown className="w-2.5 h-2.5 fill-stone-950" />
                     Elite
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-stone-400 leading-tight mt-0.5">{user.phone ? `+91 ${user.phone}` : 'Sign in to access perks'}</p>
-              <p className="text-[10px] text-stone-400 truncate leading-tight">{user.email || 'guest@instatrim.com'}</p>
+              <p className="text-[11px] text-stone-400 leading-tight mt-0.5">{user?.phone ? `+91 ${user.phone}` : 'Sign in to access perks'}</p>
+              <p className="text-[10px] text-stone-400 truncate leading-tight">{user?.email || 'guest@instatrim.com'}</p>
             </div>
           </div>
 
@@ -242,7 +242,7 @@ export const AccountPage = () => {
           className="w-full py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-xs text-stone-700 hover:bg-stone-50 active:scale-98 transition-all flex items-center justify-center gap-1.5 shadow-xs"
         >
           <LogOut className="w-3.5 h-3.5 text-stone-500" />
-          <span>{user.isLoggedIn ? 'Log Out of InstaaTrim' : 'Log In / Register'}</span>
+          <span>{user?.isLoggedIn ? 'Log Out of InstaaTrim' : 'Log In / Register'}</span>
         </button>
       </main>
 

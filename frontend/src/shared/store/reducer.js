@@ -111,6 +111,9 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Bookings ----------------
+    case 'SET_BOOKINGS': {
+      return { ...state, bookings: action.payload };
+    }
     case 'ADD_BOOKING': {
       return { ...state, bookings: [action.payload, ...state.bookings] };
     }
@@ -144,6 +147,7 @@ export function appReducer(state, action) {
         services: state.services.map((s) => (s.id === serviceId ? { ...s, ...patch } : s))
       };
     }
+
     case 'DELETE_SERVICE': {
       return { ...state, services: state.services.filter((s) => s.id !== action.payload.serviceId) };
     }
@@ -231,7 +235,20 @@ export function appReducer(state, action) {
 
     // ---------------- Services ----------------
     case 'SET_SERVICES': {
-      return { ...state, services: action.payload };
+      const incoming = Array.isArray(action.payload) ? action.payload : [];
+      if (incoming.length === 0) return { ...state };
+      
+      const existing = [...(state.services || [])];
+      for (const item of incoming) {
+        const id = item.id || item._id;
+        const idx = existing.findIndex(s => (s.id && s.id === id) || (s._id && s._id === id));
+        if (idx >= 0) {
+          existing[idx] = { ...existing[idx], ...item };
+        } else {
+          existing.push(item);
+        }
+      }
+      return { ...state, services: existing };
     }
     case 'ADD_SERVICE': {
       return { ...state, services: [...state.services, action.payload] };
@@ -312,6 +329,13 @@ export function appReducer(state, action) {
 
     // ---------------- Staff & Stations ----------------
     case 'ADD_STAFF': {
+      const incomingId = action.payload.id || action.payload._id;
+      const existingIdx = state.staff.findIndex((s) => (s.id && s.id === incomingId) || (s._id && s._id === incomingId));
+      if (existingIdx >= 0) {
+        const updated = [...state.staff];
+        updated[existingIdx] = { ...updated[existingIdx], ...action.payload };
+        return { ...state, staff: updated };
+      }
       return { ...state, staff: [action.payload, ...state.staff] };
     }
     case 'UPDATE_STAFF': {
@@ -682,6 +706,13 @@ export function appReducer(state, action) {
 
     // ---------------- Staff Management ----------------
     case 'ADD_STAFF': {
+      const incomingId2 = action.payload.id || action.payload._id;
+      const existingIdx2 = (state.staff || []).findIndex((s) => (s.id && s.id === incomingId2) || (s._id && s._id === incomingId2));
+      if (existingIdx2 >= 0) {
+        const updated2 = [...(state.staff || [])];
+        updated2[existingIdx2] = { ...updated2[existingIdx2], ...action.payload };
+        return { ...state, staff: updated2 };
+      }
       return { ...state, staff: [action.payload, ...(state.staff || [])] };
     }
     case 'UPDATE_STAFF': {

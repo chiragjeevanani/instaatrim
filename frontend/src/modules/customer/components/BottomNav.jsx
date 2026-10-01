@@ -1,13 +1,15 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Store, Sparkles, Calendar, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Home, Store, Sparkles, Calendar, User, ShoppingBag, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useCustomer } from '../context/CustomerContext';
 
 export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const currentPath = location.pathname;
+  const { cartItems, cartSummary, setIsCartOpen } = useCustomer();
 
   const navItems = [
     {
@@ -44,10 +46,44 @@ export const BottomNav = () => {
   ];
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200/90 z-50 shadow-nav px-3 py-2 box-border pb-3"
-      data-purpose="app-navigation"
-    >
+    <>
+      <AnimatePresence>
+        {cartItems.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-[65px] left-0 right-0 w-full max-w-[480px] mx-auto z-40 px-4"
+          >
+            <div 
+              onClick={() => setIsCartOpen(true)}
+              className="bg-brand-maroon text-white rounded-xl shadow-lg p-3 flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center relative">
+                  <ShoppingBag className="w-5 h-5 text-white" />
+                  <span className="absolute -top-1 -right-1 bg-amber-400 text-stone-900 text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                    {cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[11px] text-white/80 font-medium">Cart Subtotal</p>
+                  <p className="text-sm font-bold">₹{cartSummary.subtotal}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 font-semibold text-[13px]">
+                <span>View Cart</span>
+                <ChevronRight className="w-4 h-4" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <nav
+        className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200/90 z-50 shadow-nav px-3 py-2 box-border pb-3"
+        data-purpose="app-navigation"
+      >
       <div className="flex items-center justify-between relative">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -81,5 +117,6 @@ export const BottomNav = () => {
         })}
       </div>
     </nav>
+    </>
   );
 };

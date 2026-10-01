@@ -16,7 +16,8 @@ export const CartDrawer = () => {
     setIsBookingFlowOpen,
     appliedCoupon,
     applyCoupon,
-    removeCoupon
+    removeCoupon,
+    availableCoupons
   } = useCustomer();
 
   const [couponInput, setCouponInput] = useState('');
@@ -26,7 +27,11 @@ export const CartDrawer = () => {
 
   const handleCheckout = () => {
     setIsCartOpen(false);
-    setIsBookingFlowOpen(true);
+    if (bookingSlot && bookingSlot.time) {
+      navigate('/customer/checkout');
+    } else {
+      setIsBookingFlowOpen(true);
+    }
   };
 
   return (
@@ -189,21 +194,18 @@ export const CartDrawer = () => {
                   )}
 
                   {/* Quick coupon suggestion chips */}
-                  {!appliedCoupon && (
-                    <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-stone-100">
-                      <span className="text-[9.5px] text-stone-400 font-medium">Try:</span>
-                      <button
-                        onClick={() => applyCoupon('ELITE10')}
-                        className="text-[9.5px] font-bold bg-purple-50 text-brand-maroon px-1.5 py-0.5 rounded border border-purple-200 cursor-pointer"
-                      >
-                        ELITE10 (10% OFF)
-                      </button>
-                      <button
-                        onClick={() => applyCoupon('INSTA50')}
-                        className="text-[9.5px] font-bold bg-purple-50 text-brand-maroon px-1.5 py-0.5 rounded border border-purple-200 cursor-pointer"
-                      >
-                        INSTA50 (₹50 OFF)
-                      </button>
+                  {!appliedCoupon && availableCoupons && availableCoupons.length > 0 && (
+                    <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-stone-100 overflow-x-auto no-scrollbar">
+                      <span className="text-[9.5px] text-stone-400 font-medium whitespace-nowrap">Try:</span>
+                      {availableCoupons.map(coupon => (
+                        <button
+                          key={coupon.id || coupon._id}
+                          onClick={() => applyCoupon(coupon.code)}
+                          className="text-[9.5px] font-bold bg-purple-50 text-brand-maroon px-1.5 py-0.5 rounded border border-purple-200 cursor-pointer whitespace-nowrap shrink-0"
+                        >
+                          {coupon.code} ({coupon.discountPercent ? `${coupon.discountPercent}% OFF` : `₹${coupon.flatDiscount} OFF`})
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>

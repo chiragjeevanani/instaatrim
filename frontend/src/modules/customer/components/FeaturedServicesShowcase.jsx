@@ -6,7 +6,7 @@ import { Clock, Plus, Check, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
-  const { cartItems, addToCart, setIsCartOpen, openServiceDetail } = useCustomer();
+  const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail } = useCustomer();
   const { state } = useAppData();
   const navigate = useNavigate();
 
@@ -60,7 +60,8 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
 
       <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 w-full max-w-full">
         {featuredServices.map((service) => {
-          const isInCart = cartItems.some((item) => item.id === service.id);
+          const cartItem = cartItems.find((item) => item.id === service.id);
+          const quantity = cartItem?.quantity || 0;
 
           return (
             <motion.div
@@ -109,18 +110,29 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
                   )}
                 </div>
 
-                {isInCart ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsCartOpen(true);
-                    }}
-                    className="h-[26px] px-2 border border-emerald-600 text-emerald-800 bg-emerald-50 font-bold text-[9.5px] rounded-lg active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                {quantity > 0 ? (
+                  <div 
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-[26px] flex items-center border border-brand-maroon bg-brand-maroon/5 rounded-lg overflow-hidden"
                   >
-                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    <span>Added</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(service.id)}
+                      className="w-7 h-full flex items-center justify-center text-brand-maroon hover:bg-brand-maroon/10 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span className="text-sm font-bold leading-none mb-[2px]">-</span>
+                    </button>
+                    <span className="w-[14px] text-center text-[10.5px] font-black text-brand-maroon">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => addToCart(service, { id: service.salonId, name: service.salonName })}
+                      className="w-7 h-full flex items-center justify-center text-brand-maroon hover:bg-brand-maroon/10 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span className="text-sm font-bold leading-none mb-[2px]">+</span>
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"

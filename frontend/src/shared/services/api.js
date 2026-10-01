@@ -241,21 +241,48 @@ const salons = {
     dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
     return clone(json.data);
   },
-  toggleActive: (salonId) =>
-    withLatency(() => {
-      const salon = getState().salons.find((s) => s.id === salonId);
-      const isStoreOpen = !(salon?.isStoreOpen ?? true);
+  toggleActive: async (salonId) => {
+    const salon = getState().salons.find((s) => s.id === salonId);
+    const isStoreOpen = !(salon?.isStoreOpen ?? true);
+    
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isStoreOpen })
+      });
+      if (res.ok) {
+        dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: { isStoreOpen } } });
+        return isStoreOpen;
+      }
+      throw new Error('Failed to update salon status in DB');
+    } catch (e) {
+      console.error(e);
+      // Fallback for local state only if network fails
       dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: { isStoreOpen } } });
       return isStoreOpen;
-    })
+    }
+  }
 };
 
 // =============================================================================
 // Services
 // =============================================================================
 const services = {
-  listBySalon: (salonId) =>
-    withLatency(() => clone(getState().services.filter((s) => s.salonId === salonId))),
+  listBySalon: async (salonId) => {
+    try {
+      const res = await fetch(`${API_BASE}/services?salonId=${salonId}`);
+      if (res.ok) {
+        const json = await res.json();
+        const mapped = json.data.map(s => ({ ...s, id: s._id }));
+        // Option: merge into store if needed, but returning is enough for the component
+        return clone(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return clone(getState().services.filter((s) => s.salonId === salonId));
+  },
 
   listAll: async () => {
     try {
@@ -340,26 +367,50 @@ const services = {
 // Staff & Stations
 // =============================================================================
 const staff = {
-  listBySalon: (salonId) => withLatency(() => clone(getState().staff.filter((s) => s.salonId === salonId))),
+  listBySalon: async (salonId) => {
+    const res = await fetch(`${API_BASE}/staff/salon/${salonId}`);
+    const json = await res.json();
+    return json.data;
+  },
 
-  add: (salonId, data) =>
-    withLatency(() => {
-      const record = { id: newStaffId(), salonId, leaves: [], serviceCategories: [], ...data };
-      dispatch({ type: 'ADD_STAFF', payload: record });
-      return clone(record);
-    }),
+  listAll: async () => {
+    const res = await fetch(`${API_BASE}/staff`);
+    const json = await res.json();
+    return json.data;
+  },
 
-  update: (staffId, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_STAFF', payload: { staffId, patch } });
-      return clone({ ...getState().staff.find((s) => s.id === staffId), ...patch });
-    }),
+  add: async (salonId, data) => {
+    const res = await fetch(`${API_BASE}/staff/salon/${salonId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message);
+    dispatch({ type: 'ADD_STAFF', payload: json.data });
+    return json.data;
+  },
 
-  remove: (staffId) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_STAFF', payload: { staffId } });
-      return true;
-    })
+  update: async (staffId, patch) => {
+    const res = await fetch(`${API_BASE}/staff/${staffId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message);
+    dispatch({ type: 'UPDATE_STAFF', payload: { staffId, patch: json.data } });
+    return json.data;
+  },
+
+  remove: async (staffId) => {
+    const res = await fetch(`${API_BASE}/staff/${staffId}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete staff');
+    dispatch({ type: 'DELETE_STAFF', payload: { staffId } });
+    return true;
+  }
 };
 
 const stations = {
@@ -389,28 +440,58 @@ const stations = {
 // Bookings
 // =============================================================================
 const bookings = {
-  listByCustomer: (customerId) =>
-    withLatency(() => clone(getState().bookings.filter((b) => b.customerId === customerId))),
+  listByCustomer: async (customerId) => {
+    try {
+      const res = await fetch(`${API_BASE}/bookings/customer/${customerId}`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      
+      const bks = json.data.map(b => ({ ...b, id: b._id }));
+      dispatch({ type: 'SET_BOOKINGS', payload: bks }); // Optional sync to store
+      return bks;
+    } catch(e) {
+      console.error(e);
+      // Fallback
+      return clone(getState().bookings.filter((b) => b.customerId === customerId));
+    }
+  },
 
-  listBySalon: (salonId) =>
-    withLatency(() => clone(getState().bookings.filter((b) => b.salonId === salonId))),
+  listBySalon: async (salonId) => {
+    try {
+      const res = await fetch(`${API_BASE}/bookings/salon/${salonId}`);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      return json.data.map(b => ({ ...b, id: b._id }));
+    } catch(e) {
+      console.error(e);
+      return clone(getState().bookings.filter((b) => b.salonId === salonId));
+    }
+  },
 
   listAll: () => withLatency(() => clone(getState().bookings)),
 
-  get: (bookingId) =>
-    withLatency(() => {
-      const found = getState().bookings.find((b) => b.id === bookingId);
-      if (!found) throw new ApiError(`Booking ${bookingId} not found`, 'NOT_FOUND');
-      return clone(found);
-    }),
+  get: async (bookingId) => {
+    // Rely on local state for quick fetch if it's there
+    const found = getState().bookings.find((b) => b.id === bookingId);
+    if (!found) throw new ApiError(`Booking ${bookingId} not found`, 'NOT_FOUND');
+    return clone(found);
+  },
 
-  create: (payload) =>
-    withLatency(() => {
-      // Defaults are applied UNDER the payload, then the two fields that
-      // need "fall back if falsy" rather than "fall back only if absent"
-      // are computed last against the already-merged object — spreading
-      // `payload` after setting these previously let a null dateKey from
-      // an unpicked slot silently clobber the computed fallback.
+  create: async (payload) => {
+    try {
+      const res = await fetch(`${API_BASE}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Failed to create booking');
+      
+      const newBooking = { ...json.data, id: json.data._id };
+      dispatch({ type: 'ADD_BOOKING', payload: newBooking });
+      return newBooking;
+    } catch(e) {
+      console.error('Real booking creation failed, falling back to mock:', e);
       const booking = {
         id: newBookingId(),
         status: BOOKING_STATUS.CONFIRMED,
@@ -423,7 +504,8 @@ const bookings = {
       booking.dateKey = payload.dateKey || dateKey(new Date());
       dispatch({ type: 'ADD_BOOKING', payload: booking });
       return clone(booking);
-    }),
+    }
+  },
 
   updateStatus: (bookingId, status, extra = {}, { force = false } = {}) =>
     withLatency(() => {

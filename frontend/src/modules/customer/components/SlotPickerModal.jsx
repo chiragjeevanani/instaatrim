@@ -17,11 +17,44 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
   const { isSlotPickerOpen, setIsSlotPickerOpen, bookingSlot, setBookingSlot, cartItems, showToast } = useCustomer();
   const { state } = useAppData();
 
-  const salonId = propSalonId || cartItems[0]?.salonId;
-  const salon = state.salons.find((s) => s.id === salonId);
-  const staffList = useMemo(() => state.staff.filter((s) => s.salonId === salonId), [state.staff, salonId]);
+  const cartSalonId = cartItems[0]?.salonId;
+  const cartSalonName = cartItems[0]?.salonName;
+  const salonId = propSalonId || cartSalonId;
+  const salon = state.salons.find((s) => (salonId && s.id === salonId) || (cartSalonName && s.name === cartSalonName));
+  const finalSalonId = salon?.id || salonId;
+  const staffList = useMemo(() => {
+    const list = state.staff.filter((s) => s.salonId === finalSalonId);
+    if (list.length > 0) {
+      return list.map(st => ({
+        ...st,
+        weeklyHours: st.weeklyHours || salon?.weeklyHours
+      }));
+    }
+    // Fallback for DB salons that don't have mock staff assigned to their dynamic IDs
+    return [
+      {
+        id: `staff-db-${finalSalonId}`,
+        salonId: finalSalonId,
+        name: 'Senior Stylist',
+        role: 'Stylist',
+        serviceCategories: ['Men\'s Hair & Grooming', 'Nails, Art & Extensions', 'Hair & Styling', 'Facials & Skincare', 'Makeup & Bridals'],
+        weeklyHours: salon?.weeklyHours // Use the salon's weeklyHours (which we already defaulted in Context)
+      }
+    ];
+  }, [state.staff, finalSalonId, salon]);
 
-  const durationMinutes = cartItems.reduce((sum, item) => sum + (item.durationMinutes || 30), 0) || 30;
+  // Resolve duration from state.services (DB) for accuracy, fallback to cart item values
+  const durationMinutes = useMemo(() => {
+    let total = 0;
+    cartItems.forEach(item => {
+      // Try to get the real service from state to pick up DB duration
+      const realService = state.services.find(s => s.id === item.id || s._id === item.id);
+      const dur = realService?.duration || realService?.durationMinutes
+        || item.durationMinutes || item.duration || 30;
+      total += (typeof dur === 'number' ? dur : 30) * (item.quantity || 1);
+    });
+    return total || 30;
+  }, [cartItems, state.services]);
   const category = cartItems[0]?.category || null;
 
   const days = useMemo(() => rollingDays(14), []);
@@ -98,7 +131,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           return;
         }
         const hold = await acquireHold({
-          salonId,
+          salonId: finalSalonId,
           serviceId: cartItems[0]?.id || null,
           staffId: instantAvailability.slot.staffId,
           dateObj: new Date(),
@@ -123,7 +156,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           return;
         }
         const hold = await acquireHold({
-          salonId,
+          salonId: finalSalonId,
           serviceId: cartItems[0]?.id || null,
           staffId: selectedSlot.staffId,
           dateObj: selectedDay.date,
@@ -181,9 +214,8 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           <div className="grid grid-cols-2 gap-1.5 bg-[#eaddf3] border border-purple-200/50 p-1 rounded-xl">
             <button
               onClick={() => setBookingType('Scheduled')}
-              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold text-xs transition-all ${
-                bookingType === 'Scheduled' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
-              }`}
+              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold text-xs transition-all ${bookingType === 'Scheduled' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
             >
               <Calendar className="w-3.5 h-3.5" />
               <span>Scheduled Slot</span>
@@ -192,9 +224,8 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
             <button
               onClick={() => setBookingType('Instant')}
               disabled={!salon.hasInstantBooking}
-              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                bookingType === 'Instant' ? 'bg-brand-maroon text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-              }`}
+              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-bold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed ${bookingType === 'Instant' ? 'bg-brand-maroon text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
             >
               <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               <span>Instant / Book Now</span>
@@ -203,14 +234,12 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
 
           {bookingType === 'Instant' ? (
             <div
-              className={`rounded-xl p-3 text-center space-y-1.5 border ${
-                instantAvailability.state === 'unavailable' ? 'bg-stone-100 border-stone-200' : 'bg-amber-50 border-amber-200/80'
-              }`}
+              className={`rounded-xl p-3 text-center space-y-1.5 border ${instantAvailability.state === 'unavailable' ? 'bg-stone-100 border-stone-200' : 'bg-amber-50 border-amber-200/80'
+                }`}
             >
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto ${
-                  instantAvailability.state === 'unavailable' ? 'bg-stone-200 text-stone-500' : 'bg-amber-100 text-amber-700'
-                }`}
+                className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto ${instantAvailability.state === 'unavailable' ? 'bg-stone-200 text-stone-500' : 'bg-amber-100 text-amber-700'
+                  }`}
               >
                 <Zap className="w-4 h-4 fill-current" />
               </div>
@@ -230,11 +259,10 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
                     <button
                       key={d.key}
                       onClick={() => setSelectedDayKey(d.key)}
-                      className={`py-1.5 px-1 rounded-xl text-center border transition-all ${
-                        selectedDayKey === d.key
-                          ? 'border-brand-maroon bg-white text-brand-maroon font-bold shadow-xs'
-                          : 'border-stone-200 bg-white/70 text-stone-700 hover:bg-white'
-                      }`}
+                      className={`py-1.5 px-1 rounded-xl text-center border transition-all ${selectedDayKey === d.key
+                        ? 'border-brand-maroon bg-white text-brand-maroon font-bold shadow-xs'
+                        : 'border-stone-200 bg-white/70 text-stone-700 hover:bg-white'
+                        }`}
                     >
                       <span className="text-[11px] font-bold block">{d.label}</span>
                       <span className="text-[9.5px] text-stone-400 block">{d.sub}</span>
@@ -258,11 +286,10 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
                       <button
                         key={slot.time}
                         onClick={() => setSelectedSlot(slot)}
-                        className={`py-1.5 px-1 text-[11px] rounded-lg font-medium text-center border transition-all flex items-center justify-center gap-1 ${
-                          selectedSlot?.time === slot.time
-                            ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
-                            : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
-                        }`}
+                        className={`py-1.5 px-1 text-[11px] rounded-lg font-medium text-center border transition-all flex items-center justify-center gap-1 ${selectedSlot?.time === slot.time
+                          ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
+                          : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+                          }`}
                       >
                         {selectedSlot?.time === slot.time && <CheckCircle2 className="w-3 h-3" />}
                         <span>{slot.time}</span>

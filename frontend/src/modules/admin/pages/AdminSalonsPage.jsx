@@ -78,11 +78,10 @@ export const AdminSalonsPage = () => {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-                  filter === f
-                    ? 'bg-purple-600 text-white'
-                    : 'text-stone-400 hover:text-white'
-                }`}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${filter === f
+                  ? 'bg-purple-600 text-white'
+                  : 'text-stone-400 hover:text-white'
+                  }`}
               >
                 {f}
               </button>
@@ -162,11 +161,10 @@ export const AdminSalonsPage = () => {
                       <td className="py-4 px-4">
                         <button
                           onClick={() => toggleSalonActive(salon.id)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                            salon.isStoreOpen ?? true
-                              ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/60 hover:bg-emerald-900/50'
-                              : 'bg-stone-800 text-stone-400 border border-stone-700 hover:bg-stone-700'
-                          }`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${salon.isStoreOpen ?? true
+                            ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-800/60 hover:bg-emerald-900/50'
+                            : 'bg-stone-800 text-stone-400 border border-stone-700 hover:bg-stone-700'
+                            }`}
                         >
                           <Power className="w-3 h-3" />
                           <span>{salon.isStoreOpen ?? true ? 'Online' : 'Offline'}</span>

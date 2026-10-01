@@ -37,10 +37,11 @@ export const CheckoutPage = () => {
   } = useCustomer();
   const { state } = useAppData();
 
-  const [paymentMethod, setPaymentMethod] = useState('UPI (Google Pay / PhonePe)');
+  const [paymentMethod, setPaymentMethod] = useState('Pay Online');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [holdExpired, setHoldExpired] = useState(false);
+  const [showSuccessTick, setShowSuccessTick] = useState(false);
 
   if (cartItems.length === 0) {
     return (
@@ -58,11 +59,8 @@ export const CheckoutPage = () => {
   }
 
   const paymentOptions = [
-    { id: 'upi-gpay', name: 'UPI (Google Pay / PhonePe)', sub: 'Instant 1-click payment', icon: <Smartphone className="w-4 h-4 text-emerald-600" /> },
-    { id: 'card', name: 'Credit / Debit Card', sub: 'Visa, MasterCard, RuPay', icon: <CreditCard className="w-4 h-4 text-blue-600" /> },
-    { id: 'netbanking', name: 'Net Banking', sub: 'All major Indian banks', icon: <Landmark className="w-4 h-4 text-indigo-600" /> },
-    { id: 'wallet', name: 'Wallets', sub: 'Paytm, Amazon Pay & more', icon: <Wallet className="w-4 h-4 text-purple-600" /> },
-    { id: 'pay-at-salon', name: 'Pay at Salon', sub: 'Pay cash or card after service', icon: <Banknote className="w-4 h-4 text-amber-600" /> }
+    { id: 'pay-online', name: 'Pay Online', sub: 'Cards, UPI, Wallets, NetBanking (via Razorpay)', icon: <Smartphone className="w-4 h-4 text-emerald-600" /> },
+    { id: 'pay-at-salon', name: 'Pay at Salon (COD)', sub: 'Pay cash or card after service', icon: <Banknote className="w-4 h-4 text-amber-600" /> }
   ];
 
   const handleHoldExpire = () => {
@@ -71,11 +69,39 @@ export const CheckoutPage = () => {
     showToast('Your held slot expired. Please pick a new one.');
   };
 
+  const confirmBookingAfterPayment = async (paymentStatus, transactionId) => {
+    try {
+      const newBooking = await createBooking({
+        salonId: cartItems[0]?.salonId || 'sal-1',
+        salonName: cartItems[0]?.salonName || 'Luxe Glow Salon & Spa',
+        address: currentLocation?.area || 'South Tukoganj, Indore',
+        paymentMethod,
+        paymentStatus,
+        transactionId,
+        holdId: bookingSlot.holdId,
+        staffId: bookingSlot.staffId
+      });
+
+      await releaseHold(bookingSlot.holdId);
+      setBookingSlot((prev) => ({ ...prev, holdId: null, holdExpiresAt: null }));
+      
+      // Show Zomato-style success tick before navigating
+      setShowSuccessTick(true);
+      setTimeout(() => {
+        setShowSuccessTick(false);
+        navigate(`/customer/booking-confirmation/${newBooking.id}`);
+      }, 2000);
+      
+    } catch (err) {
+      setPaymentError(err?.message || 'Booking failed to save.');
+      showToast(err?.message || 'Booking failed');
+      setIsProcessing(false);
+    }
+  };
+
   const handlePayAndConfirm = async () => {
     setPaymentError(null);
 
-    // Re-validate the hold immediately before charging — it may have
-    // lapsed in the seconds since the slot picker closed.
     if (bookingSlot.holdId && !isHoldStillValid({ id: bookingSlot.holdId }, state.holds)) {
       setHoldExpired(true);
       showToast('Your held slot has expired. Please choose a new slot.');
@@ -83,30 +109,83 @@ export const CheckoutPage = () => {
     }
 
     setIsProcessing(true);
+
+    if (paymentMethod === 'Pay at Salon (COD)') {
+      // Direct COD Flow
+      await confirmBookingAfterPayment('Pending', null);
+      return;
+    }
+
+    // Razorpay Flow
     try {
-      const payment =
-        paymentMethod === 'Pay at Salon'
-          ? { status: 'Pending', transactionId: null }
-          : await processPayment({ amount: cartSummary.finalAmount, method: paymentMethod });
-
-      const newBooking = await createBooking({
-        salonId: cartItems[0]?.salonId || 'sal-1',
-        salonName: cartItems[0]?.salonName || 'Luxe Glow Salon & Spa',
-        address: currentLocation?.area || 'South Tukoganj, Indore',
-        paymentMethod,
-        paymentStatus: payment.status,
-        transactionId: payment.transactionId,
-        holdId: bookingSlot.holdId,
-        staffId: bookingSlot.staffId
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+      
+      // 1. Create order on backend
+      const res = await fetch(`${API_BASE}/payments/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: cartSummary.finalAmount })
       });
+      const data = await res.json();
+      
+      if (!data.success) throw new Error('Failed to initialize payment');
 
-      await releaseHold(bookingSlot.holdId);
-      setBookingSlot((prev) => ({ ...prev, holdId: null, holdExpiresAt: null }));
-      navigate(`/customer/booking-confirmation/${newBooking.id}`);
+      const options = {
+        key: 'rzp_test_S3IcSS1NbymL6D', // Updated test key
+        amount: data.data.amount,
+        currency: data.data.currency,
+        name: 'InstaaTrim',
+        description: 'Salon Booking Payment',
+        order_id: data.data.id,
+        handler: async function (response) {
+          // 2. Verify payment on backend
+          try {
+            const verifyRes = await fetch(`${API_BASE}/payments/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            
+            if (verifyData.success) {
+              await confirmBookingAfterPayment('Paid', response.razorpay_payment_id);
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (verifyErr) {
+            setPaymentError('Payment verification failed. Please contact support.');
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: 'Customer',
+          email: 'customer@example.com',
+          contact: '9999999999'
+        },
+        theme: {
+          color: '#881337'
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessing(false);
+            showToast('Payment cancelled');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+        setPaymentError('Payment failed: ' + response.error.description);
+        setIsProcessing(false);
+      });
+      rzp.open();
     } catch (err) {
-      setPaymentError(err?.message || 'Payment failed. Please try again.');
+      setPaymentError(err?.message || 'Failed to start payment');
       showToast(err?.message || 'Payment failed');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -311,6 +390,41 @@ export const CheckoutPage = () => {
           )}
         </button>
       </div>
+
+      {/* Full Screen Zomato Style Success Animation */}
+      {showSuccessTick && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 200 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+              <motion.svg
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="w-12 h-12 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="3"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </motion.svg>
+            </div>
+            <motion.h2
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="text-2xl font-black text-stone-900"
+            >
+              Booking Confirmed!
+            </motion.h2>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 };

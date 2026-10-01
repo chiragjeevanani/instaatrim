@@ -27,12 +27,37 @@ export const CustomerProvider = ({ children }) => {
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {
           // Add them to store
+          // Default hours fallback for DB salons without weeklyHours
           json.data.forEach(salon => {
             const exists = state.salons.find(s => s.id === salon.id || s.id === salon._id);
+            
+            // Map DB openTime/closeTime to the weeklyHours structure the frontend expects
+            const open = salon.openTime || '09:00 AM';
+            const close = salon.closeTime || '09:00 PM';
+            const dynamicHours = {
+              Sunday: { open, close, closed: false },
+              Monday: { open, close, closed: false },
+              Tuesday: { open, close, closed: false },
+              Wednesday: { open, close, closed: false },
+              Thursday: { open, close, closed: false },
+              Friday: { open, close, closed: false },
+              Saturday: { open, close, closed: false }
+            };
+
+            const hasWeeklyHours = salon.weeklyHours && Object.keys(salon.weeklyHours).length > 0;
+
+            const salonWithDefaults = {
+              ...salon,
+              id: salon._id || salon.id,
+              weeklyHours: hasWeeklyHours ? salon.weeklyHours : dynamicHours,
+              breaks: salon.breaks || [],
+              holidays: salon.holidays || []
+            };
+            
             if (!exists) {
-              dispatch({ type: 'ADD_SALON', payload: { ...salon, id: salon._id || salon.id } });
+              dispatch({ type: 'ADD_SALON', payload: salonWithDefaults });
             } else {
-              dispatch({ type: 'PATCH_SALON', payload: { salonId: salon._id || salon.id, patch: salon } });
+              dispatch({ type: 'PATCH_SALON', payload: { salonId: salonWithDefaults.id, patch: salonWithDefaults } });
             }
           });
         }
@@ -50,6 +75,23 @@ export const CustomerProvider = ({ children }) => {
       })
       .catch(console.error);
 
+    // Fetch all staff members globally
+    fetch(`${API_BASE}/staff`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          json.data.forEach(st => {
+            const exists = state.staff.find(s => s.id === st.id || s.id === st._id);
+            if (!exists) {
+              dispatch({ type: 'ADD_STAFF', payload: { ...st, id: st._id || st.id } });
+            } else {
+              dispatch({ type: 'UPDATE_STAFF', payload: { staffId: st._id || st.id, patch: st } });
+            }
+          });
+        }
+      })
+      .catch(console.error);
+
     // Fetch all ads
     fetch(`${API_BASE}/ads`)
       .then((res) => res.json())
@@ -60,7 +102,7 @@ export const CustomerProvider = ({ children }) => {
         }
       })
       .catch(console.error);
-      
+
     // Fetch all categories
     fetch(`${API_BASE}/categories`)
       .then((res) => res.json())
@@ -71,6 +113,13 @@ export const CustomerProvider = ({ children }) => {
         }
       })
       .catch(console.error);
+
+    // Fetch all coupons
+    api.coupons.list().then(data => {
+      if (Array.isArray(data)) {
+        setAvailableCoupons(data.filter(c => c.isActive));
+      }
+    }).catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -104,22 +153,79 @@ export const CustomerProvider = ({ children }) => {
   );
 
   // ---------------- Cart (transient, local to this checkout session) ----------------
-  const [cartItems, setCartItems] = useState([]);
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-
-  const [bookingSlot, setBookingSlot] = useState({
-    type: 'Scheduled',
-    dateKey: null,
-    date: 'Tomorrow',
-    time: '11:00 AM'
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('instaatrim_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [appliedCoupon, setAppliedCoupon] = useState(() => {
+    try {
+      const saved = localStorage.getItem('instaatrim_applied_coupon');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+  const [isCartOpen, setIsCartOpen] = useState(() => {
+    try {
+      return localStorage.getItem('instaatrim_is_cart_open') === 'true';
+    } catch { return false; }
+  });
+
+  const [bookingSlot, setBookingSlot] = useState(() => {
+    try {
+      const saved = localStorage.getItem('instaatrim_booking_slot');
+      return saved ? JSON.parse(saved) : {
+        type: 'Scheduled',
+        dateKey: null,
+        date: 'Tomorrow',
+        time: '11:00 AM'
+      };
+    } catch {
+      return {
+        type: 'Scheduled',
+        dateKey: null,
+        date: 'Tomorrow',
+        time: '11:00 AM'
+      };
+    }
+  });
+
+  // Sync to localStorage
+  useEffect(() => {
+    localStorage.setItem('instaatrim_cart', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  useEffect(() => {
+    if (appliedCoupon) {
+      localStorage.setItem('instaatrim_applied_coupon', JSON.stringify(appliedCoupon));
+    } else {
+      localStorage.removeItem('instaatrim_applied_coupon');
+    }
+  }, [appliedCoupon]);
+
+  useEffect(() => {
+    localStorage.setItem('instaatrim_booking_slot', JSON.stringify(bookingSlot));
+  }, [bookingSlot]);
+
   const [isSlotPickerOpen, setIsSlotPickerOpen] = useState(false);
 
   const [isReferModalOpen, setIsReferModalOpen] = useState(false);
   const [isEliteModalOpen, setIsEliteModalOpen] = useState(false);
-  const [isBookingFlowOpen, setIsBookingFlowOpen] = useState(false);
+  const [isBookingFlowOpen, setIsBookingFlowOpen] = useState(() => {
+    try {
+      return localStorage.getItem('instaatrim_is_booking_open') === 'true';
+    } catch { return false; }
+  });
   const [preferredProduct, setPreferredProduct] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('instaatrim_is_cart_open', isCartOpen);
+  }, [isCartOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('instaatrim_is_booking_open', isBookingFlowOpen);
+  }, [isBookingFlowOpen]);
 
   // ---------------- Service Detail Modal-to-Fullscreen State ----------------
   const [activeDetailService, setActiveDetailService] = useState(null);
@@ -146,18 +252,19 @@ export const CustomerProvider = ({ children }) => {
   const addToCart = useCallback(
     (service, salon) => {
       setCartItems((prev) => {
-        const exists = prev.find((item) => item.id === service.id);
-        if (exists) {
-          showToast('Service is already in your cart');
-          return prev;
-        }
-        // Cart is scoped to one salon (Defect D2 fix) — adding a service
-        // from a different salon than what's already in the cart starts a
-        // fresh cart instead of silently mixing two salons into one
-        // booking.
         const incomingSalonId = salon ? salon.id : service.salonId;
         const existingSalonId = prev[0]?.salonId;
         const base = existingSalonId && existingSalonId !== incomingSalonId ? [] : prev;
+        
+        const exists = base.find((item) => item.id === service.id);
+        if (exists) {
+          return base.map(item => 
+            item.id === service.id 
+              ? { ...item, quantity: (item.quantity || 1) + 1 } 
+              : item
+          );
+        }
+
         if (base.length === 0 && prev.length > 0) {
           showToast(`Started a new cart for ${salon ? salon.name : service.salonName}`);
         } else {
@@ -168,7 +275,10 @@ export const CustomerProvider = ({ children }) => {
           {
             ...service,
             salonId: incomingSalonId,
-            salonName: salon ? salon.name : service.salonName
+            salonName: salon ? salon.name : service.salonName,
+            // DB services use `duration` (in minutes as number), slot picker needs `durationMinutes`
+            durationMinutes: service.durationMinutes || (typeof service.duration === 'number' ? service.duration : 30),
+            quantity: 1
           }
         ];
       });
@@ -178,15 +288,28 @@ export const CustomerProvider = ({ children }) => {
 
   const removeFromCart = useCallback(
     (serviceId) => {
-      setCartItems((prev) => prev.filter((item) => item.id !== serviceId));
-      showToast('Removed from cart');
+      setCartItems((prev) => {
+        const exists = prev.find((item) => item.id === serviceId);
+        if (exists && (exists.quantity || 1) > 1) {
+          return prev.map(item => 
+            item.id === serviceId 
+              ? { ...item, quantity: item.quantity - 1 } 
+              : item
+          );
+        }
+        showToast('Removed from cart');
+        return prev.filter((item) => item.id !== serviceId);
+      });
     },
     [showToast]
   );
 
   const clearCart = useCallback(() => {
     setCartItems([]);
+    setAppliedCoupon(null);
     setPreferredProduct(null);
+    localStorage.removeItem('instaatrim_cart');
+    localStorage.removeItem('instaatrim_applied_coupon');
   }, []);
 
   const applyCoupon = useCallback(
@@ -213,8 +336,8 @@ export const CustomerProvider = ({ children }) => {
   }, [showToast]);
 
   const cartSummary = useMemo(() => {
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.price || 0), 0);
-    const originalSubtotal = cartItems.reduce((acc, item) => acc + (item.originalPrice || item.price || 0), 0);
+    const subtotal = cartItems.reduce((acc, item) => acc + ((item.price || 0) * (item.quantity || 1)), 0);
+    const originalSubtotal = cartItems.reduce((acc, item) => acc + ((item.originalPrice || item.price || 0) * (item.quantity || 1)), 0);
     let discount = 0;
     if (appliedCoupon && subtotal >= (appliedCoupon.minOrder || 0)) {
       discount = computeDiscount(appliedCoupon, subtotal);
@@ -240,7 +363,7 @@ export const CustomerProvider = ({ children }) => {
         bookingMode: bookingSlot.type,
         dateKey: bookingSlot.dateKey,
         time: bookingSlot.type === 'Instant' ? 'Within 15 mins' : bookingSlot.time,
-        services: cartItems.length > 0 ? cartItems.map((i) => ({ id: i.id, name: i.name, price: i.price, duration: i.duration })) : bookingData.items || [],
+        services: cartItems.length > 0 ? cartItems.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity || 1, duration: i.duration })) : bookingData.items || [],
         totalAmount: cartSummary.subtotal,
         discountAmount: cartSummary.discount,
         finalPaid: cartSummary.finalAmount,
@@ -429,6 +552,7 @@ export const CustomerProvider = ({ children }) => {
         savedLocations,
         addLocation,
         cartItems,
+        availableCoupons,
         addToCart,
         removeFromCart,
         clearCart,

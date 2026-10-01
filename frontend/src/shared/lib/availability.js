@@ -37,7 +37,8 @@ const bookingWindow = (booking) => {
 const staffIsOnLeave = (staffMember, dateKeyStr) => (staffMember.leaves || []).includes(dateKeyStr);
 
 const workingWindowFor = (weeklyHours, weekday) => {
-  const day = weeklyHours?.[weekday];
+  const defaultDay = { open: '09:00 AM', close: '09:00 PM', closed: false };
+  const day = (weeklyHours || {})[weekday] || defaultDay;
   if (!day || day.closed) return null;
   return { openMin: parseClockToMinutes(day.open), closeMin: parseClockToMinutes(day.close) };
 };
@@ -93,7 +94,15 @@ export function getDaySlots({ salon, staffList, durationMinutes, category, booki
   const totalChairs = salon.totalChairs || Infinity;
   const slots = [];
 
+  // For today, only show slots that START at least 30 minutes from now
+  const isToday = isSameDay(dateObj, new Date());
+  const nowMin = isToday ? nowMinutesOfDay(new Date()) : 0;
+  const BUFFER_MINUTES = 30; // minimum lead time before a slot can be booked
+
   for (let t = salonWindow.openMin; t + duration <= salonWindow.closeMin; t += SLOT_STEP_MINUTES) {
+    // Skip past slots and slots within the buffer window for today
+    if (isToday && t < nowMin + BUFFER_MINUTES) continue;
+
     const slotEnd = t + duration;
     if (isOnSalonBreak(salon, weekday, t, slotEnd)) continue;
 

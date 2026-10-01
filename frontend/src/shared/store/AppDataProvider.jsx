@@ -13,7 +13,13 @@ const init = () => {
   // Shallow-merge so new seed collections introduced later (e.g. a phase
   // that adds `tickets`) still appear for a browser with old persisted
   // state, instead of being permanently missing.
-  return { ...seed, ...persisted };
+  const merged = { ...seed, ...persisted };
+  
+  // Self-heal: If local storage wiped out mock collections due to an empty backend fetch, restore them from seed.
+  if (!merged.services || merged.services.length === 0) merged.services = seed.services;
+  if (!merged.salons || merged.salons.length === 0) merged.salons = seed.salons;
+  
+  return merged;
 };
 
 export const AppDataProvider = ({ children }) => {

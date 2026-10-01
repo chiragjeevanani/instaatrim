@@ -53,6 +53,23 @@ export const SalonProvider = ({ children }) => {
           }
         })
         .catch(console.error);
+
+      // Fetch staff for this salon
+      fetch(`http://localhost:6200/api/staff/salon/${salonId}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && Array.isArray(json.data)) {
+            json.data.forEach(st => {
+              const exists = state.staff.find(s => s.id === st.id || s.id === st._id);
+              if (!exists) {
+                dispatch({ type: 'ADD_STAFF', payload: { ...st, id: st._id || st.id } });
+              } else {
+                dispatch({ type: 'UPDATE_STAFF', payload: { staffId: st._id || st.id, patch: st } });
+              }
+            });
+          }
+        })
+        .catch(console.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, salonId, dispatch]);
@@ -265,7 +282,19 @@ export const SalonProvider = ({ children }) => {
   );
 
   // ---------------- Staff & Stations ----------------
-  const staff = useMemo(() => state.staff.filter((s) => s.salonId === salonId), [state.staff, salonId]);
+  const staff = useMemo(() => {
+    const salonStaff = state.staff.filter((s) => s.salonId === salonId);
+    const unique = [];
+    const seen = new Set();
+    for (const s of salonStaff) {
+      const key = s.id || s._id;
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        unique.push(s);
+      }
+    }
+    return unique;
+  }, [state.staff, salonId]);
   const stations = useMemo(() => state.stations.filter((s) => s.salonId === salonId), [state.stations, salonId]);
 
   const addStaff = useCallback(

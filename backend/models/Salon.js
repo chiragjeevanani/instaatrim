@@ -23,6 +23,8 @@ const salonSchema = new mongoose.Schema({
     isVerified: { type: Boolean, default: false },
     verificationStatus: { type: String, default: 'Pending' },
     commissionRate: { type: String, default: 'Pending Admin Approval' },
+    isStoreOpen: { type: Boolean, default: true },
+    hasInstantBooking: { type: Boolean, default: true },
     rating: { type: Number, default: 0.0 },
     isBoosted: { type: Boolean, default: false },
     isSponsored: { type: Boolean, default: false },

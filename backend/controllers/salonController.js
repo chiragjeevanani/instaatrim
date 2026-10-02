@@ -137,12 +137,47 @@ exports.getSalonById = async (req, res) => {
 
 exports.getAllSalons = async (req, res) => {
     try {
+        const Category = require('../models/Category');
+
+        // Fetch ALL salons (no query filter first)
         const salons = await Salon.find({});
-        const mappedSalons = salons.map(salon => {
+
+        // Get all categories so we can resolve ObjectId <-> name
+        const allCategories = await Category.find({});
+        const catMap = {}; // _id string -> category object
+        allCategories.forEach(c => { catMap[c._id.toString()] = c; });
+
+        let mappedSalons = salons.map(salon => {
             const salonData = salon.toObject();
             salonData.id = salon._id.toString();
+
+            // If category is stored as ObjectId, resolve it to name/slug
+            if (salonData.category) {
+                const catId = salonData.category.toString();
+                const catObj = catMap[catId];
+                if (catObj) {
+                    salonData.categoryName = catObj.name;
+                    salonData.categorySlug = catObj.slug;
+                    salonData.category = catObj.name; // Normalize to name string
+                }
+            }
             return salonData;
         });
+
+        // Apply category filter if provided
+        if (req.query.category && req.query.category !== 'All') {
+            const filterSlug = req.query.category.toLowerCase();
+            mappedSalons = mappedSalons.filter(s => {
+                const catName = (s.categoryName || s.category || '').toLowerCase();
+                const catSlug = (s.categorySlug || '').toLowerCase();
+                return (
+                    catSlug.includes(filterSlug) ||
+                    catName.includes(filterSlug.replace(/-/g, ' ')) ||
+                    filterSlug.includes(catName.replace(/\s+/g, '-'))
+                );
+            });
+        }
+
         res.status(200).json({ success: true, data: mappedSalons });
     } catch (error) {
         console.error('Error getting all salons:', error);

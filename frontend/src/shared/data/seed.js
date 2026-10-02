@@ -965,56 +965,7 @@ export const DEFAULT_EDITORIAL_TRENDS = [
   }
 ];
 
-export const DEFAULT_TICKETS = [
-  {
-    id: 'TCK-201',
-    userId: 'cust-1',
-    userName: 'Ananya Sharma',
-    userRole: 'customer',
-    userContact: '+91 70007 92773',
-    salonId: 'sal-1',
-    salonName: 'Luxe Glow Salon & Spa',
-    category: 'Booking & Slot',
-    subject: 'Request to reschedule Sunday slot by 30 mins',
-    status: 'Open',
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    messages: [
-      {
-        sender: 'customer',
-        senderName: 'Ananya Sharma',
-        text: 'Hi, I got caught up in traffic and might reach 30 minutes late for my 11 AM appointment. Can salon please hold the station?',
-        timestamp: new Date(Date.now() - 7200000).toISOString()
-      },
-      {
-        sender: 'admin',
-        senderName: 'InstaaTrim HQ Support',
-        text: 'Hello Ananya, we have coordinated with Luxe Glow Salon. Chair 2 is reserved and your appointment window has been extended.',
-        timestamp: new Date(Date.now() - 3600000).toISOString()
-      }
-    ]
-  },
-  {
-    id: 'TCK-202',
-    userId: 'sal-1',
-    userName: 'Shalini Verma (Luxe Glow)',
-    userRole: 'salon',
-    userContact: '+91 98765 43210',
-    salonId: 'sal-1',
-    salonName: 'Luxe Glow Salon & Spa',
-    category: 'Payout & Billing',
-    subject: 'Query on commission deduction for festive package',
-    status: 'In Progress',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    messages: [
-      {
-        sender: 'salon',
-        senderName: 'Shalini Verma',
-        text: 'Our payout request PAY-101 has 12% deduction instead of promotional 10%. Please verify.',
-        timestamp: new Date(Date.now() - 86400000).toISOString()
-      }
-    ]
-  }
-];
+export const DEFAULT_TICKETS = [];
 
 export const DEFAULT_NOTIFICATIONS = [
   {

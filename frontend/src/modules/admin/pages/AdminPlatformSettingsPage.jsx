@@ -43,13 +43,14 @@ export const AdminPlatformSettingsPage = () => {
   });
 
   const [eliteForm, setEliteForm] = useState({
-    name: 'InstaaTrim Elite Club',
-    tagline: 'VIP Membership & Priority Beauty Access',
-    price: 299,
-    originalPrice: 999,
-    validityDays: 90,
-    discountPercent: 10,
-    perks: [],
+    title: 'Elite',
+    discountText: 'Get 10% OFF on all bookings',
+    plans: [
+      { planName: 'Monthly', durationMonths: 1, price: 99, originalPrice: 199 },
+      { planName: 'Quarterly', durationMonths: 3, price: 199, originalPrice: 499 },
+      { planName: 'Annual', durationMonths: 12, price: 299, originalPrice: 999 }
+    ],
+    benefits: [],
     isActive: true
   });
 
@@ -68,12 +69,8 @@ export const AdminPlatformSettingsPage = () => {
       setEliteForm((prev) => ({
         ...prev,
         ...elitePlan,
-        perks: elitePlan.perks || [
-          'Flat 10% Extra Discount on all bookings across all salons',
-          'Free cancellation up to 1 hour before scheduled time',
-          'Priority slot access & zero convenience charges',
-          'Free Safety & Sanitized Kit on every visit'
-        ]
+        plans: elitePlan.plans || prev.plans,
+        benefits: elitePlan.benefits || []
       }));
     }
   }, [elitePlan]);
@@ -97,12 +94,16 @@ export const AdminPlatformSettingsPage = () => {
   const handleSaveElite = async (e) => {
     e.preventDefault();
     setIsSavingElite(true);
+    // Parse numeric fields inside plans
+    const parsedPlans = eliteForm.plans.map(p => ({
+      ...p,
+      durationMonths: Number(p.durationMonths),
+      price: Number(p.price),
+      originalPrice: Number(p.originalPrice)
+    }));
     await updateElitePlan({
       ...eliteForm,
-      price: Number(eliteForm.price),
-      originalPrice: Number(eliteForm.originalPrice),
-      validityDays: Number(eliteForm.validityDays),
-      discountPercent: Number(eliteForm.discountPercent)
+      plans: parsedPlans
     });
     setIsSavingElite(false);
   };
@@ -111,7 +112,7 @@ export const AdminPlatformSettingsPage = () => {
     if (!newPerkText.trim()) return;
     setEliteForm((prev) => ({
       ...prev,
-      perks: [...prev.perks, newPerkText.trim()]
+      benefits: [...(prev.benefits || []), newPerkText.trim()]
     }));
     setNewPerkText('');
   };
@@ -119,7 +120,27 @@ export const AdminPlatformSettingsPage = () => {
   const handleRemovePerk = (index) => {
     setEliteForm((prev) => ({
       ...prev,
-      perks: prev.perks.filter((_, idx) => idx !== index)
+      benefits: (prev.benefits || []).filter((_, idx) => idx !== index)
+    }));
+  };
+
+  const updatePlanField = (index, field, value) => {
+    const updatedPlans = [...eliteForm.plans];
+    updatedPlans[index][field] = value;
+    setEliteForm(prev => ({ ...prev, plans: updatedPlans }));
+  };
+
+  const handleAddPlan = () => {
+    setEliteForm(prev => ({
+      ...prev,
+      plans: [...prev.plans, { planName: 'New Plan', durationMonths: 1, price: 0, originalPrice: 0 }]
+    }));
+  };
+
+  const handleRemovePlan = (index) => {
+    setEliteForm(prev => ({
+      ...prev,
+      plans: prev.plans.filter((_, idx) => idx !== index)
     }));
   };
 
@@ -257,6 +278,22 @@ export const AdminPlatformSettingsPage = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-stone-400 font-semibold mb-1">
+                  Support Ticket Topics (Comma Separated)
+                </label>
+                <input
+                  type="text"
+                  value={Array.isArray(settingsForm.supportTopics) ? settingsForm.supportTopics.join(', ') : (settingsForm.supportTopics || '')}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, supportTopics: e.target.value.split(',').map(s => s.trim()) })}
+                  className={`w-full p-2.5 rounded-xl border outline-none ${
+                    isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
+                  }`}
+                  placeholder="e.g. Booking Issue, Refund, Other"
+                />
+                <span className="text-[10px] text-stone-500 mt-0.5 block">Dropdown options for customer support modal</span>
+              </div>
+
               <div className="pt-2">
                 <button
                   type="submit"
@@ -292,70 +329,81 @@ export const AdminPlatformSettingsPage = () => {
             </div>
 
             <form onSubmit={handleSaveElite} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-stone-400 font-semibold mb-1">Pass Price (₹)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={eliteForm.price}
-                    onChange={(e) => setEliteForm({ ...eliteForm, price: e.target.value })}
-                    className={`w-full p-2.5 rounded-xl border outline-none font-bold text-amber-400 ${
-                      isLight ? 'bg-stone-50 border-stone-300' : 'bg-[#1a1a26] border-[#2d2d40]'
-                    }`}
-                  />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-stone-400 font-semibold">Membership Plans</label>
+                  <button type="button" onClick={handleAddPlan} className="text-amber-400 hover:text-amber-300 font-bold text-[11px] flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Add Plan
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-stone-400 font-semibold mb-1">Anchor / Strikethrough (₹)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={eliteForm.originalPrice}
-                    onChange={(e) => setEliteForm({ ...eliteForm, originalPrice: e.target.value })}
-                    className={`w-full p-2.5 rounded-xl border outline-none line-through text-stone-400 ${
-                      isLight ? 'bg-stone-50 border-stone-300' : 'bg-[#1a1a26] border-[#2d2d40]'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-stone-400 font-semibold mb-1">VIP Booking Discount (%)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={eliteForm.discountPercent}
-                    onChange={(e) => setEliteForm({ ...eliteForm, discountPercent: e.target.value })}
-                    className={`w-full p-2.5 rounded-xl border outline-none font-bold ${
-                      isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
-                    }`}
-                  />
-                  <span className="text-[10px] text-stone-500 mt-0.5 block">Applied across all salons for Elite members</span>
-                </div>
-
-                <div>
-                  <label className="block text-stone-400 font-semibold mb-1">Pass Validity (Days)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={eliteForm.validityDays}
-                    onChange={(e) => setEliteForm({ ...eliteForm, validityDays: e.target.value })}
-                    className={`w-full p-2.5 rounded-xl border outline-none ${
-                      isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
-                    }`}
-                  />
-                  <span className="text-[10px] text-stone-500 mt-0.5 block">e.g. 90 days = 3 Months Pass</span>
-                </div>
+                
+                {eliteForm.plans.map((plan, idx) => (
+                  <div key={idx} className={`p-3 rounded-xl border relative ${isLight ? 'bg-stone-50 border-stone-200' : 'bg-[#1a1a26] border-[#2d2d40]'}`}>
+                    <button type="button" onClick={() => handleRemovePlan(idx)} className="absolute top-3 right-3 text-stone-500 hover:text-red-400">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block text-stone-500 text-[10px] mb-1 uppercase tracking-wider font-bold">Plan Name</label>
+                        <input
+                          type="text"
+                          value={plan.planName}
+                          onChange={(e) => updatePlanField(idx, 'planName', e.target.value)}
+                          className={`w-full p-2 rounded-lg border outline-none font-bold text-amber-400 ${
+                            isLight ? 'bg-white border-stone-300' : 'bg-[#14141e] border-[#36364d]'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-stone-500 text-[10px] mb-1 uppercase tracking-wider font-bold">Validity (Months)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={plan.durationMonths}
+                          onChange={(e) => updatePlanField(idx, 'durationMonths', e.target.value)}
+                          className={`w-full p-2 rounded-lg border outline-none font-bold text-white ${
+                            isLight ? 'bg-white border-stone-300 text-stone-900' : 'bg-[#14141e] border-[#36364d]'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-stone-500 text-[10px] mb-1 uppercase tracking-wider font-bold">Pass Price (₹)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={plan.price}
+                          onChange={(e) => updatePlanField(idx, 'price', e.target.value)}
+                          className={`w-full p-2 rounded-lg border outline-none font-bold text-white ${
+                            isLight ? 'bg-white border-stone-300 text-stone-900' : 'bg-[#14141e] border-[#36364d]'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-stone-500 text-[10px] mb-1 uppercase tracking-wider font-bold">Strikethrough (₹)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={plan.originalPrice}
+                          onChange={(e) => updatePlanField(idx, 'originalPrice', e.target.value)}
+                          className={`w-full p-2 rounded-lg border outline-none line-through text-stone-400 ${
+                            isLight ? 'bg-white border-stone-300' : 'bg-[#14141e] border-[#36364d]'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Perks List */}
               <div>
                 <label className="block text-stone-400 font-semibold mb-1.5">Elite Perks Displayed to Customer</label>
                 <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {eliteForm.perks.map((perk, idx) => (
+                  {(eliteForm.benefits || []).map((perk, idx) => (
                     <div
                       key={idx}
                       className={`p-2 rounded-lg border flex items-center justify-between gap-2 text-[11px] ${

@@ -6,7 +6,7 @@ const salonSchema = new mongoose.Schema({
     mobile: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // bcrypt hashed
-    category: { type: String },
+    category: { type: mongoose.Schema.Types.Mixed }, // Can be ObjectId ref or plain string
     city: { type: String },
     area: { type: String },
     address: { type: String },

@@ -224,7 +224,6 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
   };
 
   const handleProceedToCheckout = () => {
-    setIsBookingFlowOpen(false);
     navigate('/customer/checkout');
   };
 
@@ -345,13 +344,16 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                         <span className="text-[10px] text-stone-400">Total duration: ~{durationMinutes} mins</span>
                       </div>
 
-                      {cartItems.map((item) => (
+                      {cartItems.flatMap((item) => 
+                        Array.from({ length: item.quantity || 1 }).map((_, idx) => (
                         <div
-                          key={item.id}
+                          key={`${item.id}-${idx}`}
                           className="bg-white border border-purple-100 rounded-xl p-3 flex items-start justify-between gap-3 shadow-xs"
                         >
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-bold text-stone-900 leading-snug">{item.name || item.title}</h4>
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="text-xs font-bold text-stone-900 leading-snug">{item.name || item.title}</h4>
+                            </div>
                             <div className="flex items-center gap-2 mt-1 text-[10.5px] text-stone-500">
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3 text-stone-400" />
@@ -374,7 +376,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      ))}
+                      )))}
                     </div>
 
                     {/* Coupons & Promo Box */}
@@ -737,15 +739,18 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                     Services ({cartItems.length})
                   </span>
                   <div className="divide-y divide-stone-100">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="py-2 flex items-center justify-between text-xs">
+                    {cartItems.flatMap((item) => 
+                      Array.from({ length: item.quantity || 1 }).map((_, idx) => (
+                      <div key={`${item.id}-${idx}`} className="py-2 flex items-center justify-between text-xs">
                         <div>
-                          <p className="font-bold text-stone-900 text-xs">{item.name || item.title}</p>
+                          <p className="font-bold text-stone-900 text-xs">
+                            {item.name || item.title}
+                          </p>
                           <p className="text-[10px] text-stone-500">{item.duration}</p>
                         </div>
                         <span className="font-black text-stone-900 text-xs">₹{item.price}</span>
                       </div>
-                    ))}
+                    )))}
                   </div>
                 </div>
 

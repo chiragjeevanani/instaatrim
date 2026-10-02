@@ -46,7 +46,7 @@ export const AdminTicketsPage = () => {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-[11px] text-purple-400 font-bold">{t.id}</span>
+                    <span className="font-mono text-[11px] text-purple-400 font-bold">TKT-{t.id.slice(-6).toUpperCase()}</span>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                         isOpen
@@ -82,7 +82,7 @@ export const AdminTicketsPage = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-bold text-white">{selectedTicket.subject || 'Support Query'}</h2>
-                    <span className="font-mono text-xs text-purple-400">({selectedTicket.id})</span>
+                    <span className="font-mono text-xs text-purple-400">(TKT-{selectedTicket.id.slice(-6).toUpperCase()})</span>
                   </div>
                   <div className="text-xs text-stone-400 mt-1">
                     From: <span className="text-stone-200">{selectedTicket.userName || selectedTicket.userId}</span> •

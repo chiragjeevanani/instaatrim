@@ -87,4 +87,20 @@ const getAllCustomers = async (req, res) => {
     }
 };
 
-module.exports = { getMyProfile, updateMyProfile, getAllCustomers };
+const upgradeToElite = async (req, res) => {
+    try {
+        const customer = await Customer.findByIdAndUpdate(
+            req.params.id,
+            { is_elite: true },
+            { new: true }
+        );
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'Customer not found' });
+        }
+        res.status(200).json({ success: true, data: customer });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { getMyProfile, updateMyProfile, getAllCustomers, upgradeToElite };

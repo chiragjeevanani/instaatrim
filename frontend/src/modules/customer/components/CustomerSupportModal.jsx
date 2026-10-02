@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
 import { useCustomer } from '../context/CustomerContext';
+import { useAppData } from '../../../shared/store/AppDataProvider';
 import { HelpCircle, Send, X, ShieldAlert, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const CustomerSupportModal = ({ isOpen, onClose }) => {
   const { createSupportTicket } = useCustomer();
+  const { state } = useAppData();
 
-  const [category, setCategory] = useState('Booking & Rescheduling');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const categories = [
+  const categories = state.platformSettings?.supportTopics || [
     'Booking & Rescheduling',
     'Payment & Refund Dispute',
     'Salon Experience & Hygiene',
     'Elite Membership Inquiry',
     'App / Technical Support'
   ];
+
+  const [category, setCategory] = useState(categories[0] || 'General Inquiry');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -48,7 +48,7 @@ export const computeDiscount = (coupon, subtotal) => {
   if (!coupon) return 0;
   if (coupon.discountPercent) {
     const calculated = (subtotal * coupon.discountPercent) / 100;
-    return Math.min(calculated, coupon.maxDiscount || calculated);
+    return calculated;
   }
   if (coupon.flatDiscount) return Math.min(coupon.flatDiscount, subtotal);
   return 0;

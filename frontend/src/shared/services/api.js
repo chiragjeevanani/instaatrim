@@ -24,23 +24,51 @@ const clone = (v) => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
 // Salons
 // =============================================================================
 const salons = {
-  list: (filters = {}) =>
-    withLatency(() => {
-      let result = getState().salons;
+  list: async (filters = {}) => {
+    try {
+      let url = `${API_BASE}/salons`;
+      const params = new URLSearchParams();
+      if (filters.category && filters.category !== 'All') {
+        params.set('category', filters.category);
+      }
+      if ([...params].length) url += `?${params.toString()}`;
+
+      const res = await fetch(url);
+      const json = await res.json();
+      const data = (json.data || []).map(s => ({ ...s, id: s._id || s.id }));
+      // Hydrate frontend store for caching
+      dispatch({ type: 'SET_SALONS', payload: data });
+      return data;
+    } catch (e) {
+      console.error(e);
+      // Fallback to cache if backend fails
+      let result = getState().salons || [];
       if (filters.category && filters.category !== 'All') {
         result = result.filter(
-          (s) => s.category.toLowerCase() === filters.category.toLowerCase() || s.category.toLowerCase() === 'unisex'
+          (s) => s.category?.toLowerCase() === filters.category.toLowerCase() || s.category?.toLowerCase() === 'unisex'
         );
       }
       return clone(result);
-    }),
+    }
+  },
 
-  get: (salonId) =>
-    withLatency(() => {
-      const salon = getState().salons.find((s) => s.id === salonId);
+  get: async (salonId) => {
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`);
+      const json = await res.json();
+      if (!res.ok) throw new ApiError(json.message || `Salon ${salonId} not found`, 'NOT_FOUND');
+      
+      const data = json.data;
+      dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: data } });
+      return data;
+    } catch (e) {
+      console.error(e);
+      // Fallback
+      const salon = (getState().salons || []).find((s) => s.id === salonId);
       if (!salon) throw new ApiError(`Salon ${salonId} not found`, 'NOT_FOUND');
       return clone(salon);
-    }),
+    }
+  },
 
   patch: (salonId, patch) =>
     withLatency(() => {
@@ -507,8 +535,21 @@ const bookings = {
     }
   },
 
-  updateStatus: (bookingId, status, extra = {}, { force = false } = {}) =>
-    withLatency(() => {
+  updateStatus: async (bookingId, status, extra = {}, { force = false } = {}) => {
+    try {
+      const res = await fetch(`${API_BASE}/bookings/${bookingId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, ...extra })
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Failed to update status');
+
+      const updatedBooking = { ...json.data, id: json.data._id };
+      dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId, status: updatedBooking.status, extra, force } });
+      return updatedBooking;
+    } catch (e) {
+      console.error('Real status update failed, falling back to mock:', e);
       const current = getState().bookings.find((b) => b.id === bookingId);
       if (!current) throw new ApiError(`Booking ${bookingId} not found`, 'NOT_FOUND');
       if (!force && !canTransition(current.status, status)) {
@@ -516,7 +557,8 @@ const bookings = {
       }
       dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId, status, extra, force } });
       return clone({ ...current, status, ...extra });
-    }),
+    }
+  },
 
   patch: (bookingId, patch) =>
     withLatency(() => {
@@ -525,13 +567,27 @@ const bookings = {
       return clone({ ...current, ...patch });
     }),
 
-  reschedule: (bookingId, { dateKey: newDateKey, time }) =>
-    withLatency(() => {
+  reschedule: async (bookingId, { dateKey: newDateKey, time }) => {
+    try {
+      const res = await fetch(`${API_BASE}/bookings/${bookingId}/reschedule`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dateKey: newDateKey, time })
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Failed to reschedule booking');
+      
+      const updatedBooking = { ...json.data, id: json.data._id };
+      dispatch({ type: 'PATCH_BOOKING', payload: { bookingId, patch: updatedBooking } });
+      return updatedBooking;
+    } catch(e) {
+      console.error('Real booking reschedule failed, falling back to mock:', e);
       const patch = { dateKey: newDateKey, time, status: BOOKING_STATUS.CONFIRMED };
       dispatch({ type: 'PATCH_BOOKING', payload: { bookingId, patch } });
       const current = getState().bookings.find((b) => b.id === bookingId);
       return clone({ ...current, ...patch });
-    }),
+    }
+  },
 
   addRating: (bookingId, { rating, review }) =>
     withLatency(() => {
@@ -544,37 +600,67 @@ const bookings = {
 // Offers & Coupons
 // =============================================================================
 const offers = {
-  listBySalon: (salonId) => withLatency(() => clone(getState().offers.filter((o) => o.salonId === salonId))),
+  listBySalon: async (salonId) => {
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`);
+      const json = await res.json();
+      const salon = json.data;
+      return clone((salon?.offers || []));
+    } catch (e) {
+      console.error(e);
+      return clone(getState().offers.filter((o) => o.salonId === salonId));
+    }
+  },
 
-  add: (salonId, data) =>
-    withLatency(() => {
-      const offer = {
-        id: newOfferId(),
-        salonId,
-        isActive: true,
-        redeemedCount: 0,
-        approvalStatus: 'pending', // salon-created offers await admin approval — SRS §8.4
-        serviceIds: [],
-        customerSegment: 'all',
-        ...data
-      };
-      dispatch({ type: 'ADD_OFFER', payload: offer });
-      return clone(offer);
-    }),
+  add: async (salonId, data) => {
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}/offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        const offer = { ...json.data, id: json.data._id || json.data.id, salonId };
+        dispatch({ type: 'ADD_OFFER', payload: offer });
+        return clone(offer);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    // Fallback to local mock
+    const offer = {
+      id: newOfferId(), salonId, isActive: true, redeemedCount: 0,
+      approvalStatus: 'pending', serviceIds: [], customerSegment: 'all', ...data
+    };
+    dispatch({ type: 'ADD_OFFER', payload: offer });
+    return clone(offer);
+  },
 
-  listAll: () => withLatency(() => clone(getState().offers)),
+  listAll: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/salons`);
+      const json = await res.json();
+      const allOffers = [];
+      (json.data || []).forEach(salon => {
+        (salon.offers || []).forEach(o => allOffers.push({ ...o, salonId: salon._id || salon.id }));
+      });
+      return allOffers;
+    } catch (e) {
+      console.error(e);
+      return clone(getState().offers);
+    }
+  },
 
-  approve: (offerId) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'approved', isActive: true } } });
-      return clone(getState().offers.find((o) => o.id === offerId));
-    }),
+  approve: async (offerId) => {
+    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'approved', isActive: true } } });
+    return clone(getState().offers.find((o) => o.id === offerId));
+  },
 
-  reject: (offerId, reason = 'Rejected by administrator') =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'rejected', isActive: false, rejectionReason: reason } } });
-      return clone(getState().offers.find((o) => o.id === offerId));
-    })
+  reject: async (offerId, reason = 'Rejected by administrator') => {
+    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'rejected', isActive: false, rejectionReason: reason } } });
+    return clone(getState().offers.find((o) => o.id === offerId));
+  }
 };
 
 const coupons = {
@@ -630,40 +716,122 @@ const coupons = {
 // Reviews
 // =============================================================================
 const reviews = {
-  listBySalon: (salonId) => withLatency(() => clone(getState().reviews.filter((r) => r.salonId === salonId))),
+  listBySalon: async (salonId) => {
+    try {
+      const res = await fetch(`${API_BASE}/reviews/salon/${salonId}`);
+      const json = await res.json();
+      if (res.ok) {
+        return (json.data || []).map(r => ({ ...r, id: r._id || r.id }));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return clone(getState().reviews.filter((r) => r.salonId === salonId));
+  },
 
-  listAll: () => withLatency(() => clone(getState().reviews)),
+  listAll: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/reviews`);
+      const json = await res.json();
+      if (res.ok) {
+        return (json.data || []).map(r => ({ ...r, id: r._id || r.id }));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return clone(getState().reviews);
+  },
 
-  add: (salonId, data) =>
-    withLatency(() => {
-      const review = { id: newReviewId(), salonId, reply: null, verifiedBooking: true, date: 'Just now', ...data };
-      dispatch({ type: 'ADD_REVIEW', payload: review });
-      return clone(review);
-    }),
+  add: async (salonId, data) => {
+    try {
+      const token = localStorage.getItem('instaatrim_token');
+      const res = await fetch(`${API_BASE}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ salonId, ...data })
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        const review = { ...json.data, id: json.data._id || json.data.id };
+        dispatch({ type: 'ADD_REVIEW', payload: review });
+        return clone(review);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    const review = { id: newReviewId(), salonId, reply: null, verifiedBooking: true, date: 'Just now', ...data };
+    dispatch({ type: 'ADD_REVIEW', payload: review });
+    return clone(review);
+  },
 
-  reply: (reviewId, replyText) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { reply: replyText } } });
-      return true;
-    }),
+  reply: async (reviewId, replyText) => {
+    try {
+      const res = await fetch(`${API_BASE}/reviews/${reviewId}/reply`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reply: replyText })
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { reply: replyText } } });
+        return true;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { reply: replyText } } });
+    return true;
+  },
 
-  flag: (reviewId, reason = 'Flagged for content review') =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: true, flagReason: reason } } });
-      return true;
-    }),
+  flag: async (reviewId, reason = 'Flagged for content review') => {
+    try {
+      const res = await fetch(`${API_BASE}/reviews/${reviewId}/flag`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFlagged: true, flagReason: reason })
+      });
+      if (res.ok) {
+        dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: true, flagReason: reason } } });
+        return true;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: true, flagReason: reason } } });
+    return true;
+  },
 
-  unflag: (reviewId) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: false, flagReason: null } } });
-      return true;
-    }),
+  unflag: async (reviewId) => {
+    try {
+      const res = await fetch(`${API_BASE}/reviews/${reviewId}/flag`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFlagged: false, flagReason: null })
+      });
+      if (res.ok) {
+        dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: false, flagReason: null } } });
+        return true;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    dispatch({ type: 'UPDATE_REVIEW', payload: { reviewId, patch: { isFlagged: false, flagReason: null } } });
+    return true;
+  },
 
-  remove: (reviewId) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_REVIEW', payload: { reviewId } });
-      return true;
-    })
+  remove: async (reviewId) => {
+    try {
+      const res = await fetch(`${API_BASE}/reviews/${reviewId}`, { method: 'DELETE' });
+      if (res.ok) {
+        dispatch({ type: 'DELETE_REVIEW', payload: { reviewId } });
+        return true;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    dispatch({ type: 'DELETE_REVIEW', payload: { reviewId } });
+    return true;
+  }
 };
 
 // =============================================================================
@@ -763,34 +931,88 @@ const notifications = {
 // Support tickets (Phase 4)
 // =============================================================================
 const tickets = {
-  listByUser: (userId) => withLatency(() => clone(getState().tickets.filter((t) => t.userId === userId))),
+  listByUser: async (userId) => {
+    try {
+      const token = localStorage.getItem('instaatrim_token');
+      const res = await fetch(`${API_BASE}/tickets/user/${userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const json = await res.json();
+      if (res.ok) {
+        const mapped = (json.data || []).map(t => ({ ...t, id: t._id || t.id }));
+        return mapped;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return clone(getState().tickets.filter((t) => t.userId === userId));
+  },
 
-  listAll: () => withLatency(() => clone(getState().tickets)),
+  listAll: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/tickets`, { headers: authHeaders() });
+      const json = await res.json();
+      if (res.ok) {
+        const mapped = (json.data || []).map(t => ({ ...t, id: t._id || t.id }));
+        dispatch({ type: 'SET_TICKETS', payload: mapped });
+        return mapped;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return clone(getState().tickets);
+  },
 
-  create: (data) =>
-    withLatency(() => {
-      const ticket = {
-        id: newTicketId(),
-        status: 'Open',
-        createdAt: new Date().toISOString(),
-        messages: [],
-        ...data
-      };
-      dispatch({ type: 'ADD_TICKET', payload: ticket });
-      return clone(ticket);
-    }),
+  create: async (data) => {
+    try {
+      const token = localStorage.getItem('instaatrim_token');
+      const res = await fetch(`${API_BASE}/tickets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        const ticket = { ...json.data, id: json.data._id || json.data.id };
+        dispatch({ type: 'ADD_TICKET', payload: ticket });
+        return clone(ticket);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    // Fallback local
+    const ticket = { id: newTicketId(), status: 'Open', createdAt: new Date().toISOString(), messages: [], ...data };
+    dispatch({ type: 'ADD_TICKET', payload: ticket });
+    return clone(ticket);
+  },
 
-  updateStatus: (ticketId, status) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_TICKET', payload: { ticketId, patch: { status } } });
-      return true;
-    }),
+  updateStatus: async (ticketId, status) => {
+    try {
+      await fetch(`${API_BASE}/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ status })
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    dispatch({ type: 'UPDATE_TICKET', payload: { ticketId, patch: { status } } });
+    return true;
+  },
 
-  addMessage: (ticketId, message) =>
-    withLatency(() => {
-      dispatch({ type: 'APPEND_TICKET_MESSAGE', payload: { ticketId, message } });
-      return true;
-    })
+  addMessage: async (ticketId, message) => {
+    try {
+      await fetch(`${API_BASE}/tickets/${ticketId}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(message)
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    dispatch({ type: 'APPEND_TICKET_MESSAGE', payload: { ticketId, message } });
+    return true;
+  }
 };
 
 // =============================================================================
@@ -1486,26 +1708,70 @@ const payouts = {
 // Platform Commercial & Operational Settings
 // =============================================================================
 const platformSettings = {
-  get: () => withLatency(() => clone(getState().platformSettings)),
-
-  update: (patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_PLATFORM_SETTINGS', payload: patch });
+  get: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/platform-settings`);
+      const json = await res.json();
+      const data = json.data || {};
+      dispatch({ type: 'UPDATE_PLATFORM_SETTINGS', payload: data });
+      return data;
+    } catch (e) {
+      console.error(e);
       return clone(getState().platformSettings);
-    })
+    }
+  },
+
+  update: async (patch) => {
+    try {
+      const res = await fetch(`${API_BASE}/platform-settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch)
+      });
+      const json = await res.json();
+      const data = json.data || patch;
+      dispatch({ type: 'UPDATE_PLATFORM_SETTINGS', payload: data });
+      return data;
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  }
 };
 
 // =============================================================================
 // Elite Membership Plan
 // =============================================================================
 const elitePlan = {
-  get: () => withLatency(() => clone(getState().elitePlan)),
-
-  update: (patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_ELITE_PLAN', payload: patch });
+  get: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/page-campaigns/elite`);
+      const json = await res.json();
+      const data = json.data || {};
+      dispatch({ type: 'UPDATE_ELITE_PLAN', payload: data });
+      return data;
+    } catch (e) {
+      console.error(e);
       return clone(getState().elitePlan);
-    })
+    }
+  },
+
+  update: async (patch) => {
+    try {
+      const res = await fetch(`${API_BASE}/page-campaigns/elite`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(patch)
+      });
+      const json = await res.json();
+      const data = json.data || {};
+      dispatch({ type: 'UPDATE_ELITE_PLAN', payload: data });
+      return data;
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  }
 };
 
 // =============================================================================

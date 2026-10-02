@@ -40,14 +40,14 @@ const resolveSeedBookingDates = (bookings) =>
 export const buildInitialState = () => ({
   categories: CATEGORIES.map((c) => ({ ...c, isActive: c.isActive !== false })),
   heroBanners: BANNERS.map((b) => ({ ...b, isActive: b.isActive !== false })),
-  salons: SALONS,
-  services: SERVICES,
-  staff: STAFF,
-  stations: STATIONS,
-  bookings: resolveSeedBookingDates(BOOKINGS),
-  offers: OFFERS,
+  salons: [],
+  services: [],
+  staff: [],
+  stations: [],
+  bookings: [],
+  offers: [],
   coupons: COUPONS,
-  reviews: REVIEWS,
+  reviews: [],
   locations: LOCATIONS,
   advertisements: TOP_ADVERTISEMENTS.map((ad) => ({ ...ad, isActive: ad.isActive !== false })),
   brandPartners: BRAND_PARTNERS.map((bp) => ({ ...bp, isActive: bp.isActive !== false })),
@@ -60,7 +60,7 @@ export const buildInitialState = () => ({
   trendsItems: [],
   holds: [],
   notifications: DEFAULT_NOTIFICATIONS,
-  tickets: DEFAULT_TICKETS,
+  tickets: [],
   customers: [],
   currentCustomerId: null,
   partnerSession: null, // { salonId } once a partner logs in
@@ -237,7 +237,7 @@ export function appReducer(state, action) {
     case 'SET_SERVICES': {
       const incoming = Array.isArray(action.payload) ? action.payload : [];
       if (incoming.length === 0) return { ...state };
-      
+
       const existing = [...(state.services || [])];
       for (const item of incoming) {
         const id = item.id || item._id;
@@ -267,7 +267,7 @@ export function appReducer(state, action) {
         services: state.services.filter((s) => s.id !== action.payload.serviceId)
       };
     }
-    
+
     // ---------------- Ads ----------------
     case 'SET_ADS': {
       return { ...state, advertisements: action.payload };
@@ -583,6 +583,9 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Support tickets (Phase 4) ----------------
+    case 'SET_TICKETS': {
+      return { ...state, tickets: action.payload };
+    }
     case 'ADD_TICKET': {
       return { ...state, tickets: [action.payload, ...state.tickets] };
     }
@@ -730,6 +733,9 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Reviews & Salon Replies ----------------
+    case 'SET_REVIEWS': {
+      return { ...state, reviews: action.payload };
+    }
     case 'ADD_REVIEW': {
       return { ...state, reviews: [action.payload, ...(state.reviews || [])] };
     }
@@ -738,6 +744,20 @@ export function appReducer(state, action) {
       return {
         ...state,
         reviews: (state.reviews || []).map((r) => (r.id === reviewId ? { ...r, reply } : r))
+      };
+    }
+    case 'UPDATE_REVIEW': {
+      const { reviewId, patch } = action.payload;
+      return {
+        ...state,
+        reviews: (state.reviews || []).map((r) => (r.id === reviewId ? { ...r, ...patch } : r))
+      };
+    }
+    case 'DELETE_REVIEW': {
+      const { reviewId } = action.payload;
+      return {
+        ...state,
+        reviews: (state.reviews || []).filter((r) => r.id !== reviewId)
       };
     }
 

@@ -1,16 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { X, Copy, Share2, Gift, Check } from 'lucide-react';
-import { useState } from 'react';
 
 export const ReferEarnModal = () => {
   const { isReferModalOpen, setIsReferModalOpen, user, showToast } = useCustomer();
   const [copied, setCopied] = useState(false);
+  const [campaign, setCampaign] = useState(null);
+
+  useEffect(() => {
+    if (isReferModalOpen) {
+      fetch('http://localhost:6200/api/referral/active')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setCampaign(data.data);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isReferModalOpen]);
 
   if (!isReferModalOpen) return null;
 
-  const referralCode = user?.referralCode || 'INSTATRIM50';
+  const referralCode = user?.referralCode || campaign?.defaultCode || 'INSTATRIM50';
+  const title = campaign?.title || 'Refer & Earn ₹150';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralCode);
@@ -52,10 +66,14 @@ export const ReferEarnModal = () => {
           </div>
 
           <div>
-            <h3 className="text-base font-bold text-stone-900">Refer &amp; Earn ₹150</h3>
-            <p className="text-[11px] text-stone-600 mt-1 leading-relaxed">
-              Share your link with friends. They get <span className="font-bold text-brand-maroon">₹100 OFF</span>, and you get <span className="font-bold text-amber-700">₹150 credits</span>!
-            </p>
+            <h3 className="text-base font-bold text-stone-900">{title}</h3>
+            {campaign ? (
+              <p className="text-[11px] text-stone-600 mt-1 leading-relaxed">{campaign.description}</p>
+            ) : (
+              <p className="text-[11px] text-stone-600 mt-1 leading-relaxed">
+                Share your link with friends. They get <span className="font-bold text-brand-maroon">₹100 OFF</span>, and you get <span className="font-bold text-amber-700">₹150 credits</span>!
+              </p>
+            )}
           </div>
 
           {/* Code Box */}

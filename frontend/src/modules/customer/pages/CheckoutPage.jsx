@@ -43,6 +43,34 @@ export const CheckoutPage = () => {
   const [holdExpired, setHoldExpired] = useState(false);
   const [showSuccessTick, setShowSuccessTick] = useState(false);
 
+  if (showSuccessTick) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 200 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+            <svg
+              className="w-12 h-12 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="3"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-black text-stone-900">
+            Booking Confirmed!
+          </h2>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] max-w-[480px] mx-auto p-6 flex flex-col items-center justify-center text-center">
@@ -279,15 +307,18 @@ export const CheckoutPage = () => {
             Services ({cartItems.length})
           </span>
           <div className="divide-y divide-stone-100">
-            {cartItems.map((item) => (
-              <div key={item.id} className="py-1.5 flex items-center justify-between text-xs">
+            {cartItems.flatMap((item) => 
+              Array.from({ length: item.quantity || 1 }).map((_, idx) => (
+              <div key={`${item.id}-${idx}`} className="py-1.5 flex items-center justify-between text-xs">
                 <div>
-                  <p className="font-bold text-stone-900 text-xs">{item.name || item.title}</p>
+                  <p className="font-bold text-stone-900 text-xs">
+                    {item.name || item.title}
+                  </p>
                   <p className="text-[10px] text-stone-500">{item.duration}</p>
                 </div>
                 <span className="font-black text-stone-900 text-xs">₹{item.price}</span>
               </div>
-            ))}
+            )))}
           </div>
         </div>
 
@@ -335,7 +366,7 @@ export const CheckoutPage = () => {
         <div className="bg-stone-200/60 rounded-xl p-2.5 flex items-start gap-2 text-xs text-stone-600">
           <AlertCircle className="w-3.5 h-3.5 text-brand-maroon shrink-0 mt-0.5" />
           <p className="text-[10.5px] text-stone-600 leading-snug">
-            Free cancellation up to 1 hr before your slot with 100% full refund guarantee.
+            Free cancellation up to {state.platformSettings?.cancellationFreeHours || 1} hr before your slot with 100% full refund guarantee.
           </p>
         </div>
 
@@ -350,6 +381,23 @@ export const CheckoutPage = () => {
             <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
               <span>Coupon Savings ({appliedCoupon?.code})</span>
               <span>-₹{cartSummary.discount}</span>
+            </div>
+          )}
+          {cartSummary.taxAmount > 0 && (
+            <div className="flex justify-between text-stone-600 text-[11px]">
+              <span>Taxes & GST ({cartSummary.taxRatePercent}%)</span>
+              <span>₹{cartSummary.taxAmount}</span>
+            </div>
+          )}
+          {cartSummary.convenienceFee > 0 ? (
+            <div className="flex justify-between text-stone-600 text-[11px]">
+              <span>Platform Fee</span>
+              <span>₹{cartSummary.convenienceFee}</span>
+            </div>
+          ) : (
+            <div className="flex justify-between text-stone-600 text-[11px]">
+              <span>Platform Fee</span>
+              <span className="text-emerald-600 font-bold">FREE (Elite)</span>
             </div>
           )}
           <div className="flex justify-between text-stone-600 text-[11px]">
@@ -391,40 +439,6 @@ export const CheckoutPage = () => {
         </button>
       </div>
 
-      {/* Full Screen Zomato Style Success Animation */}
-      {showSuccessTick && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
-          <motion.div
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 15, stiffness: 200 }}
-            className="flex flex-col items-center gap-4"
-          >
-            <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-              <motion.svg
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="w-12 h-12 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="3"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </motion.svg>
-            </div>
-            <motion.h2
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-2xl font-black text-stone-900"
-            >
-              Booking Confirmed!
-            </motion.h2>
-          </motion.div>
-        </div>
-      )}
     </motion.div>
   );
 };

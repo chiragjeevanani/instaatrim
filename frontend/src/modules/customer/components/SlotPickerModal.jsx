@@ -285,14 +285,20 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
                     {daySlots.map((slot) => (
                       <button
                         key={slot.time}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`py-1.5 px-1 text-[11px] rounded-lg font-medium text-center border transition-all flex items-center justify-center gap-1 ${selectedSlot?.time === slot.time
-                          ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
-                          : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+                        disabled={!slot.available}
+                        onClick={() => slot.available && setSelectedSlot(slot)}
+                        className={`py-1.5 px-1 rounded-lg text-center border transition-all flex flex-col items-center justify-center gap-0.5 ${!slot.available
+                          ? 'border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed opacity-75'
+                          : selectedSlot?.time === slot.time
+                            ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
+                            : 'border-stone-300 bg-white text-stone-700 hover:border-brand-maroon/50'
                           }`}
                       >
-                        {selectedSlot?.time === slot.time && <CheckCircle2 className="w-3 h-3" />}
-                        <span>{slot.time}</span>
+                        <div className="flex items-center gap-1 text-[11px] font-medium">
+                          {selectedSlot?.time === slot.time && <CheckCircle2 className="w-3 h-3" />}
+                          <span className={!slot.available ? 'line-through' : ''}>{slot.time}</span>
+                        </div>
+                        {!slot.available && <span className="text-[8px] uppercase tracking-widest font-black text-rose-500/80">Booked</span>}
                       </button>
                     ))}
                   </div>

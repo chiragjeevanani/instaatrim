@@ -12,4 +12,7 @@ router.get('/me', protectCustomer, getMyProfile);
 // PUT  /api/customers/me  → update own profile (protected)
 router.put('/me', protectCustomer, updateMyProfile);
 
+// PATCH /api/customers/:id/elite → upgrade to elite
+router.patch('/:id/elite', require('../controllers/customerController').upgradeToElite);
+
 module.exports = router;

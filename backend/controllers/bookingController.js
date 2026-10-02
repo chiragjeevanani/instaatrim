@@ -22,6 +22,15 @@ exports.createBooking = async (req, res) => {
     }
 };
 
+exports.getAllBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find().sort({ createdAt: -1 });
+        res.status(200).json({ success: true, data: bookings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.getCustomerBookings = async (req, res) => {
     try {
         const { customerId } = req.params;
@@ -51,6 +60,23 @@ exports.updateBookingStatus = async (req, res) => {
         if (cancelReason) updateData.cancelReason = cancelReason;
 
         const booking = await Booking.findByIdAndUpdate(id, updateData, { new: true });
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        res.status(200).json({ success: true, data: booking });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.rescheduleBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { dateKey, time } = req.body;
+        
+        const booking = await Booking.findByIdAndUpdate(id, { dateKey, time, status: 'Confirmed' }, { new: true });
         
         if (!booking) {
             return res.status(404).json({ success: false, message: 'Booking not found' });

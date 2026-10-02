@@ -93,15 +93,7 @@ export const CustomerProvider = ({ children }) => {
       .catch(console.error);
 
     // Fetch all ads
-    fetch(`${API_BASE}/ads`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          const mappedAds = json.data.map(a => ({ ...a, id: a._id }));
-          dispatch({ type: 'SET_ADS', payload: mappedAds });
-        }
-      })
-      .catch(console.error);
+    api.ads.getAll().catch(console.error);
 
     // Fetch all categories
     fetch(`${API_BASE}/categories`)
@@ -120,6 +112,22 @@ export const CustomerProvider = ({ children }) => {
         setAvailableCoupons(data.filter(c => c.isActive));
       }
     }).catch(console.error);
+
+    // Fetch Editorial (Skincare & Trends)
+    api.editorial.getSkincare().then((data) => {
+      if (Array.isArray(data)) {
+        dispatch({ type: 'SET_SKINCARE_ITEMS', payload: data.map(i => ({ ...i, id: i._id || i.id })) });
+      }
+    }).catch(console.error);
+
+    api.editorial.getTrends().then((data) => {
+      if (Array.isArray(data)) {
+        dispatch({ type: 'SET_TRENDS_ITEMS', payload: data.map(i => ({ ...i, id: i._id || i.id })) });
+      }
+    }).catch(console.error);
+
+    // Fetch platform settings for commercial rules
+    api.platformSettings.get().catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -127,6 +135,12 @@ export const CustomerProvider = ({ children }) => {
     () => state.customers.find((c) => c.id === state.currentCustomerId) || state.customers[0] || null,
     [state.customers, state.currentCustomerId]
   );
+
+  useEffect(() => {
+    if (user?.id) {
+      api.bookings.listByCustomer(user.id).catch(console.error);
+    }
+  }, [user?.id]);
 
   // ---------------- Locations (shared store) ----------------
   const savedLocations = useMemo(
@@ -308,6 +322,8 @@ export const CustomerProvider = ({ children }) => {
     setCartItems([]);
     setAppliedCoupon(null);
     setPreferredProduct(null);
+    setIsCartOpen(false);
+    setIsBookingFlowOpen(false);
     localStorage.removeItem('instaatrim_cart');
     localStorage.removeItem('instaatrim_applied_coupon');
   }, []);
@@ -342,10 +358,21 @@ export const CustomerProvider = ({ children }) => {
     if (appliedCoupon && subtotal >= (appliedCoupon.minOrder || 0)) {
       discount = computeDiscount(appliedCoupon, subtotal);
     }
-    const finalAmount = Math.max(0, subtotal - discount);
-    const totalSavings = originalSubtotal - finalAmount;
-    return { subtotal, originalSubtotal, discount, finalAmount, totalSavings };
-  }, [cartItems, appliedCoupon]);
+    
+    // Dynamic rules from DB Platform Settings
+    const settings = state.platformSettings || {};
+    // Elite members get 0 convenience fee
+    const convenienceFee = user?.is_elite ? 0 : (Number(settings.convenienceFee) || 0);
+    const taxRatePercent = Number(settings.taxRatePercent) || 0;
+    
+    const taxableAmount = Math.max(0, subtotal - discount);
+    const taxAmount = Math.round((taxableAmount * taxRatePercent) / 100);
+
+    const finalAmount = taxableAmount + taxAmount + convenienceFee;
+    const totalSavings = originalSubtotal - taxableAmount;
+    
+    return { subtotal, originalSubtotal, discount, taxAmount, taxRatePercent, convenienceFee, finalAmount, totalSavings };
+  }, [cartItems, appliedCoupon, state.platformSettings, user?.is_elite]);
 
   // ---------------- Bookings (shared store) ----------------
   const bookings = useMemo(() => user ? state.bookings.filter((b) => b.customerId === user.id) : [], [state.bookings, user?.id]);

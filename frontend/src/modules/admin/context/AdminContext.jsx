@@ -3,6 +3,8 @@ import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { ADMIN_CREDENTIALS } from '../../../shared/data/seed';
 
+import { io } from 'socket.io-client';
+
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
@@ -54,8 +56,44 @@ export const AdminProvider = ({ children }) => {
           }
         })
         .catch(console.error);
+
+      // Fetch elite plan config
+      api.elitePlan.get().catch(console.error);
+      
+      // Fetch all bookings for admin analytics
+      fetch('http://localhost:6200/api/bookings/all')
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            const bks = json.data.map(b => ({ ...b, id: b._id }));
+            dispatch({ type: 'SET_BOOKINGS', payload: bks });
+          }
+        })
+        .catch(console.error);
+
+      // Fetch all reviews
+      api.reviews.listAll().then(data => {
+        if (data) dispatch({ type: 'SET_REVIEWS', payload: data });
+      }).catch(console.error);
+
+      // Fetch all tickets
+      api.tickets.listAll().catch(console.error);
+
+      // Socket.io integration
+      const socket = io('http://localhost:6200');
+      socket.on('ticket_created', (ticket) => {
+        const mapped = { ...ticket, id: ticket._id || ticket.id };
+        dispatch({ type: 'ADD_TICKET', payload: mapped });
+      });
+      socket.on('ticket_updated', (ticket) => {
+        dispatch({ type: 'UPDATE_TICKET', payload: { ticketId: ticket._id, patch: ticket } });
+      });
+
+      return () => {
+        socket.disconnect();
+      };
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, dispatch]);
 
   // Theme state: 'dark' | 'light' (defaults to 'dark', persists to localStorage)
   const [theme, setTheme] = useState(() => {

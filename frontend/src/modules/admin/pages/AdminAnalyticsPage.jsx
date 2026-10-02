@@ -4,7 +4,7 @@ import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 
 export const AdminAnalyticsPage = () => {
-  const { kpis, salons, bookings, services } = useAdmin();
+  const { kpis, salons, bookings, services, categories } = useAdmin();
 
   // Booking mode split
   const scheduledCount = bookings.filter((b) => (b.bookingMode || 'Scheduled') === 'Scheduled').length;
@@ -27,7 +27,10 @@ export const AdminAnalyticsPage = () => {
   // Category share
   const categoryCounts = {};
   services.forEach((s) => {
-    categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
+    // Map category ID to name if it's an ID
+    const catObj = categories?.find(c => c.id === s.category || c.slug === s.category || c.name === s.category);
+    const catName = catObj ? catObj.name : (s.category || 'Unknown');
+    categoryCounts[catName] = (categoryCounts[catName] || 0) + 1;
   });
   const sortedCategories = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
   const totalCatalogServices = services.length || 1;

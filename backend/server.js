@@ -28,6 +28,11 @@ const adminRoutes = require('./routes/adminRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const paymentRoutes = require('./routes/paymentRoutes'); // ADDED
 const bookingRoutes = require('./routes/bookingRoutes'); // ADDED
+const referralRoutes = require('./routes/referralRoutes');
+const pageCampaignRoutes = require('./routes/pageCampaignRoutes');
+const platformSettingsRoutes = require('./routes/platformSettingsRoutes');
+
+const reviewRoutes = require('./routes/reviewRoutes'); // ADDED
 
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
@@ -39,15 +44,34 @@ app.use('/api/rituals', ritualRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/staff', staffRoutes);
-app.use('/api/payments', paymentRoutes); // ADDED
-app.use('/api/bookings', bookingRoutes); // ADDED
+app.use('/api/payments', paymentRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/page-campaigns', pageCampaignRoutes);
+app.use('/api/platform-settings', platformSettingsRoutes);
+app.use('/api/tickets', require('./routes/ticketRoutes'));
+app.use('/api/reviews', reviewRoutes); // ADDED
 
 app.get('/', (req, res) => {
     res.send('InstaaTrim API is running...');
 });
 
+const http = require('http');
+const socketConfig = require('./socket');
+
 connectDB().then(() => {
-    app.listen(PORT, () => {
+    const server = http.createServer(app);
+    
+    // Initialize Socket.io
+    const io = socketConfig.init(server);
+    io.on('connection', (socket) => {
+        console.log('Client connected via socket:', socket.id);
+        socket.on('disconnect', () => {
+            console.log('Client disconnected:', socket.id);
+        });
+    });
+
+    server.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
     });
 });

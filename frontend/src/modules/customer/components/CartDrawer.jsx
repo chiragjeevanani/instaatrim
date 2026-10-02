@@ -26,10 +26,10 @@ export const CartDrawer = () => {
   if (!isCartOpen) return null;
 
   const handleCheckout = () => {
-    setIsCartOpen(false);
     if (bookingSlot && bookingSlot.time) {
       navigate('/customer/checkout');
     } else {
+      setIsCartOpen(false);
       setIsBookingFlowOpen(true);
     }
   };
@@ -121,13 +121,16 @@ export const CartDrawer = () => {
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block px-0.5">
                     Selected Services
                   </span>
-                  {cartItems.map((item) => (
+                  {cartItems.flatMap((item) => 
+                    Array.from({ length: item.quantity || 1 }).map((_, idx) => (
                     <div
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       className="bg-white border border-stone-200/80 rounded-xl p-2.5 flex items-start justify-between gap-2 shadow-xs"
                     >
                       <div className="flex-1 min-w-0">
-                        <h5 className="text-xs font-bold text-stone-900 truncate leading-tight">{item.name || item.title}</h5>
+                        <div className="flex items-center gap-1.5">
+                          <h5 className="text-xs font-bold text-stone-900 truncate leading-tight">{item.name || item.title}</h5>
+                        </div>
                         <p className="text-[10px] text-stone-500 mt-0.5">{item.duration} • {item.salonName || 'Salon Partner'}</p>
                         <div className="flex items-baseline gap-1.5 mt-1">
                           <span className="text-xs font-black text-stone-900">₹{item.price}</span>
@@ -143,7 +146,7 @@ export const CartDrawer = () => {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  ))}
+                  )))}
                 </div>
 
                 {/* Promo Code & Coupon Section - Compact */}

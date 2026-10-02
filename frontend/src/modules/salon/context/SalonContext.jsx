@@ -54,7 +54,7 @@ export const SalonProvider = ({ children }) => {
         })
         .catch(console.error);
 
-      // Fetch staff for this salon
+        // Fetch staff for this salon
       fetch(`http://localhost:6200/api/staff/salon/${salonId}`)
         .then((res) => res.json())
         .then((json) => {
@@ -70,6 +70,9 @@ export const SalonProvider = ({ children }) => {
           }
         })
         .catch(console.error);
+
+      // Fetch bookings for this salon
+      api.bookings.listBySalon(salonId).catch(console.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, salonId, dispatch]);

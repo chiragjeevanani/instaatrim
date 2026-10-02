@@ -22,7 +22,6 @@ import {
   isSameDay
 } from './time';
 
-const SLOT_STEP_MINUTES = 15;
 const NON_BLOCKING_STATUSES = ['Cancelled', 'No Show', 'Refunded'];
 
 const isBookingBlocking = (status) => !NON_BLOCKING_STATUSES.includes(status);
@@ -60,7 +59,7 @@ const isSalonHoliday = (salon, dateKeyStr) => (salon.holidays || []).some((h) =>
 export function getDaySlots({ salon, staffList, durationMinutes, category, bookings, holds = [], dateObj, excludeHoldId }) {
   const weekday = weekdayName(dateObj);
   const todayKeyStr = dateKey(dateObj);
-  const duration = durationMinutes || 30;
+  const duration = parseInt(durationMinutes, 10) || 30;
 
   if (!salon.isStoreOpen) {
     return { slots: [], reason: 'This salon is currently marked closed by the partner.' };
@@ -99,7 +98,7 @@ export function getDaySlots({ salon, staffList, durationMinutes, category, booki
   const nowMin = isToday ? nowMinutesOfDay(new Date()) : 0;
   const BUFFER_MINUTES = 30; // minimum lead time before a slot can be booked
 
-  for (let t = salonWindow.openMin; t + duration <= salonWindow.closeMin; t += SLOT_STEP_MINUTES) {
+  for (let t = salonWindow.openMin; t + duration <= salonWindow.closeMin; t += duration) {
     // Skip past slots and slots within the buffer window for today
     if (isToday && t < nowMin + BUFFER_MINUTES) continue;
 
@@ -128,7 +127,17 @@ export function getDaySlots({ salon, staffList, durationMinutes, category, booki
         startMin: t,
         endMin: slotEnd,
         staffId: freeStaff[0].id,
-        staffOptions: freeStaff.map((s) => s.id)
+        staffOptions: freeStaff.map((s) => s.id),
+        available: true
+      });
+    } else {
+      slots.push({
+        time: minutesToClock(t),
+        startMin: t,
+        endMin: slotEnd,
+        staffId: null,
+        staffOptions: [],
+        available: false
       });
     }
   }
@@ -151,14 +160,16 @@ export function getInstantAvailability({ salon, staffList, durationMinutes, cate
   }
 
   const { slots } = getDaySlots({ salon, staffList, durationMinutes, category, bookings, holds, dateObj: atDate });
-  if (slots.length === 0) {
+  const availableSlots = slots.filter(s => s.available !== false);
+
+  if (availableSlots.length === 0) {
     return { state: 'unavailable', label: 'No available stations right now', slot: null };
   }
 
   const nowMin = nowMinutesOfDay(atDate);
   const wait = salon.instantWaitMinutes ?? 15;
 
-  const withinWait = slots.find((s) => s.startMin >= nowMin && s.startMin <= nowMin + wait);
+  const withinWait = availableSlots.find((s) => s.startMin >= nowMin && s.startMin <= nowMin + wait);
   if (withinWait) {
     const minutesAway = Math.max(0, withinWait.startMin - nowMin);
     return minutesAway <= 3
@@ -166,7 +177,7 @@ export function getInstantAvailability({ salon, staffList, durationMinutes, cate
       : { state: 'soon', label: `Available in ${minutesAway} Minutes`, slot: withinWait };
   }
 
-  const next = slots.find((s) => s.startMin >= nowMin);
+  const next = availableSlots.find((s) => s.startMin >= nowMin);
   if (next) {
     return { state: 'next', label: `Next Available Slot: ${next.time}`, slot: next };
   }

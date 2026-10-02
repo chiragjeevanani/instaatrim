@@ -56,12 +56,22 @@ export const SalonListingPage = () => {
           !activeCategory || salon.services.some((s) => activeCategory.serviceCategories.includes(s.category));
 
         const term = searchTerm.trim().toLowerCase();
+        
+        const getCatName = (catId) => {
+          const c = state.categories?.find(c => c.id === catId || c.slug === catId || c.name === catId);
+          return c ? c.name : String(catId || '');
+        };
+
         const matchesSearch =
           !term ||
-          salon.name.toLowerCase().includes(term) ||
-          salon.tagline.toLowerCase().includes(term) ||
-          salon.area.toLowerCase().includes(term) ||
-          salon.services.some((s) => s.name.toLowerCase().includes(term) || s.category.toLowerCase().includes(term));
+          (salon.name && salon.name.toLowerCase().includes(term)) ||
+          (salon.tagline && salon.tagline.toLowerCase().includes(term)) ||
+          (salon.area && salon.area.toLowerCase().includes(term)) ||
+          (salon.category && getCatName(salon.category).toLowerCase().includes(term)) ||
+          salon.services.some((s) => 
+            (s.name && s.name.toLowerCase().includes(term)) || 
+            (s.category && getCatName(s.category).toLowerCase().includes(term))
+          );
 
         const matchesGender =
           selectedGender === 'All' ||
@@ -268,61 +278,7 @@ export const SalonListingPage = () => {
           </motion.div>
         )}
 
-        {/* TOUCHPOINT 5: SPONSORED SEARCH & KEYWORD BIDDING (TOP PIN) */}
-        <motion.div
-          whileHover={{ y: -1 }}
-          onClick={handleQuickBookSponsored}
-          className="bg-gradient-to-r from-sky-950 via-slate-900 to-[#0c4a6e] rounded-2xl p-3.5 text-white shadow-md border border-sky-300/60 cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <span className="bg-sky-500 text-white text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-2xs">
-              AD • TOP RESULT
-            </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-sm font-black text-sky-300">₹1,499</span>
-              <span className="text-[10px] text-stone-400 line-through">₹2,200</span>
-              <span className="text-[8.5px] bg-emerald-500/30 text-emerald-300 font-bold px-1.5 py-0.2 rounded border border-emerald-400/30">
-                32% OFF
-              </span>
-            </div>
-          </div>
 
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-xs font-bold text-white leading-snug">
-                7-Step Korean HydraGlo Facial
-              </h3>
-              <p className="text-[10.5px] text-sky-200 mt-0.5 flex items-center gap-1.5">
-                <span>Enrich Glamour Studio</span>
-                <span>•</span>
-                <span className="flex items-center gap-0.5 text-amber-300 font-bold">
-                  <Star className="w-2.5 h-2.5 fill-amber-300" />
-                  4.9
-                </span>
-                <span>•</span>
-                <span className="text-stone-300">New Palasia (1.4 km)</span>
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleQuickBookSponsored}
-              className="shrink-0 bg-sky-400 hover:bg-sky-300 text-stone-950 text-[10px] font-extrabold px-3 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
-            >
-              <span>Quick Book</span>
-              <ArrowRight className="w-3 h-3 stroke-[2.5]" />
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Separator from Page 5 wireframe: Organic Results below... */}
-        <div className="flex items-center gap-2 py-1">
-          <div className="h-px bg-stone-300/80 flex-1" />
-          <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-            Organic Results below...
-          </span>
-          <div className="h-px bg-stone-300/80 flex-1" />
-        </div>
 
         <div className="flex justify-between items-center px-1 pt-1">
           <span className="text-[11px] font-bold text-stone-600">

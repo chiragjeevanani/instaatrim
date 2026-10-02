@@ -20,7 +20,26 @@ export const RescheduleModal = ({ booking, onClose }) => {
   if (!booking) return null;
 
   const salon = state.salons.find((s) => s.id === booking.salonId);
-  const staffList = state.staff.filter((s) => s.salonId === booking.salonId);
+  const finalSalonId = salon?.id || booking.salonId;
+  const staffList = useMemo(() => {
+    const list = state.staff.filter((s) => s.salonId === finalSalonId || s.salonId === salon?.id || s.salonId === salon?._id);
+    if (list.length > 0) {
+      return list.map(st => ({
+        ...st,
+        weeklyHours: st.weeklyHours || salon?.weeklyHours
+      }));
+    }
+    return [
+      {
+        id: `staff-db-${finalSalonId}`,
+        salonId: finalSalonId,
+        name: 'Senior Stylist',
+        role: 'Stylist',
+        serviceCategories: ['Men\'s Hair & Grooming', 'Nails, Art & Extensions', 'Hair & Styling', 'Facials & Skincare', 'Makeup & Bridals'],
+        weeklyHours: salon?.weeklyHours
+      }
+    ];
+  }, [state.staff, finalSalonId, salon]);
   const durationMinutes = (booking.services || []).reduce((sum, s) => sum + parseDurationToMinutes(s.duration), 0) || 30;
   const category = booking.services?.[0]?.category || null;
   const selectedDay = days.find((d) => d.key === selectedDayKey) || days[0];

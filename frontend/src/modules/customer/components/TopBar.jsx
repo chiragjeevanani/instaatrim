@@ -12,7 +12,8 @@ export const TopBar = ({ onSearchClick }) => {
     setIsEliteModalOpen,
     cartItems,
     setIsCartOpen,
-    notifications = []
+    notifications = [],
+    user
   } = useCustomer();
   const [query, setQuery] = useState('');
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -84,14 +85,23 @@ export const TopBar = ({ onSearchClick }) => {
               </span>
             </button>
 
-            {/* Buy Elite */}
+            {/* Elite Badge */}
             <button
               type="button"
               onClick={() => setIsEliteModalOpen(true)}
-              className="flex flex-col items-center justify-center bg-[#1e1035] text-white px-2.5 h-[26px] rounded-full border border-purple-800/40 active:scale-95 transition-transform min-w-[38px] cursor-pointer"
+              className={`flex flex-col items-center justify-center ${user?.is_elite ? 'bg-gradient-to-r from-amber-400 to-amber-300 border-amber-300' : 'bg-[#1e1035] border-purple-800/40'} text-white px-2.5 h-[26px] rounded-full border active:scale-95 transition-transform min-w-[38px] cursor-pointer`}
             >
-              <span className="text-[7.5px] text-purple-300 font-normal leading-none">Buy</span>
-              <span className="text-[11px] font-serif font-bold text-[#e1b670] leading-none mt-0.5">Elite</span>
+              {user?.is_elite ? (
+                <>
+                  <span className="text-[10px] font-serif font-black text-stone-900 leading-none">ELITE</span>
+                  <span className="text-[7.5px] text-stone-800 font-bold leading-none mt-0.5">MEMBER</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-[7.5px] text-purple-300 font-normal leading-none">Buy</span>
+                  <span className="text-[11px] font-serif font-bold text-[#e1b670] leading-none mt-0.5">Elite</span>
+                </>
+              )}
             </button>
 
             {/* Cart Icon (if items in cart) */}

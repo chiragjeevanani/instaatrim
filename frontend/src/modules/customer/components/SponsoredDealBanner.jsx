@@ -9,12 +9,27 @@ import { MID_PAGE_CAMPAIGNS, MID_PAGE_CAMPAIGN } from '../../../shared/data/adve
 export const SponsoredDealBanner = () => {
   const [copiedId, setCopiedId] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [dbCampaigns, setDbCampaigns] = useState([]);
   const navigate = useNavigate();
   const { state } = useAppData();
   const { applyCoupon, showToast } = useCustomer();
 
-  // Combine campaigns from state or fallback
+  useEffect(() => {
+    fetch('http://localhost:6200/api/page-campaigns/midpage')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data && data.data.length > 0) {
+          setDbCampaigns(data.data);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // Combine campaigns from DB or fallback
   const campaigns = useMemo(() => {
+    if (dbCampaigns.length > 0) {
+      return dbCampaigns;
+    }
     let list = [];
     if (Array.isArray(state.midPageCampaigns) && state.midPageCampaigns.length > 0) {
       list = state.midPageCampaigns.filter((c) => c.isActive !== false);
@@ -26,7 +41,7 @@ export const SponsoredDealBanner = () => {
       list = [MID_PAGE_CAMPAIGN];
     }
     return list;
-  }, [state.midPageCampaigns, state.midPageCampaign]);
+  }, [dbCampaigns, state.midPageCampaigns, state.midPageCampaign]);
 
   // Reset index if out of range
   useEffect(() => {

@@ -1,23 +1,141 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { X, Sparkles, Check, Crown } from 'lucide-react';
 
 export const EliteModal = () => {
-  const { isEliteModalOpen, setIsEliteModalOpen, user, showToast } = useCustomer();
+  const { isEliteModalOpen, setIsEliteModalOpen, user, showToast, fetchMyProfile } = useCustomer();
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    if (isEliteModalOpen) {
+      fetch('http://localhost:6200/api/page-campaigns/elite')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            setConfig(data.data);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isEliteModalOpen]);
+
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
 
   if (!isEliteModalOpen) return null;
 
-  const benefits = [
-    'Flat 10% Extra Discount on all bookings across all salons',
-    'Free cancellation up to 1 hour before scheduled time',
-    'Priority slot access & zero convenience charges',
-    'Free Safety & Sanitized Kit on every visit'
+  const benefits = config?.benefits || [];
+  
+  const plans = config?.plans?.length > 0 ? config.plans : [
+    { planName: 'Annual', durationMonths: 12, price: 299, originalPrice: 999 }
   ];
+  
+  const selectedPlan = plans[selectedPlanIndex] || plans[0];
+  const price = selectedPlan.price;
 
-  const handleJoin = () => {
-    showToast('You are now an InstaaTrim Elite Club Member!');
-    setIsEliteModalOpen(false);
+  const confirmMembership = async (paymentId, method) => {
+    if (!user || !user.id) {
+      showToast('Please login to purchase membership');
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:6200/api/customers/${user.id}/elite`, {
+        method: 'PATCH'
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('You are now an InstaaTrim Elite Club Member! 🎉');
+        if (fetchMyProfile) await fetchMyProfile();
+        setIsEliteModalOpen(false);
+      } else {
+        throw new Error('Failed to update membership');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Error confirming membership');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleJoinCOD = () => {
+    setIsProcessing(true);
+    // Simulate COD API call
+    setTimeout(() => {
+      confirmMembership(null, 'COD');
+    }, 800);
+  };
+
+  const handleJoinRazorpay = async () => {
+    if (!user || !user.id) {
+      showToast('Please login to purchase membership');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`http://localhost:6200/api/payments/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: price })
+      });
+      const data = await res.json();
+      
+      if (!data.success) throw new Error('Failed to initialize payment');
+
+      const options = {
+        key: 'rzp_test_S3IcSS1NbymL6D', 
+        amount: data.data.amount,
+        currency: data.data.currency,
+        name: 'InstaaTrim',
+        description: 'Elite Membership',
+        order_id: data.data.id,
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch(`http://localhost:6200/api/payments/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            
+            if (verifyData.success) {
+              confirmMembership(response.razorpay_payment_id, 'Paid');
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (verifyErr) {
+            showToast('Payment verification failed. Please contact support.');
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: user.name || 'Customer',
+          contact: user.phone || ''
+        },
+        theme: { color: '#fbbf24' },
+        modal: {
+          ondismiss: function() {
+            setIsProcessing(false);
+            showToast('Payment cancelled');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+        showToast('Payment failed: ' + response.error.description);
+        setIsProcessing(false);
+      });
+      rzp.open();
+    } catch (err) {
+      showToast(err?.message || 'Failed to start payment');
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -28,7 +146,7 @@ export const EliteModal = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setIsEliteModalOpen(false)}
+          onClick={() => !isProcessing && setIsEliteModalOpen(false)}
           className="absolute inset-0 bg-black/70 backdrop-blur-xs"
         />
 
@@ -41,7 +159,7 @@ export const EliteModal = () => {
         >
           {/* Close button */}
           <button
-            onClick={() => setIsEliteModalOpen(false)}
+            onClick={() => !isProcessing && setIsEliteModalOpen(false)}
             className="absolute top-3 right-3 p-1 rounded-full text-stone-400 hover:text-white"
           >
             <X className="w-4 h-4" />
@@ -75,27 +193,65 @@ export const EliteModal = () => {
             ))}
           </div>
 
-          {/* Pricing Box */}
-          <div className="bg-white/10 rounded-xl p-2.5 border border-amber-400/20 flex items-center justify-between">
-            <div>
-              <span className="text-[9px] text-amber-300 uppercase tracking-wider font-bold">Annual Membership</span>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-base font-black text-white">₹299</span>
-                <span className="text-[10px] text-stone-400 line-through">₹999</span>
-                <span className="text-[9.5px] font-bold text-emerald-400">70% OFF</span>
-              </div>
-            </div>
-            <span className="text-[10px] text-stone-300 font-medium">12 Months</span>
+          {/* Pricing Plans */}
+          <div className="space-y-2 mt-2">
+            {plans.map((plan, idx) => {
+              const isSelected = selectedPlanIndex === idx;
+              const discountPercent = Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100);
+              return (
+                <div 
+                  key={idx} 
+                  onClick={() => setSelectedPlanIndex(idx)}
+                  className={`relative p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${isSelected ? 'bg-amber-400/10 border-amber-400' : 'bg-white/5 border-stone-700 hover:bg-white/10'}`}
+                >
+                  <div className="flex flex-col">
+                    <span className={`text-[10px] uppercase tracking-wider font-bold ${isSelected ? 'text-amber-400' : 'text-stone-300'}`}>
+                      {plan.planName} Membership
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-0.5">
+                      <span className="text-base font-black text-white">₹{plan.price}</span>
+                      {plan.originalPrice > plan.price && (
+                        <>
+                          <span className="text-[10px] text-stone-400 line-through">₹{plan.originalPrice}</span>
+                          <span className="text-[9.5px] font-bold text-emerald-400">{discountPercent}% OFF</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-stone-300 font-medium">{plan.durationMonths} Months</span>
+                    <div className={`w-4 h-4 rounded-full mt-1 flex items-center justify-center border ${isSelected ? 'bg-amber-400 border-amber-400' : 'border-stone-500'}`}>
+                      {isSelected && <Check className="w-3 h-3 text-stone-900 stroke-[3]" />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* CTA */}
-          <button
-            onClick={handleJoin}
-            className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-stone-950 font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.985] flex items-center justify-center gap-1.5"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{user?.isElite ? 'Active Member • Renew' : 'Join Elite Membership'}</span>
-          </button>
+          {/* CTA Buttons */}
+          <div className="flex gap-2 mt-2">
+            <button
+              disabled={isProcessing}
+              onClick={handleJoinCOD}
+              className="flex-1 bg-stone-800 text-amber-400 font-bold text-xs py-2.5 rounded-xl shadow border border-amber-400/30 transition-all active:scale-[0.985] flex items-center justify-center gap-1 disabled:opacity-50"
+            >
+              <Check className="w-4 h-4" />
+              Pay via COD
+            </button>
+            <button
+              disabled={isProcessing}
+              onClick={handleJoinRazorpay}
+              className="flex-1 py-2.5 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-stone-950 font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.985] flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              {isProcessing ? 'Processing...' : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Pay Online</span>
+                </>
+              )}
+            </button>
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>

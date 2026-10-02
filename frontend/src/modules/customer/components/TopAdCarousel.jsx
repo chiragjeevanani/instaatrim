@@ -7,7 +7,7 @@ import { Sparkles, ChevronRight, Tag, ShieldCheck } from 'lucide-react';
 
 export const TopAdCarousel = ({ onSelectAd }) => {
   const { state } = useAppData();
-  const ads = (state.advertisements || []).filter((a) => a.isActive !== false);
+  const ads = (state.advertisements || []).filter((a) => a.isActive !== false && a.campaignType !== 'hero_banner');
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();

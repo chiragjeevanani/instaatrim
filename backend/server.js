@@ -40,6 +40,7 @@ app.use('/api/ads', adRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/salons', salonRoutes);
+app.use('/api/stations', require('./routes/stationRoutes'));
 app.use('/api/rituals', ritualRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/admin', adminRoutes);
@@ -51,7 +52,8 @@ app.use('/api/page-campaigns', pageCampaignRoutes);
 app.use('/api/platform-settings', platformSettingsRoutes);
 app.use('/api/tickets', require('./routes/ticketRoutes'));
 app.use('/api/reviews', reviewRoutes); // ADDED
-
+app.use('/api/payouts', require('./routes/payoutRoutes'));
+app.use('/api/herobanners', require('./routes/heroBannerRoutes'));
 app.get('/', (req, res) => {
     res.send('InstaaTrim API is running...');
 });

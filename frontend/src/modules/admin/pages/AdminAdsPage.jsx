@@ -200,6 +200,7 @@ export const AdminAdsPage = () => {
       category: ad.category || 'all',
       validTill: ad.validTill || 'Limited Time Offer',
       isActive: ad.isActive !== false,
+      campaignType: ad.campaignType || 'top_carousel',
       imageFiles: []
     });
     setAdModalOpen(true);
@@ -220,7 +221,7 @@ export const AdminAdsPage = () => {
     formData.append('category', adFormData.category);
     formData.append('validTill', adFormData.validTill);
     formData.append('isActive', adFormData.isActive);
-    formData.append('campaignType', 'top_carousel');
+    formData.append('campaignType', adFormData.campaignType || 'top_carousel');
 
     if (adFormData.imageFiles && adFormData.imageFiles.length > 0) {
       adFormData.imageFiles.forEach(file => {
@@ -243,12 +244,12 @@ export const AdminAdsPage = () => {
   const handleOpenCreateHeroBanner = () => {
     setEditingHeroBanner(null);
     setHeroFormData({
-      title: 'Radiance Revival\n& Glow Package',
-      subtitle: 'Exclusive Salon Ritual',
-      desc: 'Infused with organic botanicals & ultra-hydrating serums',
-      ctaText: 'Book Chair',
-      tag: 'Festive Special',
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
+      title: '',
+      subtitle: '',
+      desc: '',
+      ctaText: '',
+      tag: '',
+      image: '',
       salonId: salons[0]?.id || '',
       serviceId: services[0]?.id || '',
       link: '',
@@ -296,14 +297,14 @@ export const AdminAdsPage = () => {
   const handleOpenCreateMidCampaign = () => {
     setEditingMidCampaign(null);
     setMidFormData({
-      badge: 'Sponsored Campaign',
-      title: 'Glow Festival Special Deal',
-      subtitle: 'Co-sponsored by Lakmé & O3+ Pro',
-      highlight: 'Book Any 2 Services • Get Free De-Tan',
-      coupon: 'GLOW50',
-      ctaText: 'Claim Pass',
-      bannerImage: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
-      link: '/customer/salons',
+      badge: '',
+      title: '',
+      subtitle: '',
+      highlight: '',
+      coupon: '',
+      ctaText: '',
+      bannerImage: '',
+      link: '',
       isActive: true
     });
     setMidModalOpen(true);
@@ -349,9 +350,9 @@ export const AdminAdsPage = () => {
       name: '',
       fullName: '',
       tagline: '',
-      offer: '20% OFF',
+      offer: '',
       couponCode: '',
-      logo: '✨',
+      logo: '',
       description: '',
       isActive: true
     });
@@ -1679,6 +1680,25 @@ export const AdminAdsPage = () => {
             </div>
 
             <form onSubmit={handleSubmitAd} className="space-y-4 pt-4 text-xs">
+              <div className="grid grid-cols-1 gap-3 mb-2">
+                <div>
+                  <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>
+                    Campaign Type (Placement) *
+                  </label>
+                  <select
+                    value={adFormData.campaignType || 'top_carousel'}
+                    onChange={(e) => setAdFormData({ ...adFormData, campaignType: e.target.value })}
+                    className={`w-full rounded-xl px-3 py-2 outline-none border ${isLight
+                      ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
+                      : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'
+                      }`}
+                  >
+                    <option value="top_carousel">Top Carousel (Small Ad)</option>
+                    <option value="hero_banner">Hero Banner (Main Big Banner)</option>
+                    <option value="mid_page">Mid Page Deal</option>
+                  </select>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={`block mb-1 font-semibold ${isLight ? 'text-slate-700' : 'text-stone-400'}`}>

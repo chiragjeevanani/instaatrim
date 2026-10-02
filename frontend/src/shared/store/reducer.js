@@ -153,6 +153,9 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Offers ----------------
+    case 'SET_OFFERS': {
+      return { ...state, offers: action.payload };
+    }
     case 'ADD_OFFER': {
       return { ...state, offers: [action.payload, ...state.offers] };
     }
@@ -231,6 +234,24 @@ export function appReducer(state, action) {
             : s
         )
       };
+    }
+
+    // ---------------- Stations ----------------
+    case 'SET_STATIONS': {
+      const incoming = Array.isArray(action.payload) ? action.payload : [];
+      if (incoming.length === 0) return { ...state };
+      
+      const existing = [...(state.stations || [])];
+      for (const item of incoming) {
+        const id = item.id || item._id;
+        const idx = existing.findIndex(s => (s.id && s.id === id) || (s._id && s._id === id));
+        if (idx >= 0) {
+          existing[idx] = { ...existing[idx], ...item };
+        } else {
+          existing.push(item);
+        }
+      }
+      return { ...state, stations: existing };
     }
 
     // ---------------- Services ----------------
@@ -406,6 +427,9 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Advertisements & Banners ----------------
+    case 'SET_HERO_BANNERS': {
+      return { ...state, heroBanners: action.payload };
+    }
     case 'SET_ADVERTISEMENTS': {
       return { ...state, advertisements: action.payload };
     }
@@ -633,6 +657,9 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Payouts & Settlements ----------------
+    case 'SET_PAYOUTS': {
+      return { ...state, payouts: action.payload };
+    }
     case 'REQUEST_PAYOUT': {
       return { ...state, payouts: [action.payload, ...(state.payouts || [])] };
     }

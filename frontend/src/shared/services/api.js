@@ -57,7 +57,7 @@ const salons = {
       const res = await fetch(`${API_BASE}/salons/${salonId}`);
       const json = await res.json();
       if (!res.ok) throw new ApiError(json.message || `Salon ${salonId} not found`, 'NOT_FOUND');
-      
+
       const data = json.data;
       dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: data } });
       return data;
@@ -272,7 +272,7 @@ const salons = {
   toggleActive: async (salonId) => {
     const salon = getState().salons.find((s) => s.id === salonId);
     const isStoreOpen = !(salon?.isStoreOpen ?? true);
-    
+
     try {
       const res = await fetch(`${API_BASE}/salons/${salonId}`, {
         method: 'PUT',
@@ -336,7 +336,7 @@ const services = {
         'APPROVAL_REQUIRED'
       );
     }
-    
+
     try {
       const res = await fetch(`${API_BASE}/services`, {
         method: 'POST',
@@ -345,7 +345,7 @@ const services = {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to create service');
-      
+
       const newService = { ...json.data, id: json.data._id, name: json.data.title || data.name };
       dispatch({ type: 'ADD_SERVICE', payload: newService });
       return clone(newService);
@@ -442,26 +442,46 @@ const staff = {
 };
 
 const stations = {
-  listBySalon: (salonId) => withLatency(() => clone(getState().stations.filter((s) => s.salonId === salonId))),
+  listBySalon: async (salonId) => {
+    const res = await fetch(`${API_BASE}/stations/salon/${salonId}`);
+    const json = await res.json();
+    return json.data;
+  },
 
-  add: (salonId, data) =>
-    withLatency(() => {
-      const record = { id: newStationId(), salonId, staffId: null, ...data };
-      dispatch({ type: 'ADD_STATION', payload: record });
-      return clone(record);
-    }),
+  add: async (salonId, data) => {
+    const res = await fetch(`${API_BASE}/stations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salonId, ...data })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message);
+    const saved = { ...json.data, id: json.data._id };
+    dispatch({ type: 'ADD_STATION', payload: saved });
+    return saved;
+  },
 
-  update: (stationId, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_STATION', payload: { stationId, patch } });
-      return clone({ ...getState().stations.find((s) => s.id === stationId), ...patch });
-    }),
+  update: async (stationId, patch) => {
+    const res = await fetch(`${API_BASE}/stations/${stationId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message);
+    const updated = { ...json.data, id: json.data._id };
+    dispatch({ type: 'UPDATE_STATION', payload: { stationId, patch: updated } });
+    return updated;
+  },
 
-  remove: (stationId) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_STATION', payload: { stationId } });
-      return true;
-    })
+  remove: async (stationId) => {
+    const res = await fetch(`${API_BASE}/stations/${stationId}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete station');
+    dispatch({ type: 'DELETE_STATION', payload: { stationId } });
+    return true;
+  }
 };
 
 // =============================================================================
@@ -473,11 +493,11 @@ const bookings = {
       const res = await fetch(`${API_BASE}/bookings/customer/${customerId}`);
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
-      
+
       const bks = json.data.map(b => ({ ...b, id: b._id }));
       dispatch({ type: 'SET_BOOKINGS', payload: bks }); // Optional sync to store
       return bks;
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       // Fallback
       return clone(getState().bookings.filter((b) => b.customerId === customerId));
@@ -489,8 +509,10 @@ const bookings = {
       const res = await fetch(`${API_BASE}/bookings/salon/${salonId}`);
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
-      return json.data.map(b => ({ ...b, id: b._id }));
-    } catch(e) {
+      const bks = json.data.map(b => ({ ...b, id: b._id }));
+      dispatch({ type: 'SET_BOOKINGS', payload: bks });
+      return bks;
+    } catch (e) {
       console.error(e);
       return clone(getState().bookings.filter((b) => b.salonId === salonId));
     }
@@ -514,11 +536,11 @@ const bookings = {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Failed to create booking');
-      
+
       const newBooking = { ...json.data, id: json.data._id };
       dispatch({ type: 'ADD_BOOKING', payload: newBooking });
       return newBooking;
-    } catch(e) {
+    } catch (e) {
       console.error('Real booking creation failed, falling back to mock:', e);
       const booking = {
         id: newBookingId(),
@@ -576,11 +598,11 @@ const bookings = {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message || 'Failed to reschedule booking');
-      
+
       const updatedBooking = { ...json.data, id: json.data._id };
       dispatch({ type: 'PATCH_BOOKING', payload: { bookingId, patch: updatedBooking } });
       return updatedBooking;
-    } catch(e) {
+    } catch (e) {
       console.error('Real booking reschedule failed, falling back to mock:', e);
       const patch = { dateKey: newDateKey, time, status: BOOKING_STATUS.CONFIRMED };
       dispatch({ type: 'PATCH_BOOKING', payload: { bookingId, patch } });
@@ -628,13 +650,7 @@ const offers = {
     } catch (e) {
       console.error(e);
     }
-    // Fallback to local mock
-    const offer = {
-      id: newOfferId(), salonId, isActive: true, redeemedCount: 0,
-      approvalStatus: 'pending', serviceIds: [], customerSegment: 'all', ...data
-    };
-    dispatch({ type: 'ADD_OFFER', payload: offer });
-    return clone(offer);
+    return null;
   },
 
   listAll: async () => {
@@ -652,14 +668,58 @@ const offers = {
     }
   },
 
+  update: async (offerId, patch) => {
+    try {
+      const offer = getState().offers.find(o => o.id === offerId);
+      if (!offer) return null;
+
+      const res = await fetch(`${API_BASE}/salons/${offer.salonId}/offers/${offerId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch)
+      });
+      if (res.ok) {
+        dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch } });
+        return clone({ ...offer, ...patch });
+      }
+    } catch (e) { console.error(e); }
+    return null;
+  },
+
   approve: async (offerId) => {
-    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'approved', isActive: true } } });
-    return clone(getState().offers.find((o) => o.id === offerId));
+    try {
+      const offer = getState().offers.find(o => o.id === offerId);
+      if (!offer) return null;
+
+      const res = await fetch(`${API_BASE}/salons/${offer.salonId}/offers/${offerId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalStatus: 'approved', isActive: true })
+      });
+      if (res.ok) {
+        dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'approved', isActive: true } } });
+        return clone(getState().offers.find((o) => o.id === offerId));
+      }
+    } catch (e) { console.error(e); }
+    return null;
   },
 
   reject: async (offerId, reason = 'Rejected by administrator') => {
-    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'rejected', isActive: false, rejectionReason: reason } } });
-    return clone(getState().offers.find((o) => o.id === offerId));
+    try {
+      const offer = getState().offers.find(o => o.id === offerId);
+      if (!offer) return null;
+
+      const res = await fetch(`${API_BASE}/salons/${offer.salonId}/offers/${offerId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalStatus: 'rejected', isActive: false, rejectionReason: reason })
+      });
+      if (res.ok) {
+        dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'rejected', isActive: false, rejectionReason: reason } } });
+        return clone(getState().offers.find((o) => o.id === offerId));
+      }
+    } catch (e) { console.error(e); }
+    return null;
   }
 };
 
@@ -1227,13 +1287,21 @@ const ads = {
           // Extract the first image to display in the UI as 'image' property
           image: (ad.images && ad.images.length > 0) ? ad.images[0] : ad.image
         }));
-        // Update local state directly using an implicit or explicit reducer action
+        // Extract hero banners and set desc from description
+        const heroBanners = apiAds
+          .filter(ad => ad.campaignType === 'hero_banner')
+          .map(ad => ({ ...ad, desc: ad.description }));
+
+        dispatch({ type: 'SET_HERO_BANNERS', payload: heroBanners });
+
+        // The remaining ads can go to SET_ADVERTISEMENTS (or all of them, depending on how TopAdCarousel filters)
+        // Usually TopAdCarousel can just take all ads, or we can filter it. Let's just set all.
         dispatch({ type: 'SET_ADVERTISEMENTS', payload: apiAds });
         const s = getState();
         return {
           advertisements: apiAds,
           brandPartners: clone(s.brandPartners || []),
-          heroBanners: clone(s.heroBanners || []),
+          heroBanners: heroBanners.length ? heroBanners : clone(s.heroBanners || []),
           midPageCampaigns: clone(s.midPageCampaigns || []),
           midPageCampaign: clone(s.midPageCampaign || {})
         };
@@ -1406,36 +1474,68 @@ const ads = {
     }),
 
   // Hero Carousel Banners
-  createHeroBanner: (data) =>
-    withLatency(() => {
-      const item = {
-        id: newBannerId(),
-        isActive: true,
-        ...data
-      };
-      dispatch({ type: 'ADD_HERO_BANNER', payload: item });
-      return clone(item);
-    }),
+  createHeroBanner: async (data) => {
+    try {
+      const res = await fetch(`${API_BASE}/herobanners`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        const item = { ...json.data, id: json.data._id };
+        dispatch({ type: 'ADD_HERO_BANNER', payload: item });
+        return clone(item);
+      }
+    } catch (e) { console.error(e); }
+    return null;
+  },
 
-  updateHeroBanner: (id, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_HERO_BANNER', payload: { id, patch } });
-      const updated = (getState().heroBanners || []).find((b) => b.id === id);
-      return clone(updated);
-    }),
+  updateHeroBanner: async (id, patch) => {
+    try {
+      const res = await fetch(`${API_BASE}/herobanners/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch)
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        dispatch({ type: 'UPDATE_HERO_BANNER', payload: { id, patch: json.data } });
+        return clone(json.data);
+      }
+    } catch (e) { console.error(e); }
+    return null;
+  },
 
-  deleteHeroBanner: (id) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_HERO_BANNER', payload: id });
-      return true;
-    }),
+  deleteHeroBanner: async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/herobanners/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        dispatch({ type: 'DELETE_HERO_BANNER', payload: id });
+        return true;
+      }
+    } catch (e) { console.error(e); }
+    return false;
+  },
 
-  toggleHeroBannerActive: (id) =>
-    withLatency(() => {
-      dispatch({ type: 'TOGGLE_HERO_BANNER_ACTIVE', payload: id });
-      const updated = (getState().heroBanners || []).find((b) => b.id === id);
-      return clone(updated);
-    }),
+  toggleHeroBannerActive: async (id) => {
+    try {
+      const banner = (getState().heroBanners || []).find((b) => b.id === id);
+      if (!banner) return null;
+
+      const res = await fetch(`${API_BASE}/herobanners/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !banner.isActive })
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        dispatch({ type: 'TOGGLE_HERO_BANNER_ACTIVE', payload: id });
+        return clone(json.data);
+      }
+    } catch (e) { console.error(e); }
+    return null;
+  },
 
   // Mid-Page Deals Carousel Campaigns
   createMidCampaign: (data) =>
@@ -1610,7 +1710,7 @@ const promotions = {
       });
       const json = await res.json();
       if (!json.success) throw new ApiError(json.message);
-      
+
       dispatch({ type: 'PATCH_SALON', payload: { id: salonId, patch: json.data } });
       return json.data;
     } catch (e) {
@@ -1635,7 +1735,7 @@ const promotions = {
       });
       const json = await res.json();
       if (!json.success) throw new ApiError(json.message);
-      
+
       dispatch({ type: 'PATCH_SALON', payload: { id: salonId, patch: json.data } });
       return json.data;
     } catch (e) {
@@ -1670,32 +1770,59 @@ const promotions = {
 // Payouts & Settlements
 // =============================================================================
 const payouts = {
-  listAll: () => withLatency(() => clone(getState().payouts || [])),
+  listAll: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/payouts`, { headers: authHeaders() });
+      if (res.ok) {
+        const json = await res.json();
+        dispatch({ type: 'SET_PAYOUTS', payload: json.data });
+        return json.data;
+      }
+    } catch (e) { console.error('Failed to fetch payouts', e); }
+    return clone(getState().payouts || []);
+  },
 
   listBySalon: (salonId) =>
     withLatency(() => clone((getState().payouts || []).filter((p) => p.salonId === salonId))),
 
-  request: (data) =>
-    withLatency(() => {
-      const payout = {
-        id: `pay-${Date.now()}`,
-        status: 'Pending',
-        requestedAt: new Date().toISOString(),
-        settledAt: null,
-        utr: null,
-        notes: '',
-        ...data
-      };
-      dispatch({ type: 'REQUEST_PAYOUT', payload: payout });
-      return clone(payout);
-    }),
+  request: async (data) => {
+    try {
+      const res = await fetch(`${API_BASE}/payouts`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          status: 'Pending',
+          date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+          settledAt: null,
+          utr: null,
+          notes: '',
+          ...data
+        })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        dispatch({ type: 'REQUEST_PAYOUT', payload: json.data });
+        return json.data;
+      }
+    } catch (e) { console.error(e); }
+    return null;
+  },
 
-  updateStatus: (payoutId, status, extra = {}) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_PAYOUT_STATUS', payload: { payoutId, status, extra } });
-      const updated = (getState().payouts || []).find((p) => p.id === payoutId);
-      return clone(updated);
-    }),
+  updateStatus: async (payoutId, status, extra = {}) => {
+    try {
+      const res = await fetch(`${API_BASE}/payouts/${payoutId}/status`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify({ status, utr: extra.utr, notes: extra.notes || extra.rejectionReason })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        dispatch({ type: 'UPDATE_PAYOUT_STATUS', payload: { payoutId, status, extra } });
+        return json.data;
+      }
+    } catch (e) { console.error(e); }
+    return null;
+  },
 
   delete: (payoutId) =>
     withLatency(() => {

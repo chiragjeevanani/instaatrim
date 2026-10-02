@@ -22,10 +22,10 @@ export const OfferModal = ({ isOpen, onClose }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [discountType, setDiscountType] = useState('percentage');
-  const [discountValue, setDiscountValue] = useState(25);
-  const [timeWindow, setTimeWindow] = useState('01:00 PM - 04:00 PM');
+  const [discountValue, setDiscountValue] = useState('');
+  const [timeWindow, setTimeWindow] = useState('');
   const [selectedDays, setSelectedDays] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday']);
-  const [minOrderValue, setMinOrderValue] = useState(799);
+  const [minOrderValue, setMinOrderValue] = useState('');
 
   if (!isOpen) return null;
 
@@ -148,16 +148,13 @@ export const OfferModal = ({ isOpen, onClose }) => {
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <label className="text-[10.5px] font-bold text-stone-700 block mb-1">Time Slot Window</label>
-                <select
+                <input
+                  type="text"
+                  placeholder="e.g. 1 PM - 4 PM"
                   value={timeWindow}
                   onChange={(e) => setTimeWindow(e.target.value)}
-                  className="w-full bg-white text-stone-800 text-xs rounded-xl border border-stone-200 px-2.5 py-2 outline-none font-medium shadow-2xs cursor-pointer"
-                >
-                  <option value="01:00 PM - 04:00 PM">1 PM - 4 PM (Afternoon Non-Peak)</option>
-                  <option value="12:00 PM - 03:00 PM">12 PM - 3 PM (Mid-Day)</option>
-                  <option value="09:30 AM - 11:30 AM">9:30 AM - 11:30 AM (Early Bird)</option>
-                  <option value="07:00 PM - 08:30 PM">7 PM - 8:30 PM (Evening Closing)</option>
-                </select>
+                  className="w-full bg-white text-stone-800 text-xs rounded-xl border border-stone-200 px-3 py-2 outline-none font-medium shadow-2xs"
+                />
               </div>
 
               <div>

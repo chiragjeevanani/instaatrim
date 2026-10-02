@@ -30,7 +30,8 @@ const salonSchema = new mongoose.Schema({
     isSponsored: { type: Boolean, default: false },
     boostRank: { type: Number },
     sponsorBadge: { type: String },
-    boostReason: { type: String }
+    boostReason: { type: String },
+    offers: [{ type: mongoose.Schema.Types.Mixed }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Salon', salonSchema);

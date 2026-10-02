@@ -17,9 +17,21 @@ import {
 
 export const SalonAnalyticsPage = () => {
   const { metrics, salonProfile, showToast } = useSalon();
+  const [dbMetrics, setDbMetrics] = React.useState(null);
+
+  React.useEffect(() => {
+    if (salonProfile?.id) {
+      fetch(`http://localhost:6200/api/salons/${salonProfile.id}/analytics`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) setDbMetrics(json.data);
+        })
+        .catch(console.error);
+    }
+  }, [salonProfile?.id]);
 
   const handleRequestPayout = () => {
-    showToast(`Instant payout request of ₹${metrics.availablePayout.toLocaleString()} submitted to HDFC Bank (A/C **4892)`);
+    showToast(`Instant payout request of ₹${(dbMetrics?.availablePayout || 0).toLocaleString()} submitted to HDFC Bank (A/C **4892)`);
   };
 
   return (
@@ -51,7 +63,7 @@ export const SalonAnalyticsPage = () => {
                   Available for Payout
                 </span>
                 <span className="text-xl font-bold text-stone-900 leading-tight">
-                  ₹{metrics.availablePayout.toLocaleString()}
+                  ₹{(dbMetrics?.availablePayout || 0).toLocaleString()}
                 </span>
               </div>
             </div>
@@ -85,7 +97,7 @@ export const SalonAnalyticsPage = () => {
               MTD Revenue
             </span>
             <span className="text-xl font-bold text-stone-900 mt-1 block">
-              ₹{metrics.monthGmv.toLocaleString()}
+              ₹{(dbMetrics?.mtdRevenue || 0).toLocaleString()}
             </span>
             <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
               <ArrowUpRight className="w-3 h-3 stroke-[2.5]" />
@@ -99,10 +111,10 @@ export const SalonAnalyticsPage = () => {
               Avg Order Value
             </span>
             <span className="text-xl font-bold text-stone-900 mt-1 block">
-              ₹1,180
+              ₹{Math.round(dbMetrics?.avgOrderValue || 0).toLocaleString()}
             </span>
             <p className="text-[11px] text-stone-400 font-normal mt-1">
-              124 appointments
+              {dbMetrics?.totalAppointments || 0} appointments
             </p>
           </div>
 
@@ -112,10 +124,10 @@ export const SalonAnalyticsPage = () => {
               Repeat Clients
             </span>
             <span className="text-xl font-bold text-stone-900 mt-1 block">
-              68.4%
+              {dbMetrics?.repeatClientRate || 0}%
             </span>
             <p className="text-[11px] text-stone-400 font-normal mt-1">
-              85 loyal guests
+              {dbMetrics?.repeatCustomers || 0} loyal guests
             </p>
           </div>
 
@@ -125,10 +137,10 @@ export const SalonAnalyticsPage = () => {
               Completion Rate
             </span>
             <span className="text-xl font-bold text-stone-900 mt-1 block">
-              97.9%
+              {dbMetrics?.completionRate || 0}%
             </span>
             <p className="text-[11px] text-emerald-600 font-medium mt-1">
-              Only 2.1% cancellations
+              Only {dbMetrics?.cancellationRate || 0}% cancellations
             </p>
           </div>
         </div>
@@ -181,29 +193,19 @@ export const SalonAnalyticsPage = () => {
             Top Performing Services
           </h3>
           <div className="divide-y divide-stone-100 text-xs">
-            <div className="py-2 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-stone-900 text-[11.5px]">HydraGlo Pore Extraction Facial</p>
-                <span className="text-[10px] text-stone-400">42 bookings • 4.9 ★</span>
-              </div>
-              <span className="font-bold text-stone-900 text-xs">₹54,558</span>
-            </div>
-
-            <div className="py-2 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-stone-900 text-[11.5px]">Full Body Aromatherapy Spa</p>
-                <span className="text-[10px] text-stone-400">28 bookings • 4.8 ★</span>
-              </div>
-              <span className="font-bold text-stone-900 text-xs">₹41,972</span>
-            </div>
-
-            <div className="py-2 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-stone-900 text-[11.5px]">Korean Full Arms &amp; Legs Wax</p>
-                <span className="text-[10px] text-stone-400">38 bookings • 4.8 ★</span>
-              </div>
-              <span className="font-bold text-stone-900 text-xs">₹34,162</span>
-            </div>
+            {dbMetrics?.topServices?.length > 0 ? (
+              dbMetrics.topServices.map((service, idx) => (
+                <div key={idx} className="py-2 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-stone-900 text-[11.5px]">{service.name}</p>
+                    <span className="text-[10px] text-stone-400">{service.count} bookings</span>
+                  </div>
+                  <span className="font-bold text-stone-900 text-xs">₹{service.revenue.toLocaleString()}</span>
+                </div>
+              ))
+            ) : (
+              <div className="py-2 text-stone-400 text-[11px]">No services booked yet.</div>
+            )}
           </div>
         </div>
       </main>

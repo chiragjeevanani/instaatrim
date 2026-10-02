@@ -4,22 +4,22 @@ import { HelpCircle, Send, X, ShieldAlert, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const SalonSupportModal = ({ isOpen, onClose }) => {
-  const { createSupportTicket } = useSalon();
+  const { createSupportTicket, platformSettings } = useSalon();
 
-  const [category, setCategory] = useState('Payout & Billing');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const categories = [
+  const categories = platformSettings?.partnerSupportTopics || [
     'Payout & Billing',
     'Booking Issue / No-Show',
     'Menu & Service Edits',
     'KYC & Account Verification',
     'Emergency Technical Support'
   ];
+
+  const [category, setCategory] = useState(categories[0]);
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

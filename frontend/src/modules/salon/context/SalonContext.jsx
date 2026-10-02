@@ -42,9 +42,9 @@ export const SalonProvider = ({ children }) => {
           }
         })
         .catch(console.error);
-        
-      // Fetch services for this salon
-      fetch(`http://localhost:6200/api/services?salonId=${salonId}`)
+
+      // Fetch services (filtering done via useMemo locally for robustness)
+      fetch(`http://localhost:6200/api/services`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && Array.isArray(json.data)) {
@@ -54,7 +54,7 @@ export const SalonProvider = ({ children }) => {
         })
         .catch(console.error);
 
-        // Fetch staff for this salon
+      // Fetch staff for this salon
       fetch(`http://localhost:6200/api/staff/salon/${salonId}`)
         .then((res) => res.json())
         .then((json) => {
@@ -71,8 +71,26 @@ export const SalonProvider = ({ children }) => {
         })
         .catch(console.error);
 
+      // Fetch stations from DB
+      fetch(`http://localhost:6200/api/stations/salon/${salonId}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            dispatch({ type: 'SET_STATIONS', payload: json.data.map(s => ({ ...s, id: s._id })) });
+          }
+        })
+        .catch(console.error);
+
       // Fetch bookings for this salon
       api.bookings.listBySalon(salonId).catch(console.error);
+
+      // Fetch offers
+      api.offers.listAll().then(offers => {
+        if (offers) dispatch({ type: 'SET_OFFERS', payload: offers });
+      }).catch(console.error);
+
+      // Fetch platform settings
+      api.platformSettings.get().catch(console.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, salonId, dispatch]);
@@ -84,7 +102,7 @@ export const SalonProvider = ({ children }) => {
     return { ...salon, openHours: salon?.openHoursLegacy };
   }, [state.salons, salonId]);
 
-  const patchSalon = useCallback((patch) => api.salons.patch(salonId, patch).catch(() => {}), [salonId]);
+  const patchSalon = useCallback((patch) => api.salons.patch(salonId, patch).catch(() => { }), [salonId]);
 
   // Kept as a setState-style updater so existing call sites like
   // `setSalonProfile((prev) => ({ ...prev, openHours: x }))` need no change.
@@ -200,7 +218,9 @@ export const SalonProvider = ({ children }) => {
   }, [state.categories]);
 
   // ---------------- Services ----------------
-  const services = useMemo(() => state.services.filter((s) => s.salonId === salonId), [state.services, salonId]);
+  const services = useMemo(() => {
+    return state.services.filter(s => s.salonId === salonId || !s.salonId || String(s.salonId) === String(salonId));
+  }, [state.services, salonId]);
 
   const addService = useCallback(
     (newServiceData) => {
@@ -298,7 +318,17 @@ export const SalonProvider = ({ children }) => {
     }
     return unique;
   }, [state.staff, salonId]);
-  const stations = useMemo(() => state.stations.filter((s) => s.salonId === salonId), [state.stations, salonId]);
+  const stations = useMemo(() => {
+    const existing = state.stations.filter((s) => s.salonId === salonId);
+    if (existing.length > 0) return existing;
+    const count = salonProfile?.totalChairs || 4;
+    return Array.from({ length: count }, (_, i) => ({
+      id: `${salonId}-chair-${i + 1}`,
+      salonId,
+      name: `Chair ${i + 1}`,
+      staffId: null
+    }));
+  }, [state.stations, salonId, salonProfile?.totalChairs]);
 
   const addStaff = useCallback(
     (data) => {
@@ -326,6 +356,36 @@ export const SalonProvider = ({ children }) => {
         .remove(staffId)
         .then(() => showToast('Staff member removed'))
         .catch(() => showToast('Could not remove staff member', 'error'));
+    },
+    [showToast]
+  );
+
+  const addStation = useCallback(
+    (data) => {
+      api.stations
+        .add(salonId, data)
+        .then((st) => showToast(`Station "${st.name}" added successfully`))
+        .catch(() => showToast('Could not add station', 'error'));
+    },
+    [salonId, showToast]
+  );
+
+  const updateStation = useCallback(
+    (stationId, patch) => {
+      api.stations
+        .update(stationId, patch)
+        .then(() => showToast('Station updated'))
+        .catch(() => showToast('Could not update station', 'error'));
+    },
+    [showToast]
+  );
+
+  const removeStation = useCallback(
+    (stationId) => {
+      api.stations
+        .remove(stationId)
+        .then(() => showToast('Station removed'))
+        .catch(() => showToast('Could not remove station', 'error'));
     },
     [showToast]
   );
@@ -383,7 +443,7 @@ export const SalonProvider = ({ children }) => {
   );
 
   const markNotificationRead = useCallback((notificationId) => {
-    api.notifications.markRead(notificationId).catch(() => {});
+    api.notifications.markRead(notificationId).catch(() => { });
   }, []);
 
   // ---------------- Support Tickets ----------------
@@ -508,9 +568,13 @@ export const SalonProvider = ({ children }) => {
         offers,
         staff,
         stations,
+        addStation,
+        updateStation,
+        removeStation,
         payouts,
         reviews,
         notifications,
+        platformSettings: state.platformSettings,
         tickets,
         metrics,
         toast,

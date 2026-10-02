@@ -79,6 +79,25 @@ export const AdminProvider = ({ children }) => {
       // Fetch all tickets
       api.tickets.listAll().catch(console.error);
 
+      // Fetch all payouts
+      api.payouts.listAll().catch(console.error);
+
+      // Fetch all offers
+      api.offers.listAll().then(offers => {
+        if (offers) dispatch({ type: 'SET_OFFERS', payload: offers });
+      }).catch(console.error);
+
+      // Fetch hero banners
+      fetch('http://localhost:6200/api/herobanners')
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            const mapped = json.data.map(b => ({ ...b, id: b._id }));
+            dispatch({ type: 'SET_HERO_BANNERS', payload: mapped });
+          }
+        })
+        .catch(console.error);
+
       // Socket.io integration
       const socket = io('http://localhost:6200');
       socket.on('ticket_created', (ticket) => {

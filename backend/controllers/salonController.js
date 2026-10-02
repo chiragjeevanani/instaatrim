@@ -259,3 +259,55 @@ exports.updateSalon = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+exports.addOffer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const offerData = req.body;
+        
+        const salon = await Salon.findById(id);
+        if (!salon) return res.status(404).json({ success: false, message: 'Salon not found' });
+        
+        const newOffer = {
+            _id: `off-${Date.now()}`,
+            id: `off-${Date.now()}`,
+            isActive: true,
+            redeemedCount: 0,
+            approvalStatus: 'pending',
+            ...offerData
+        };
+        
+        if (!salon.offers) salon.offers = [];
+        salon.offers.push(newOffer);
+        await salon.save();
+        
+        res.status(201).json({ success: true, data: newOffer });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateOfferStatus = async (req, res) => {
+    try {
+        const { id, offerId } = req.params;
+        const { approvalStatus, isActive, rejectionReason } = req.body;
+        
+        const salon = await Salon.findById(id);
+        if (!salon) return res.status(404).json({ success: false, message: 'Salon not found' });
+        
+        const offerIndex = salon.offers.findIndex(o => (o._id === offerId || o.id === offerId));
+        if (offerIndex === -1) return res.status(404).json({ success: false, message: 'Offer not found' });
+        
+        if (approvalStatus) salon.offers[offerIndex].approvalStatus = approvalStatus;
+        if (isActive !== undefined) salon.offers[offerIndex].isActive = isActive;
+        if (rejectionReason) salon.offers[offerIndex].rejectionReason = rejectionReason;
+        
+        // Mark as modified so mongoose saves mixed array
+        salon.markModified('offers');
+        await salon.save();
+        
+        res.status(200).json({ success: true, data: salon.offers[offerIndex] });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

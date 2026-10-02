@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import { motion } from 'framer-motion';
 import {
@@ -11,11 +12,13 @@ import {
   Flame,
   CheckCircle2,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft
 } from 'lucide-react';
 import { OfferModal } from '../components/OfferModal';
 
 export const SalonOffersPage = () => {
+  const navigate = useNavigate();
   const { offers, toggleOfferActive } = useSalon();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -25,22 +28,30 @@ export const SalonOffersPage = () => {
     >
       <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">
-              Dynamic Pricing &amp; Flash Deals
-            </h1>
-            <p className="text-[10.5px] text-stone-400 font-normal">
-              Automated yield management for slow periods
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 bg-rose-900 hover:bg-rose-950 active:scale-95 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all"
+            onClick={() => navigate('/salon')}
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 active:scale-95 transition-all shadow-xs"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
-            <span>Create Offer</span>
+            <ChevronLeft className="w-5 h-5" />
           </button>
+          <div className="flex-1 flex items-center justify-between">
+            <div>
+              <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">
+                Dynamic Pricing &amp; Flash Deals
+              </h1>
+              <p className="text-[10.5px] text-stone-400 font-normal">
+                Automated yield management for slow periods
+              </p>
+            </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 bg-rose-900 hover:bg-rose-950 active:scale-95 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
+              <span>Create Offer</span>
+            </button>
+          </div>
         </div>
 
         {/* Informative Banner on Empty-Chair Model */}

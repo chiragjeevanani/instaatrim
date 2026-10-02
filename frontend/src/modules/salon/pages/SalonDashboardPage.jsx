@@ -47,6 +47,20 @@ export const SalonDashboardPage = () => {
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isCapacityModalOpen, setIsCapacityModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [yieldAlert, setYieldAlert] = useState(null);
+
+  React.useEffect(() => {
+    if (salonProfile?.id) {
+      fetch(`http://localhost:6200/api/salons/${salonProfile.id}/yield-alert`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && json.data) {
+            setYieldAlert(json.data);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [salonProfile?.id]);
 
   // Active bookings for today
   const activeBookings = bookings.filter(
@@ -212,44 +226,46 @@ export const SalonDashboardPage = () => {
         </div>
 
         {/* Section 25 & 42.3.4: Executive Revenue Optimizer / Empty-Chair Banner */}
-        <div className="bg-stone-900 text-white rounded-2xl p-3.5 shadow-sm relative overflow-hidden border border-stone-800">
-          <div className="flex items-start justify-between gap-3 relative z-10">
-            <div className="flex items-start gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center shrink-0 shadow-xs mt-0.5 font-bold">
-                <Flame className="w-4 h-4 fill-stone-950 stroke-[1.5]" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-xs text-stone-100 tracking-tight">
-                    Empty-Chair Yield Alert
-                  </span>
-                  <span className="text-[9px] bg-white/10 text-amber-300 font-bold px-1.5 py-0.5 rounded tracking-wider uppercase">
-                    AI Forecast
-                  </span>
+        {yieldAlert?.isActive && (
+          <div className="bg-stone-900 text-white rounded-2xl p-3.5 shadow-sm relative overflow-hidden border border-stone-800">
+            <div className="flex items-start justify-between gap-3 relative z-10">
+              <div className="flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center shrink-0 shadow-xs mt-0.5 font-bold">
+                  <Flame className="w-4 h-4 fill-stone-950 stroke-[1.5]" />
                 </div>
-                <p className="text-[11px] text-stone-300 font-normal leading-relaxed mt-1">
-                  Low walk-in traffic predicted from <span className="text-white font-medium">1:00 PM – 4:00 PM</span> today. 2 stations will sit idle.
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-xs text-stone-100 tracking-tight">
+                      Empty-Chair Yield Alert
+                    </span>
+                    <span className="text-[9px] bg-white/10 text-amber-300 font-bold px-1.5 py-0.5 rounded tracking-wider uppercase">
+                      AI Forecast
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-300 font-normal leading-relaxed mt-1">
+                    Low walk-in traffic predicted from <span className="text-white font-medium">{yieldAlert.timeWindow}</span> today. {yieldAlert.idleStations} stations will sit idle.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-white/10">
-            <button
-              onClick={() => setIsOfferModalOpen(true)}
-              className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[10.5px] rounded-lg transition-transform flex items-center gap-1.5 shadow-xs"
-            >
-              <Sparkles className="w-3.5 h-3.5 stroke-[2]" />
-              <span>Launch 25% Off Deal</span>
-            </button>
-            <button
-              onClick={() => navigate('/salon/offers')}
-              className="text-[10.5px] text-stone-300 hover:text-white px-2 py-1 transition-colors"
-            >
-              View Active Offers →
-            </button>
+            <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-white/10">
+              <button
+                onClick={() => setIsOfferModalOpen(true)}
+                className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[10.5px] rounded-lg transition-transform flex items-center gap-1.5 shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5 stroke-[2]" />
+                <span>Launch {yieldAlert.recommendedDiscount}% Off Deal</span>
+              </button>
+              <button
+                onClick={() => navigate('/salon/offers')}
+                className="text-[10.5px] text-stone-300 hover:text-white px-2 py-1 transition-colors"
+              >
+                View Active Offers →
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Quick Action Navigation Bar */}
         <div className="flex items-center gap-2">

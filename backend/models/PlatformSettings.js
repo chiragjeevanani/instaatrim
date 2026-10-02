@@ -13,6 +13,10 @@ const platformSettingsSchema = new mongoose.Schema({
     supportTopics: { 
         type: [String], 
         default: ['Booking & Rescheduling', 'Payment & Refunds', 'Salon Partner Feedback', 'Technical Issue', 'General Inquiry'] 
+    },
+    partnerSupportTopics: {
+        type: [String],
+        default: ['Payout & Billing', 'Booking Issue / No-Show', 'Menu & Service Edits', 'KYC & Account Verification', 'Emergency Technical Support']
     }
 }, { timestamps: true });
 

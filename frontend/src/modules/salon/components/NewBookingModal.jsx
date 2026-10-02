@@ -33,8 +33,14 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState(services[0]?.id || '');
   const [stationId, setStationId] = useState(freeStations[0]?.id || '');
-  const [paymentMethod, setPaymentMethod] = useState('Pay at Salon (Cash)');
+  const [paymentMethod, setPaymentMethod] = useState('Cash at Salon');
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (services.length > 0 && !selectedServiceId) {
+      setSelectedServiceId(services[0].id);
+    }
+  }, [services, selectedServiceId]);
 
   if (!isOpen) return null;
 
@@ -117,9 +123,13 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
                   <Phone className="w-3.5 h-3.5 text-stone-400 mr-2 shrink-0 stroke-[2]" />
                   <input
                     type="tel"
-                    placeholder="e.g. +91 98260 12345"
+                    placeholder="e.g. 9826012345"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setCustomerPhone(val);
+                    }}
+                    maxLength={10}
                     className="w-full text-xs text-stone-800 outline-none bg-transparent font-medium"
                   />
                 </div>
@@ -134,9 +144,10 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
                 onChange={(e) => setSelectedServiceId(e.target.value)}
                 className="w-full bg-white text-stone-800 text-xs rounded-xl border border-stone-200 px-3 py-2 outline-none focus:border-rose-900 focus:ring-1 focus:ring-rose-900 font-medium shadow-2xs cursor-pointer"
               >
+                <option value="" disabled>-- Select a service --</option>
                 {services.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name} (₹{s.price} • {s.duration})
+                    {s.name} (₹{s.price} • {s.duration} mins)
                   </option>
                 ))}
               </select>
@@ -176,9 +187,8 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   className="w-full bg-white text-stone-800 text-xs rounded-xl border border-stone-200 px-2.5 py-2 outline-none font-medium shadow-2xs cursor-pointer"
                 >
-                  <option value="Pay at Salon (Cash)">Cash at Salon</option>
-                  <option value="UPI QR (Counter)">UPI Counter QR</option>
-                  <option value="Card Machine (POS)">POS Card Machine</option>
+                  <option value="Cash at Salon">Cash at Salon</option>
+                  <option value="Razorpay">Razorpay</option>
                 </select>
               </div>
             </div>

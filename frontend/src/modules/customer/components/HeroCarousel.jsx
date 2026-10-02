@@ -6,7 +6,12 @@ import { useNavigate } from 'react-router-dom';
 
 export const HeroCarousel = () => {
   const { state } = useAppData();
-  const rawBanners = state.heroBanners && state.heroBanners.length > 0 ? state.heroBanners : mockBanners;
+  const rawBanners = state.heroBanners && state.heroBanners.length > 0 
+    ? state.heroBanners 
+    : (state.advertisements && state.advertisements.length > 0 
+        ? state.advertisements.map(ad => ({ ...ad, desc: ad.description })) 
+        : mockBanners);
+        
   const activeBanners = useMemo(() => {
     const list = rawBanners.filter((b) => b.isActive !== false);
     return list.length > 0 ? list : mockBanners;

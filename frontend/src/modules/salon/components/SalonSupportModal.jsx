@@ -14,10 +14,18 @@ export const SalonSupportModal = ({ isOpen, onClose }) => {
     'Emergency Technical Support'
   ];
 
-  const [category, setCategory] = useState(categories[0]);
+  const [category, setCategory] = useState(categories[0] || 'Support');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (categories && categories.length > 0 && !category) {
+      setCategory(categories[0]);
+    } else if (categories && categories.length > 0 && category === 'Support') {
+      setCategory(categories[0]);
+    }
+  }, [platformSettings?.partnerSupportTopics]);
 
   if (!isOpen) return null;
 

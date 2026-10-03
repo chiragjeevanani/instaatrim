@@ -464,14 +464,7 @@ export const SalonProvider = ({ children }) => {
           salonName: salonProfile.name,
           category: category || 'Partner Query',
           subject: subject || 'Partner Assistance Request',
-          messages: [
-            {
-              sender: 'salon',
-              senderName: salonProfile.ownerName || salonProfile.name,
-              text: messageText,
-              timestamp: new Date().toISOString()
-            }
-          ]
+          message: messageText
         });
         showToast('Support ticket submitted to Admin Desk!');
       } catch (e) {

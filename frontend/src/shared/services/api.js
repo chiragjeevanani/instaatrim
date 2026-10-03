@@ -70,12 +70,26 @@ const salons = {
     }
   },
 
-  patch: (salonId, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'PATCH_SALON', payload: { salonId, patch } });
-      const updated = { ...getState().salons.find((s) => s.id === salonId), ...patch };
-      return clone(updated);
-    }),
+  patch: async (salonId, patch) => {
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch)
+      });
+      const json = await res.json();
+      if (res.ok) {
+        dispatch({ type: 'PATCH_SALON', payload: { salonId, patch: json.data } });
+        return clone(json.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    // Fallback
+    dispatch({ type: 'PATCH_SALON', payload: { salonId, patch } });
+    const updated = { ...getState().salons.find((s) => s.id === salonId), ...patch };
+    return clone(updated);
+  },
 
   login: async (loginId, password) => {
     const res = await fetch(`${API_BASE}/salons/login`, {
@@ -1782,8 +1796,16 @@ const payouts = {
     return clone(getState().payouts || []);
   },
 
-  listBySalon: (salonId) =>
-    withLatency(() => clone((getState().payouts || []).filter((p) => p.salonId === salonId))),
+  listBySalon: async (salonId) => {
+    try {
+      const res = await fetch(`${API_BASE}/payouts`, { headers: authHeaders() });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data.filter(p => p.salonId === salonId);
+      }
+    } catch (e) { console.error('Failed to fetch payouts', e); }
+    return clone((getState().payouts || []).filter((p) => p.salonId === salonId));
+  },
 
   request: async (data) => {
     try {

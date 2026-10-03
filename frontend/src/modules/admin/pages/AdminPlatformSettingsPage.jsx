@@ -39,7 +39,9 @@ export const AdminPlatformSettingsPage = () => {
     minPayoutThreshold: 1000,
     cancellationFreeHours: 1,
     supportPhone: '1800-200-8811',
-    supportEmail: 'support@instaatrim.com'
+    supportEmail: 'support@instaatrim.com',
+    supportTopics: [],
+    partnerSupportTopics: []
   });
 
   const [eliteForm, setEliteForm] = useState({
@@ -280,7 +282,7 @@ export const AdminPlatformSettingsPage = () => {
 
               <div>
                 <label className="block text-stone-400 font-semibold mb-1">
-                  Support Ticket Topics (Comma Separated)
+                  Customer Support Topics (Comma Separated)
                 </label>
                 <input
                   type="text"
@@ -292,6 +294,22 @@ export const AdminPlatformSettingsPage = () => {
                   placeholder="e.g. Booking Issue, Refund, Other"
                 />
                 <span className="text-[10px] text-stone-500 mt-0.5 block">Dropdown options for customer support modal</span>
+              </div>
+
+              <div>
+                <label className="block text-stone-400 font-semibold mb-1">
+                  Salon Support Topics (Comma Separated)
+                </label>
+                <input
+                  type="text"
+                  value={Array.isArray(settingsForm.partnerSupportTopics) ? settingsForm.partnerSupportTopics.join(', ') : (settingsForm.partnerSupportTopics || '')}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, partnerSupportTopics: e.target.value.split(',').map(s => s.trim()) })}
+                  className={`w-full p-2.5 rounded-xl border outline-none ${
+                    isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
+                  }`}
+                  placeholder="e.g. Payouts, Technical Issue, Other"
+                />
+                <span className="text-[10px] text-stone-500 mt-0.5 block">Dropdown options for salon partner help desk</span>
               </div>
 
               <div className="pt-2">

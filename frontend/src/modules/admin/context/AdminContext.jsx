@@ -5,6 +5,8 @@ import { ADMIN_CREDENTIALS } from '../../../shared/data/seed';
 
 import { io } from 'socket.io-client';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
@@ -15,7 +17,7 @@ export const AdminProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetch('http://localhost:6200/api/salons')
+      fetch(`${API_BASE}/salons`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {

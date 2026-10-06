@@ -1,5 +1,6 @@
 const Customer = require('../models/Customer');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'instaatrim_secret_key';
 const STATIC_OTP = '1234'; // Static OTP as requested
@@ -24,6 +25,9 @@ const sendOTP = async (req, res) => {
             // New user — create with phone + static OTP
             customer = await Customer.create({
                 phone,
+                // referral_code has a unique MongoDB index, so new records
+                // must not insert null into that index.
+                referral_code: `DRIM${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
                 otp: STATIC_OTP,
                 otpExpiry,
             });

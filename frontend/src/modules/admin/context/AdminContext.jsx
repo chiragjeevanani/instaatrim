@@ -99,7 +99,7 @@ export const AdminProvider = ({ children }) => {
         .catch(console.error);
 
       // Socket.io integration
-      const socket = io('http://localhost:6200');
+      const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:6200');
       socket.on('ticket_created', (ticket) => {
         const mapped = { ...ticket, id: ticket._id || ticket.id };
         dispatch({ type: 'ADD_TICKET', payload: mapped });

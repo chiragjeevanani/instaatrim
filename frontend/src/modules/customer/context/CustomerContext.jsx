@@ -477,7 +477,7 @@ export const CustomerProvider = ({ children }) => {
           userRole: 'customer',
           userContact: user.phone ? `+91 ${user.phone}` : user.email || 'customer',
           salonId: null,
-          salonName: 'InstaaTrim Customer Care',
+          salonName: 'DrimStyle Customer Care',
           category: category || 'Customer Query',
           subject: subject || 'Customer Support Request',
           messages: [

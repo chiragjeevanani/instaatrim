@@ -55,7 +55,7 @@ app.use('/api/reviews', reviewRoutes); // ADDED
 app.use('/api/payouts', require('./routes/payoutRoutes'));
 app.use('/api/herobanners', require('./routes/heroBannerRoutes'));
 app.get('/', (req, res) => {
-    res.send('InstaaTrim API is running...');
+    res.send('DrimStyle API is running...');
 });
 
 const http = require('http');

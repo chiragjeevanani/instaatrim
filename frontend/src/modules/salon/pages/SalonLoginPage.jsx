@@ -68,14 +68,8 @@ export const SalonLoginPage = () => {
         <div className="flex-1 flex flex-col justify-center pb-10">
           {/* Brand Logo Header */}
           <div className="mb-5 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-maroon to-purple-600 flex items-center justify-center text-white shadow-xs">
-              <span className="font-serif font-black text-sm">IT</span>
-            </div>
+            <img src="/DrimStylelogo.png" alt="DrimStyle — Save Money Save Time" className="h-10 w-36 object-cover object-center" />
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl tracking-tight select-none font-serif">
-                <span className="text-stone-900 font-bold">Instaa</span>
-                <span className="text-brand-maroon font-black">Trim</span>
-              </h1>
               <span className="text-[9.5px] font-sans font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-stone-900 text-white">
                 Partner
               </span>

@@ -162,7 +162,7 @@ export const CheckoutPage = () => {
         key: 'rzp_test_S3IcSS1NbymL6D', // Updated test key
         amount: data.data.amount,
         currency: data.data.currency,
-        name: 'InstaaTrim',
+        name: 'DrimStyle',
         description: 'Salon Booking Payment',
         order_id: data.data.id,
         handler: async function (response) {

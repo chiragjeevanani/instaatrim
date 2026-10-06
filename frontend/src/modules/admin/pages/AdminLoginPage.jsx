@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
 export const AdminLoginPage = () => {
@@ -42,10 +42,8 @@ export const AdminLoginPage = () => {
         <div className="bg-[#13131c] border border-[#262638] rounded-2xl p-8 shadow-2xl backdrop-blur-xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-purple-600 via-pink-600 to-amber-500 flex items-center justify-center text-white shadow-xl shadow-purple-950/60">
-              <ShieldCheck className="w-8 h-8" />
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">InstaaTrim Admin</h1>
+            <img src="/DrimStylelogo.png" alt="DrimStyle — Save Money Save Time" className="h-12 w-40 mx-auto mb-4 object-cover object-center" />
+            <h1 className="text-2xl font-bold text-white tracking-tight">DrimStyle Admin</h1>
             <p className="text-xs text-stone-400 mt-1">Super Administrator Control Console</p>
           </div>
 

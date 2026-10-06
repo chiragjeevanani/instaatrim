@@ -101,7 +101,7 @@ export const SalonSupportModal = ({ isOpen, onClose }) => {
                 rows={3}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Describe your issue or query for the InstaaTrim support desk..."
+                placeholder="Describe your issue or query for the DrimStyle support desk..."
                 className="w-full p-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 outline-none focus:border-brand-maroon"
               />
             </div>

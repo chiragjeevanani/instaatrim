@@ -794,7 +794,7 @@ export const DEFAULT_CUSTOMER = {
 export const ADMIN_CREDENTIALS = {
   email: 'admin@instaatrim.com',
   password: 'admin2025',
-  name: 'InstaaTrim Super Admin',
+  name: 'DrimStyle Super Admin',
   role: 'super_admin'
 };
 
@@ -872,7 +872,7 @@ export const DEFAULT_PLATFORM_SETTINGS = {
 // ---------------------------------------------------------------------------
 export const DEFAULT_ELITE_PLAN = {
   id: 'elite-pass-3m',
-  name: 'InstaaTrim Elite Club',
+  name: 'DrimStyle Elite Club',
   tagline: 'VIP Membership & Priority Beauty Access',
   price: 299,
   originalPrice: 999,

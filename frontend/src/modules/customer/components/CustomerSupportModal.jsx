@@ -55,7 +55,7 @@ export const CustomerSupportModal = ({ isOpen, onClose }) => {
               <HelpCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-stone-900">InstaaTrim Support Desk</h3>
+              <h3 className="font-bold text-sm text-stone-900">DrimStyle Support Desk</h3>
               <p className="text-[10px] text-stone-500">Fast assistance &amp; dispute resolution</p>
             </div>
           </div>

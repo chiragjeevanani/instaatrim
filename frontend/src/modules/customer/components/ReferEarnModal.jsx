@@ -96,7 +96,7 @@ export const ReferEarnModal = () => {
             onClick={() => {
               if (navigator.share) {
                 navigator.share({
-                  title: 'InstaaTrim Salon Booking',
+                  title: 'DrimStyle Salon Booking',
                   text: `Book top salons with my code ${referralCode} and get ₹100 OFF!`,
                   url: window.location.origin
                 });

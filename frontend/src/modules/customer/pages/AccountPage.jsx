@@ -68,7 +68,7 @@ export const AccountPage = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <h1 className="text-sm font-bold tracking-tight truncate">
-                  {user?.name || 'InstaaTrim Guest'}
+                  {user?.name || 'DrimStyle Guest'}
                 </h1>
                 {user?.isElite && (
                   <span className="bg-amber-400 text-stone-950 font-black text-[8.5px] px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
@@ -103,7 +103,7 @@ export const AccountPage = () => {
               <Sparkles className="w-3.5 h-3.5" />
             </div>
             <div>
-              <span className="text-[11px] font-bold text-amber-300 block leading-tight">InstaaTrim Elite Club</span>
+              <span className="text-[11px] font-bold text-amber-300 block leading-tight">DrimStyle Elite Club</span>
               <p className="text-[9.5px] text-stone-300 leading-tight">Enjoy 10% Extra OFF on salon services</p>
             </div>
           </div>
@@ -242,7 +242,7 @@ export const AccountPage = () => {
           className="w-full py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-xs text-stone-700 hover:bg-stone-50 active:scale-98 transition-all flex items-center justify-center gap-1.5 shadow-xs"
         >
           <LogOut className="w-3.5 h-3.5 text-stone-500" />
-          <span>{user?.isLoggedIn ? 'Log Out of InstaaTrim' : 'Log In / Register'}</span>
+          <span>{user?.isLoggedIn ? 'Log Out of DrimStyle' : 'Log In / Register'}</span>
         </button>
       </main>
 
@@ -288,7 +288,7 @@ export const AccountPage = () => {
         icon={<Shield className="w-4 h-4" />}
         title="Safety & Privacy Policy"
       >
-        <p>InstaaTrim only lists salons that have completed our verification process — business documents, in-person hygiene review and an active commercial agreement.</p>
+        <p>DrimStyle only lists salons that have completed our verification process — business documents, in-person hygiene review and an active commercial agreement.</p>
         <ul className="list-disc pl-4 space-y-1 text-stone-600">
           <li>Sanitised tools and single-use kits at every verified partner</li>
           <li>Your booking, contact and payment details are never shared with a salon beyond what's needed to serve you</li>

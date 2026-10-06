@@ -261,13 +261,7 @@ export const AuthPage = () => {
 
           {/* Brand Logo */}
           <div className="mb-5 flex items-center justify-center gap-2.5 w-full">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-maroon to-purple-600 flex items-center justify-center text-white shadow-xs">
-              <span className="font-serif font-black text-sm">IT</span>
-            </div>
-            <h1 className="text-2xl tracking-tight select-none font-serif">
-              <span className="text-stone-900 font-bold">Instaa</span>
-              <span className="text-brand-maroon font-black">Trim</span>
-            </h1>
+            <img src="/DrimStylelogo.png" alt="DrimStyle — Save Money Save Time" className="h-10 w-36 object-cover object-center" />
           </div>
 
           <AnimatePresence mode="wait">
@@ -282,7 +276,7 @@ export const AuthPage = () => {
                 transition={{ duration: 0.2 }}
                 className="w-full flex flex-col"
               >
-                <h2 className="text-base font-bold text-stone-900 mb-1">Welcome to InstaaTrim</h2>
+                <h2 className="text-base font-bold text-stone-900 mb-1">Welcome to DrimStyle</h2>
                 <p className="text-xs text-stone-500 mb-4">Enter your mobile number to login or sign up</p>
 
                 <div className="relative w-full mb-3">

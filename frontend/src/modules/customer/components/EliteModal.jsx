@@ -45,7 +45,7 @@ export const EliteModal = () => {
       });
       const data = await res.json();
       if (data.success) {
-        showToast('You are now an InstaaTrim Elite Club Member! 🎉');
+        showToast('You are now an DrimStyle Elite Club Member! 🎉');
         if (fetchMyProfile) await fetchMyProfile();
         setIsEliteModalOpen(false);
       } else {
@@ -87,7 +87,7 @@ export const EliteModal = () => {
         key: 'rzp_test_S3IcSS1NbymL6D', 
         amount: data.data.amount,
         currency: data.data.currency,
-        name: 'InstaaTrim',
+        name: 'DrimStyle',
         description: 'Elite Membership',
         order_id: data.data.id,
         handler: async function (response) {

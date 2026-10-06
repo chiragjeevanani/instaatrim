@@ -95,7 +95,7 @@ export const ServiceDetailModal = () => {
     return (
       state.salons.find((s) => s.id === activeDetailService.salonId) || {
         id: activeDetailService.salonId || 'sal-1',
-        name: activeDetailService.salonName || 'InstaaTrim Partner Salon',
+        name: activeDetailService.salonName || 'DrimStyle Partner Salon',
         area: 'South Tukoganj, Indore',
         rating: 4.8,
         reviewsCount: 168,
@@ -157,7 +157,7 @@ export const ServiceDetailModal = () => {
       navigator
         .share({
           title: activeDetailService.title || activeDetailService.name,
-          text: `Check out ${activeDetailService.title || activeDetailService.name} on InstaaTrim!`,
+          text: `Check out ${activeDetailService.title || activeDetailService.name} on DrimStyle!`,
           url: window.location.href
         })
         .catch(() => {});

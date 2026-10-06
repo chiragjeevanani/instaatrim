@@ -910,7 +910,7 @@ export const SalonRegistrationPage = () => {
                     <span>Onboarding &amp; Admin Approval Process</span>
                   </div>
                   <ul className="text-[10.5px] text-stone-600 space-y-1 leading-snug pl-4 list-disc">
-                    <li>Upon submission, your salon application is reviewed by the InstaaTrim Admin team.</li>
+                    <li>Upon submission, your salon application is reviewed by the DrimStyle Admin team.</li>
                     <li>First approval from the admin is required before your salon can list treatments.</li>
                     <li>Commission rate will be decided by Admin upon approval.</li>
                   </ul>

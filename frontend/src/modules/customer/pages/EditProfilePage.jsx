@@ -240,7 +240,7 @@ export const EditProfilePage = () => {
             {/* Privacy Trust Card */}
             <div className="bg-emerald-50/80 rounded-2xl p-3 border border-emerald-200/70 flex items-center gap-2.5 text-emerald-800 text-[10.5px]">
               <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>Your contact information is strictly protected and encrypted per InstaaTrim Privacy Policy.</span>
+              <span>Your contact information is strictly protected and encrypted per DrimStyle Privacy Policy.</span>
             </div>
 
             {/* Action Buttons */}

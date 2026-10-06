@@ -151,7 +151,7 @@ export const MID_PAGE_CAMPAIGNS = [
   {
     id: 'mid-ad-beauty-pass',
     badge: 'Sponsored Campaign',
-    title: 'InstaaTrim Gold Glow Carnival',
+    title: 'DrimStyle Gold Glow Carnival',
     subtitle: 'Co-sponsored by Lakmé & O3+ Pro',
     highlight: 'Book 2 Services • Get Free De-Tan',
     coupon: 'CARNIVAL50',

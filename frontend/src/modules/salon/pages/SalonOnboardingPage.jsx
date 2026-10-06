@@ -97,7 +97,7 @@ export const SalonOnboardingPage = () => {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-emerald-950">
-                  InstaaTrim Partner Verified &amp; Active
+                  DrimStyle Partner Verified &amp; Active
                 </span>
               </div>
               <p className="text-[10.5px] text-emerald-800/90 leading-relaxed mt-0.5 font-normal">

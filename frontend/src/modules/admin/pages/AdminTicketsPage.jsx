@@ -131,7 +131,7 @@ export const AdminTicketsPage = () => {
                       className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'} space-y-1`}
                     >
                       <div className="text-[10px] text-stone-500">
-                        {isAdmin ? 'InstaaTrim Staff' : selectedTicket.userName || 'Customer'} •{' '}
+                        {isAdmin ? 'DrimStyle Staff' : selectedTicket.userName || 'Customer'} •{' '}
                         {m.sentAt ? new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </div>
                       <div

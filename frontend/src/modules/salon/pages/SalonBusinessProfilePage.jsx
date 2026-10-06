@@ -71,7 +71,7 @@ export const SalonBusinessProfilePage = () => {
           </button>
           <div>
             <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">Business Listing</h1>
-            <p className="text-[10.5px] text-stone-400 font-normal">What customers see on InstaaTrim</p>
+            <p className="text-[10.5px] text-stone-400 font-normal">What customers see on DrimStyle</p>
           </div>
         </div>
 

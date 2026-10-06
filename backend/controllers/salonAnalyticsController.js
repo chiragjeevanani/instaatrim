@@ -7,7 +7,7 @@ exports.getSalonAnalytics = async (req, res) => {
 
         // Fetch bookings for this salon
         const bookings = await Booking.find({ salonId });
-        
+
         // Fetch payouts for this salon
         const payouts = await Payout.find({ salonId });
 
@@ -17,10 +17,10 @@ exports.getSalonAnalytics = async (req, res) => {
         const completedBookings = bookings.filter(b => b.status === 'Completed');
         const cancelledBookings = bookings.filter(b => b.status === 'Cancelled');
         const totalTerminal = completedBookings.length + cancelledBookings.length;
-        
+
         // GMV Calculation (All time)
         const totalGmv = completedBookings.reduce((sum, b) => sum + (b.finalPaid || b.totalAmount || 0), 0);
-        
+
         // Payouts Settled or Pending
         const totalPayouts = payouts
             .filter(p => ['Transferred', 'Pending', 'Approved'].includes(p.status))

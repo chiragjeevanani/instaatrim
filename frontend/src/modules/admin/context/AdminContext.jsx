@@ -345,7 +345,7 @@ export const AdminProvider = ({ children }) => {
     try {
       const message = {
         sender: 'admin',
-        senderName: 'InstaaTrim Support Team',
+        senderName: 'DrimStyle Support Team',
         text,
         sentAt: new Date().toISOString()
       };

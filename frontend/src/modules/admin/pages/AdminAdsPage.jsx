@@ -1538,7 +1538,7 @@ export const AdminAdsPage = () => {
                   required
                   value={midFormData.title}
                   onChange={(e) => setMidFormData({ ...midFormData, title: e.target.value })}
-                  placeholder="e.g. InstaaTrim Gold Glow Carnival"
+                  placeholder="e.g. DrimStyle Gold Glow Carnival"
                   className={`w-full rounded-xl px-3 py-2 font-bold outline-none border ${isLight
                     ? 'bg-white border-slate-300 text-slate-900 focus:border-purple-600'
                     : 'bg-[#0d0d14] border-[#2c2c40] text-white focus:border-purple-500'

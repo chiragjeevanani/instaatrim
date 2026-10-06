@@ -337,7 +337,7 @@ export const AdminPlatformSettingsPage = () => {
                   <Crown className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">InstaaTrim Elite Club Pass</h3>
+                  <h3 className="font-bold text-sm">DrimStyle Elite Club Pass</h3>
                   <p className="text-[11px] text-stone-400">Controls VIP banner perks, subscription cost and discounts</p>
                 </div>
               </div>

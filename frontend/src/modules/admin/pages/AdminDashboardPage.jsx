@@ -16,13 +16,15 @@ import {
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 export const AdminDashboardPage = () => {
   const { kpis, bookings, salons, offers, tickets, approveOffer, rejectOffer, verifySalon } = useAdmin();
 
   const [dbStats, setDbStats] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:6200/api/admin/stats')
+    fetch(`${API_BASE}/admin/stats`)
       .then(res => res.json())
       .then(json => {
         if (json.success) setDbStats(json.data);

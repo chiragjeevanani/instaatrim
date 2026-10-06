@@ -233,6 +233,17 @@ export const AdminProvider = ({ children }) => {
     }
   }, [showToast]);
 
+  const deleteSalon = useCallback(async (salonId) => {
+    try {
+      await api.salons.remove(salonId);
+      showToast('Salon and its active setup were deleted', 'success');
+      return true;
+    } catch (err) {
+      showToast(err.message || 'Failed to delete salon', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
   const setSalonCommission = useCallback(async (salonId, rate) => {
     try {
       await api.salons.setCommission(salonId, rate);
@@ -782,6 +793,7 @@ export const AdminProvider = ({ children }) => {
       removeServiceBoost,
       verifySalon,
       rejectSalon,
+      deleteSalon,
       setSalonCommission,
       toggleSalonActive,
       approveOffer,
@@ -869,6 +881,7 @@ export const AdminProvider = ({ children }) => {
       removeServiceBoost,
       verifySalon,
       rejectSalon,
+      deleteSalon,
       setSalonCommission,
       toggleSalonActive,
       approveOffer,

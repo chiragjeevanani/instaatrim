@@ -1,5 +1,53 @@
 const Salon = require('../models/Salon');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+
+exports.deleteSalon = async (req, res) => {
+    let session;
+    try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        const salon = await Salon.findById(req.params.id).session(session);
+        if (!salon) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: 'Salon not found' });
+        }
+
+        const salonId = salon._id;
+        const salonIdString = salonId.toString();
+        const Staff = require('../models/Staff');
+        const Station = require('../models/Station');
+        const Service = require('../models/Service');
+        const Ritual = require('../models/Ritual');
+        const YieldAlert = require('../models/YieldAlert');
+        const AdCampaign = require('../models/AdCampaign');
+        const HeroBanner = require('../models/HeroBanner');
+
+        await Staff.deleteMany({ salonId }, { session });
+        await Station.deleteMany({ salonId }, { session });
+        await Service.deleteMany({ salonId }, { session });
+        await Ritual.deleteMany({ salonId }, { session });
+        await YieldAlert.deleteMany({ salonId }, { session });
+        await AdCampaign.deleteMany({ salonId: salonIdString }, { session });
+        await HeroBanner.deleteMany({ salonId: salonIdString }, { session });
+        await salon.deleteOne({ session });
+        await session.commitTransaction();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Salon and related active records deleted. Booking and payout history was retained.',
+        });
+    } catch (error) {
+        if (session?.inTransaction()) {
+            await session.abortTransaction().catch(() => {});
+        }
+        console.error('deleteSalon error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to delete salon' });
+    } finally {
+        if (session) await session.endSession();
+    }
+};
 
 exports.registerSalon = async (req, res) => {
     try {

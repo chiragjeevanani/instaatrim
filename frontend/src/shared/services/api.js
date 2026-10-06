@@ -70,6 +70,19 @@ const salons = {
     }
   },
 
+  remove: async (salonId) => {
+    const res = await fetch(`${API_BASE}/salons/${salonId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || 'Failed to delete salon');
+    }
+    dispatch({ type: 'DELETE_SALON', payload: { salonId } });
+    return true;
+  },
+
   patch: async (salonId, patch) => {
     try {
       const res = await fetch(`${API_BASE}/salons/${salonId}`, {

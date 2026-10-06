@@ -10,18 +10,34 @@ import {
   Percent,
   Power,
   Store,
-  ExternalLink
+  ExternalLink,
+  Trash2
 } from 'lucide-react';
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 
 export const AdminSalonsPage = () => {
-  const { salons, categories, verifySalon, rejectSalon, toggleSalonActive, setSalonCommission } = useAdmin();
+  const { salons, categories, verifySalon, rejectSalon, deleteSalon, toggleSalonActive, setSalonCommission } = useAdmin();
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All'); // All | Pending | Live | Rejected
   const [editingCommissionId, setEditingCommissionId] = useState(null);
   const [commissionInput, setCommissionInput] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await deleteSalon(deleteConfirm.id);
+      setDeleteConfirm(null);
+    } catch {
+      // The admin context shows the error toast; keep the confirmation open.
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filteredSalons = salons.filter((s) => {
     const matchesSearch =
@@ -232,6 +248,15 @@ export const AdminSalonsPage = () => {
                             <span>Details</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirm(salon)}
+                            title="Delete Salon"
+                            aria-label={`Delete ${salon.name}`}
+                            className="p-1.5 rounded-lg bg-[#1a1a26] border border-[#2b2b3d] text-stone-400 hover:text-red-400 hover:bg-red-950/30 hover:border-red-800/50 transition-colors cursor-pointer flex-shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -242,6 +267,42 @@ export const AdminSalonsPage = () => {
           </div>
         </div>
       </div>
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="w-full max-w-sm bg-[#14141e] border border-red-800/60 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-red-950/60 border border-red-800/80 text-red-400 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Delete Salon &quot;{deleteConfirm.name}&quot;?
+              </h3>
+              <p className="text-xs text-stone-400 mt-1">
+                This permanently removes the salon and its staff, stations, services, and active setup from the database. Booking and payout history will be retained.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-2.5 rounded-xl border border-[#2d2d42] text-stone-300 hover:text-white font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-all shadow-md shadow-red-950/40 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting…' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -81,6 +81,10 @@ export function appReducer(state, action) {
     case 'SET_SALONS': {
       return { ...state, salons: action.payload };
     }
+    case 'DELETE_SALON': {
+      const salonId = action.payload.salonId || action.payload.id || action.payload;
+      return { ...state, salons: state.salons.filter((salon) => salon.id !== salonId && salon._id !== salonId) };
+    }
 
     // ---------------- Customers ----------------
     case 'SET_CUSTOMERS': {

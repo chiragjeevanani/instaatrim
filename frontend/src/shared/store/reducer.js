@@ -89,9 +89,9 @@ export function appReducer(state, action) {
     case 'UPSERT_CUSTOMER': {
       const exists = (state.customers || []).find(c => c.id === action.payload.id);
       if (exists) {
-        return { ...state, customers: state.customers.map(c => c.id === action.payload.id ? { ...c, ...action.payload } : c) };
+        return { ...state, customers: state.customers.map(c => c.id === action.payload.id ? { ...c, ...action.payload } : c), currentCustomerId: action.payload.id };
       }
-      return { ...state, customers: [action.payload, ...(state.customers || [])] };
+      return { ...state, customers: [action.payload, ...(state.customers || [])], currentCustomerId: action.payload.id };
     }
     case 'PATCH_CURRENT_CUSTOMER': {
       return { ...state, customers: (state.customers || []).map(c => c.id === state.currentCustomerId ? { ...c, ...action.payload } : c) };
@@ -412,6 +412,10 @@ export function appReducer(state, action) {
     case 'ADD_LOCATION': {
       return { ...state, locations: [...state.locations, action.payload] };
     }
+    case 'SET_CUSTOMER_LOCATIONS': {
+      const { userId, locations } = action.payload;
+      return { ...state, locations: [...state.locations.filter((location) => location.userId !== userId), ...locations] };
+    }
     case 'UPDATE_LOCATION': {
       const { locationId, patch } = action.payload;
       return { ...state, locations: state.locations.map((l) => (l.id === locationId ? { ...l, ...patch } : l)) };
@@ -660,6 +664,10 @@ export function appReducer(state, action) {
     case 'SET_PAYOUTS': {
       return { ...state, payouts: action.payload };
     }
+    case 'SET_PAYOUTS_BY_SALON': {
+      const { salonId, payouts } = action.payload;
+      return { ...state, payouts: [...(state.payouts || []).filter((p) => p.salonId !== salonId), ...payouts] };
+    }
     case 'REQUEST_PAYOUT': {
       return { ...state, payouts: [action.payload, ...(state.payouts || [])] };
     }
@@ -762,6 +770,10 @@ export function appReducer(state, action) {
     // ---------------- Reviews & Salon Replies ----------------
     case 'SET_REVIEWS': {
       return { ...state, reviews: action.payload };
+    }
+    case 'SET_REVIEWS_BY_SALON': {
+      const { salonId, reviews } = action.payload;
+      return { ...state, reviews: [...(state.reviews || []).filter((review) => review.salonId !== salonId), ...reviews] };
     }
     case 'ADD_REVIEW': {
       return { ...state, reviews: [action.payload, ...(state.reviews || [])] };

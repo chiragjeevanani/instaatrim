@@ -197,11 +197,12 @@ export const SalonRegistrationPage = () => {
         totalChairs: Number(formData.totalChairs) || 4,
         amenities: formData.amenities,
         coverImage: formData.coverImage,
-        gstin: formData.gstin.trim() || '23AABCU9603R1ZM',
-        shopActLicense: formData.shopActLicense.trim() || 'IND-MP-2025-9921',
+        gstin: formData.gstin.trim(),
+        shopActLicense: formData.shopActLicense.trim(),
         bankName: formData.bankName,
-        accountNumber: formData.accountNumber || '4892789123',
-        ifscCode: formData.ifscCode.toUpperCase() || 'HDFC0001032'
+        accountNumber: formData.accountNumber,
+        ifscCode: formData.ifscCode.toUpperCase(),
+        payoutCycle: formData.payoutCycle
       });
 
       confetti({

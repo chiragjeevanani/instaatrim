@@ -36,6 +36,21 @@ const customerSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Salon'
     }],
+    saved_locations: [{
+        _id: false,
+        id: { type: String, required: true },
+        userId: { type: String, required: true },
+        area: { type: String, required: true },
+        address: { type: String, required: true },
+        landmark: { type: String, default: '' },
+        city: { type: String, default: '' },
+        pincode: { type: String, default: '' },
+        lat: { type: Number },
+        lng: { type: Number },
+        isCurrent: { type: Boolean, default: false },
+    }],
+    cart_items: { type: [mongoose.Schema.Types.Mixed], default: [] },
+    booking_slot: { type: mongoose.Schema.Types.Mixed, default: null },
     auth_provider: {
         type: String,
         default: 'otp',

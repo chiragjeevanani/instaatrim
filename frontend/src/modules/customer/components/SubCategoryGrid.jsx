@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppData } from '../../../shared/store/AppDataProvider';
 import { CATEGORIES } from '../../../shared/data/seed';
 import { motion } from 'framer-motion';
 
@@ -9,13 +10,16 @@ import { motion } from 'framer-motion';
 // It now reuses the single shared taxonomy so there's one place that
 // defines what a category is and how it maps to services.
 const subCategorySlugs = ['waxing', 'facial', 'body-polishing', 'mani-pedi', 'hair', 'beard', 'grooming', 'mehandi'];
-const mockSubCategories = subCategorySlugs
-  .map((slug) => CATEGORIES.find((c) => c.slug === slug))
-  .filter(Boolean)
-  .map((c) => ({ id: c.id, title: c.shortName, image: c.image, slug: c.slug }));
-
 export const SubCategoryGrid = () => {
   const navigate = useNavigate();
+  const { state } = useAppData();
+  const subCategories = useMemo(() => {
+    const categories = state.categories?.length ? state.categories : CATEGORIES;
+    return subCategorySlugs
+      .map((slug) => categories.find((category) => category.slug === slug && category.isActive !== false))
+      .filter(Boolean)
+      .map((category) => ({ id: category.id, title: category.shortName || category.name, image: category.image, slug: category.slug }));
+  }, [state.categories]);
 
   return (
     <section className="mt-8 px-4 w-full max-w-full min-w-0 box-border" data-purpose="sub-categories-showcase">
@@ -36,7 +40,7 @@ export const SubCategoryGrid = () => {
 
       {/* 3-Column Visual Grid - Generous & Spacious */}
       <div className="grid grid-cols-3 gap-2.5 w-full">
-        {mockSubCategories.map((item) => (
+        {subCategories.map((item) => (
           <motion.div
             key={item.id}
             whileTap={{ scale: 0.95 }}

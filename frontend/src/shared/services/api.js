@@ -795,7 +795,9 @@ const reviews = {
       const res = await fetch(`${API_BASE}/reviews/salon/${salonId}`);
       const json = await res.json();
       if (res.ok) {
-        return (json.data || []).map(r => ({ ...r, id: r._id || r.id }));
+        const data = (json.data || []).map(r => ({ ...r, id: r._id || r.id }));
+        dispatch({ type: 'SET_REVIEWS_BY_SALON', payload: { salonId, reviews: data } });
+        return data;
       }
     } catch (e) {
       console.error(e);
@@ -914,30 +916,48 @@ const reviews = {
 const locations = {
   listByUser: (userId) => withLatency(() => clone(getState().locations.filter((l) => l.userId === userId))),
 
-  add: (userId, data) =>
-    withLatency(() => {
-      const loc = { id: newAddressId(), userId, isCurrent: false, ...data };
-      dispatch({ type: 'ADD_LOCATION', payload: loc });
-      return clone(loc);
-    }),
+  add: async (userId, data) => {
+    const existing = getState().locations.filter((location) => location.userId === userId);
+    const loc = { id: newAddressId(), userId, isCurrent: existing.length === 0, ...data };
+    const next = [...existing, loc];
+    dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId, locations: next } });
+    await customers.updateProfile({ savedLocations: next });
+    return clone(loc);
+  },
 
-  update: (locationId, patch) =>
-    withLatency(() => {
-      dispatch({ type: 'UPDATE_LOCATION', payload: { locationId, patch } });
-      return clone({ ...getState().locations.find((l) => l.id === locationId), ...patch });
-    }),
+  update: async (locationId, patch) => {
+    const current = getState().locations.find((location) => location.id === locationId);
+    if (!current) return null;
+    const next = getState().locations
+      .filter((location) => location.userId === current.userId)
+      .map((location) => location.id === locationId ? { ...location, ...patch } : location);
+    dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId: current.userId, locations: next } });
+    await customers.updateProfile({ savedLocations: next });
+    return clone(next.find((location) => location.id === locationId));
+  },
 
-  remove: (locationId) =>
-    withLatency(() => {
-      dispatch({ type: 'DELETE_LOCATION', payload: { locationId } });
-      return true;
-    }),
+  remove: async (locationId) => {
+    const current = getState().locations.find((location) => location.id === locationId);
+    if (!current) return true;
+    let next = getState().locations.filter((location) => location.userId === current.userId && location.id !== locationId);
+    if (!next.some((location) => location.isCurrent) && next.length) {
+      next = next.map((location, index) => ({ ...location, isCurrent: index === 0 }));
+    }
+    dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId: current.userId, locations: next } });
+    await customers.updateProfile({ savedLocations: next });
+    return true;
+  },
 
-  setCurrent: (locationId) =>
-    withLatency(() => {
-      dispatch({ type: 'SET_CURRENT_LOCATION', payload: { locationId } });
-      return true;
-    })
+  setCurrent: async (locationId) => {
+    const current = getState().locations.find((location) => location.id === locationId);
+    if (!current) return false;
+    const next = getState().locations
+      .filter((location) => location.userId === current.userId)
+      .map((location) => ({ ...location, isCurrent: location.id === locationId }));
+    dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId: current.userId, locations: next } });
+    await customers.updateProfile({ savedLocations: next });
+    return true;
+  }
 };
 
 // =============================================================================
@@ -1110,6 +1130,28 @@ const authHeaders = () => ({
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
+const mapCustomerFromApi = (customer, fallback = {}) => ({
+  ...fallback,
+  id: String(customer.id || customer._id || fallback.id || ''),
+  isLoggedIn: true,
+  name: customer.name || fallback.name || 'Customer',
+  phone: customer.phone || fallback.phone || '',
+  email: customer.email || fallback.email || '',
+  gender: customer.gender || fallback.gender || 'female',
+  dob: customer.dob || fallback.dob || null,
+  is_elite: customer.is_elite ?? fallback.is_elite ?? false,
+  referral_code: customer.referral_code || fallback.referral_code || null,
+  favoriteSalonIds: (customer.favorite_salon_ids || fallback.favoriteSalonIds || []).map(String),
+  savedLocations: (customer.saved_locations || fallback.savedLocations || []).map((location) => ({
+    ...location,
+    userId: String(customer.id || customer._id || fallback.id || location.userId)
+  })),
+  cartItems: customer.cart_items || fallback.cartItems || [],
+  bookingSlot: customer.booking_slot || fallback.bookingSlot || null,
+  authProvider: customer.auth_provider || fallback.authProvider || 'otp',
+  notificationPrefs: fallback.notificationPrefs || { push: true, sms: true, email: true, whatsapp: false, marketing: false }
+});
+
 const customers = {
   list: () => withLatency(() => clone(getState().customers)),
 
@@ -1131,18 +1173,9 @@ const customers = {
         if (res.ok) {
           const data = await res.json();
           const dbCustomer = data.customer;
-          const record = {
-            id: String(dbCustomer.id),
-            isLoggedIn: true,
-            name: dbCustomer.name || name || 'Customer',
-            phone: dbCustomer.phone || phone,
-            email: dbCustomer.email || `${phone}@instaatrim.com`,
-            gender: dbCustomer.gender || 'female',
-            is_elite: dbCustomer.is_elite || false,
-            referral_code: dbCustomer.referral_code || null,
-            authProvider: 'otp',
-            notificationPrefs: { push: true, sms: true, email: true, whatsapp: false, marketing: false },
-          };
+          const record = mapCustomerFromApi(dbCustomer, { name, phone, email: `${phone}@instaatrim.com` });
+          const locations = record.savedLocations;
+          dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId: record.id, locations } });
           dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
           return clone(record);
         }
@@ -1221,7 +1254,7 @@ const customers = {
         if (res.ok) {
           const data = await res.json();
           // Sync updated profile into local store
-          dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: { ...patch, ...data.customer } });
+          dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: { ...patch, ...mapCustomerFromApi(data.customer) } });
           const state = getState();
           return clone(state.customers.find((c) => c.id === state.currentCustomerId));
         }
@@ -1244,7 +1277,9 @@ const customers = {
         });
         if (res.ok) {
           const data = await res.json();
-          dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: data.customer });
+          const record = mapCustomerFromApi(data.customer);
+          dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId: record.id, locations: record.savedLocations } });
+          dispatch({ type: 'PATCH_CURRENT_CUSTOMER', payload: record });
           const state = getState();
           return clone(state.customers.find((c) => c.id === state.currentCustomerId));
         }
@@ -1801,7 +1836,11 @@ const payouts = {
       const res = await fetch(`${API_BASE}/payouts`, { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
-        return json.data.filter(p => p.salonId === salonId);
+        const data = (json.data || [])
+          .filter((p) => p.salonId === salonId)
+          .map((p) => ({ ...p, id: p.id || p._id }));
+        dispatch({ type: 'SET_PAYOUTS_BY_SALON', payload: { salonId, payouts: data } });
+        return data;
       }
     } catch (e) { console.error('Failed to fetch payouts', e); }
     return clone((getState().payouts || []).filter((p) => p.salonId === salonId));
@@ -1818,7 +1857,8 @@ const payouts = {
           settledAt: null,
           utr: null,
           notes: '',
-          ...data
+          ...data,
+          commissionPercent: Number(data.commissionPercent ?? String(data.commissionRate || '').replace(/[^0-9.]/g, '')) || 0
         })
       });
       if (res.ok) {

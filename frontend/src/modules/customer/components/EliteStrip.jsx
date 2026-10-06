@@ -3,12 +3,14 @@ import { useCustomer } from '../context/CustomerContext';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 export const EliteStrip = () => {
   const { setIsEliteModalOpen, user } = useCustomer();
   const [config, setConfig] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:6200/api/page-campaigns/elite')
+    fetch(`${API_BASE}/page-campaigns/elite`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {

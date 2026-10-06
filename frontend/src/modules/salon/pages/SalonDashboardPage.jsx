@@ -51,7 +51,8 @@ export const SalonDashboardPage = () => {
 
   React.useEffect(() => {
     if (salonProfile?.id) {
-      fetch(`http://localhost:6200/api/salons/${salonProfile.id}/yield-alert`)
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+      fetch(`${apiBase}/salons/${salonProfile.id}/yield-alert`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {
@@ -148,7 +149,7 @@ export const SalonDashboardPage = () => {
             </div>
             <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
               <ArrowUpRight className="w-3 h-3 stroke-[2.5]" />
-              <span>+18% today</span>
+              <span>Today's total</span>
             </p>
           </div>
 

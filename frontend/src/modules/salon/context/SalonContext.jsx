@@ -29,7 +29,8 @@ export const SalonProvider = ({ children }) => {
   // on every refresh so we never lose details like 'name', 'ownerName'.
   useEffect(() => {
     if (isAuthenticated && salonId && salonId !== 'sal-1') {
-      fetch(`http://localhost:6200/api/salons/${salonId}`)
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+      fetch(`${apiBase}/salons/${salonId}`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && json.data) {
@@ -44,7 +45,7 @@ export const SalonProvider = ({ children }) => {
         .catch(console.error);
 
       // Fetch services (filtering done via useMemo locally for robustness)
-      fetch(`http://localhost:6200/api/services`)
+      fetch(`${apiBase}/services`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && Array.isArray(json.data)) {
@@ -55,7 +56,7 @@ export const SalonProvider = ({ children }) => {
         .catch(console.error);
 
       // Fetch staff for this salon
-      fetch(`http://localhost:6200/api/staff/salon/${salonId}`)
+      fetch(`${apiBase}/staff/salon/${salonId}`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && Array.isArray(json.data)) {
@@ -72,7 +73,7 @@ export const SalonProvider = ({ children }) => {
         .catch(console.error);
 
       // Fetch stations from DB
-      fetch(`http://localhost:6200/api/stations/salon/${salonId}`)
+      fetch(`${apiBase}/stations/salon/${salonId}`)
         .then((res) => res.json())
         .then((json) => {
           if (json.success && Array.isArray(json.data) && json.data.length > 0) {
@@ -83,6 +84,8 @@ export const SalonProvider = ({ children }) => {
 
       // Fetch bookings for this salon
       api.bookings.listBySalon(salonId).catch(console.error);
+      api.payouts.listBySalon(salonId).catch(console.error);
+      api.reviews.listBySalon(salonId).catch(console.error);
 
       // Fetch offers
       api.offers.listAll().then(offers => {
@@ -396,25 +399,33 @@ export const SalonProvider = ({ children }) => {
   const requestPayout = useCallback(
     async (amount, notes = '') => {
       try {
-        const commRate = salonProfile.commissionRate || '12%';
-        const rateNum = Number(commRate.replace(/\D/g, '')) || 12;
+        const commRate = salonProfile.commissionRate || 'Pending Admin Approval';
+        const rateNum = Number(String(commRate).replace(/[^0-9.]/g, ''));
+        if (!Number.isFinite(rateNum) || !String(commRate).match(/[0-9]/)) {
+          showToast('Commission rate is pending admin approval', 'error');
+          return false;
+        }
         const commDeducted = Math.round((Number(amount) * rateNum) / 100);
         const net = Number(amount) - commDeducted;
 
-        await api.payouts.request({
+        const result = await api.payouts.request({
           salonId,
           salonName: salonProfile.name,
-          bankAccount: salonProfile.accountNumber || '•••• •••• 4892 (HDFC)',
-          ifsc: salonProfile.ifscCode || 'HDFC0001032',
+          bankAccount: salonProfile.accountNumber || '',
+          ifsc: salonProfile.ifscCode || '',
           grossAmount: Number(amount),
           commissionRate: commRate,
+          commissionPercent: rateNum,
           commissionDeducted: commDeducted,
           netAmount: net,
           notes: notes || 'Partner withdrawal request'
         });
+        if (!result) throw new Error('Could not request payout');
         showToast(`Payout request for ₹${Number(amount).toLocaleString('en-IN')} submitted to Admin!`);
+        return true;
       } catch (e) {
         showToast(e.message || 'Could not request payout', 'error');
+        return false;
       }
     },
     [salonId, salonProfile, showToast]
@@ -506,7 +517,7 @@ export const SalonProvider = ({ children }) => {
       .filter((p) => p.status === 'Transferred' || p.status === 'Pending' || p.status === 'Approved')
       .reduce((sum, p) => sum + p.grossAmount, 0);
 
-    const availablePayout = Math.max(0, totalGmv - totalPayoutsSettledOrPending + 15000);
+    const availablePayout = Math.max(0, totalGmv - totalPayoutsSettledOrPending);
 
     const customerCounts = {};
     bookings.forEach((b) => {
@@ -533,9 +544,9 @@ export const SalonProvider = ({ children }) => {
       completionRate: totalTerminal > 0 ? Math.round((allTimeCompleted.length / totalTerminal) * 1000) / 10 : 100,
       repeatCustomers,
       newCustomersToday,
-      monthGmv: totalGmv > 0 ? totalGmv : 142850,
+      monthGmv: totalGmv,
       availablePayout,
-      nextPayoutDate: 'Weekly Batch (Monday)'
+      nextPayoutDate: salonProfile.payoutCycle || 'Not configured'
     };
   }, [bookings, occupiedChairs, salonProfile.totalChairs, payouts]);
 

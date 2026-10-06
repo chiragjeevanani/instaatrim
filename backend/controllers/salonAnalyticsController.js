@@ -13,6 +13,8 @@ exports.getSalonAnalytics = async (req, res) => {
 
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOf30Days = new Date(now);
+        startOf30Days.setDate(now.getDate() - 30);
 
         const completedBookings = bookings.filter(b => b.status === 'Completed');
         const cancelledBookings = bookings.filter(b => b.status === 'Cancelled');
@@ -32,6 +34,27 @@ exports.getSalonAnalytics = async (req, res) => {
         // MTD Revenue
         const mtdBookings = completedBookings.filter(b => new Date(b.createdAt) >= startOfMonth);
         const mtdRevenue = mtdBookings.reduce((sum, b) => sum + (b.finalPaid || b.totalAmount || 0), 0);
+
+        const timeOfDayBookings = { morning: 0, afternoon: 0, evening: 0 };
+        bookings.forEach((booking) => {
+            if (booking.status === 'Cancelled' || !booking.dateKey || !booking.time) return;
+            const bookingDate = new Date(`${booking.dateKey}T00:00:00`);
+            if (Number.isNaN(bookingDate.getTime()) || bookingDate < startOf30Days || bookingDate > now) return;
+            const match = booking.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+            if (!match) return;
+            let hour = Number(match[1]) % 12;
+            if (match[3].toUpperCase() === 'PM') hour += 12;
+            if (hour >= 10 && hour < 13) timeOfDayBookings.morning += 1;
+            else if (hour >= 13 && hour < 16) timeOfDayBookings.afternoon += 1;
+            else if (hour >= 16 && hour < 21) timeOfDayBookings.evening += 1;
+        });
+        const timedBookingTotal = Object.values(timeOfDayBookings).reduce((sum, count) => sum + count, 0);
+        const timeOfDayDemand = Object.fromEntries(
+            Object.entries(timeOfDayBookings).map(([period, count]) => [
+                period,
+                { count, percent: timedBookingTotal ? Math.round((count / timedBookingTotal) * 100) : 0 }
+            ])
+        );
 
         // Avg Order Value
         const avgOrderValue = completedBookings.length > 0 ? (totalGmv / completedBookings.length) : 0;
@@ -74,6 +97,7 @@ exports.getSalonAnalytics = async (req, res) => {
         const data = {
             availablePayout,
             mtdRevenue,
+            timeOfDayDemand,
             avgOrderValue,
             completionRate: parseFloat(completionRate.toFixed(1)),
             cancellationRate: parseFloat(cancellationRate.toFixed(1)),

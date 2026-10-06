@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { useCustomer } from '../context/CustomerContext';
+import { api } from '../../../shared/services/api';
 import { CartDrawer } from '../components/CartDrawer';
 import { SlotPickerModal } from '../components/SlotPickerModal';
 import { BookingFlowModal } from '../components/BookingFlowModal';
@@ -49,6 +50,10 @@ export const SalonProfilePage = () => {
   );
   const reviews = useMemo(() => state.reviews.filter((r) => r.salonId === salon.id), [state.reviews, salon.id]);
   const summary = useMemo(() => reviewSummary(reviews), [reviews]);
+
+  React.useEffect(() => {
+    api.reviews.listBySalon(salon.id).catch(console.error);
+  }, [salon.id]);
 
   const isFav = favoriteSalonIds.includes(salon.id);
 

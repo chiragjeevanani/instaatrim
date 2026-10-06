@@ -6,6 +6,8 @@ import { useCustomer } from '../context/CustomerContext';
 import { Sparkles, Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MID_PAGE_CAMPAIGNS, MID_PAGE_CAMPAIGN } from '../../../shared/data/advertisements';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 export const SponsoredDealBanner = () => {
   const [copiedId, setCopiedId] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -15,7 +17,7 @@ export const SponsoredDealBanner = () => {
   const { applyCoupon, showToast } = useCustomer();
 
   useEffect(() => {
-    fetch('http://localhost:6200/api/page-campaigns/midpage')
+    fetch(`${API_BASE}/page-campaigns/midpage`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data && data.data.length > 0) {

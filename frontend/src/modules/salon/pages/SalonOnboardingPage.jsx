@@ -195,27 +195,27 @@ export const SalonOnboardingPage = () => {
             </div>
             <div className="pt-2 flex justify-between items-center">
               <span className="text-stone-500 font-normal">Owner / Manager:</span>
-              <span className="font-medium text-stone-800">{salonProfile.ownerName || 'Shalini Verma'}</span>
+              <span className="font-medium text-stone-800">{salonProfile.ownerName || 'Not added'}</span>
             </div>
             <div className="pt-2 flex justify-between items-center">
               <span className="text-stone-500 font-normal">GSTIN / Tax ID:</span>
-              <span className="font-mono text-stone-800 font-semibold">{salonProfile.gstin || '23AABCU9603R1ZM'}</span>
+              <span className="font-mono text-stone-800 font-semibold">{salonProfile.gstin || 'Not added'}</span>
             </div>
             <div className="pt-2 flex justify-between items-center">
               <span className="text-stone-500 font-normal">Shop Act License:</span>
-              <span className="font-mono text-stone-800 font-semibold">{salonProfile.shopActLicense || 'IND-MP-2024-8841'}</span>
+              <span className="font-mono text-stone-800 font-semibold">{salonProfile.shopActLicense || 'Not added'}</span>
             </div>
             <div className="pt-2 flex justify-between items-center">
               <span className="text-stone-500 font-normal">Settlement Bank:</span>
-              <span className="font-semibold text-stone-800">{salonProfile.bankName || 'HDFC Bank'} {salonProfile.accountNumber || '••4892'}</span>
+              <span className="font-semibold text-stone-800">{salonProfile.bankName || 'Not added'} {salonProfile.accountNumber || ''}</span>
             </div>
             <div className="pt-2 flex justify-between items-center">
               <span className="text-stone-500 font-normal">IFSC Code:</span>
-              <span className="font-mono text-stone-800 font-semibold">{salonProfile.ifscCode || 'HDFC0001032'}</span>
+              <span className="font-mono text-stone-800 font-semibold">{salonProfile.ifscCode || 'Not added'}</span>
             </div>
             <div className="pt-2 flex justify-between items-center">
               <span className="text-stone-500 font-normal">Platform Commission:</span>
-              <span className="font-bold text-brand-maroon">12% Flat per booking</span>
+              <span className="font-bold text-brand-maroon">{salonProfile.commissionRate || 'Pending Admin Approval'}</span>
             </div>
           </div>
         </div>

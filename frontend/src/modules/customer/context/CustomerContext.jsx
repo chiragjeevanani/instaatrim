@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/store/selectors';
@@ -16,6 +16,8 @@ const CustomerContext = createContext();
 
 export const CustomerProvider = ({ children }) => {
   const { state, dispatch } = useAppData();
+  const draftSyncCustomerId = useRef(null);
+  const skipDraftSaveForCustomer = useRef(null);
 
   // Make sure the customer app has the latest live DB data
   useEffect(() => {
@@ -240,6 +242,40 @@ export const CustomerProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('instaatrim_is_booking_open', isBookingFlowOpen);
   }, [isBookingFlowOpen]);
+
+  useEffect(() => {
+    if (!user?.id || !user.isLoggedIn || !localStorage.getItem('instaatrim_token')) {
+      draftSyncCustomerId.current = null;
+      return;
+    }
+
+    if (draftSyncCustomerId.current === user.id) return;
+    draftSyncCustomerId.current = user.id;
+    skipDraftSaveForCustomer.current = user.id;
+
+    const draftPatch = {};
+    if (Array.isArray(user.cartItems) && user.cartItems.length > 0) {
+      setCartItems(user.cartItems);
+    } else {
+      draftPatch.cartItems = cartItems;
+    }
+    if (user.bookingSlot) {
+      setBookingSlot(user.bookingSlot);
+    } else {
+      draftPatch.bookingSlot = bookingSlot;
+    }
+    if (Object.keys(draftPatch).length) api.customers.updateProfile(draftPatch).catch(console.error);
+  }, [user?.id, user?.isLoggedIn, cartItems, bookingSlot]);
+
+  useEffect(() => {
+    if (!user?.isLoggedIn || !localStorage.getItem('instaatrim_token')) return;
+    if (draftSyncCustomerId.current !== user.id) return;
+    if (skipDraftSaveForCustomer.current === user.id) {
+      skipDraftSaveForCustomer.current = null;
+      return;
+    }
+    api.customers.updateProfile({ cartItems, bookingSlot }).catch(console.error);
+  }, [cartItems, bookingSlot, user?.id, user?.isLoggedIn]);
 
   // ---------------- Service Detail Modal-to-Fullscreen State ----------------
   const [activeDetailService, setActiveDetailService] = useState(null);

@@ -3,13 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { X, Sparkles, Check, Crown } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 export const EliteModal = () => {
   const { isEliteModalOpen, setIsEliteModalOpen, user, showToast, fetchMyProfile } = useCustomer();
   const [config, setConfig] = useState(null);
 
   useEffect(() => {
     if (isEliteModalOpen) {
-      fetch('http://localhost:6200/api/page-campaigns/elite')
+      fetch(`${API_BASE}/page-campaigns/elite`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.data) {
@@ -40,7 +42,7 @@ export const EliteModal = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:6200/api/customers/${user.id}/elite`, {
+      const res = await fetch(`${API_BASE}/customers/${user.id}/elite`, {
         method: 'PATCH'
       });
       const data = await res.json();
@@ -74,7 +76,7 @@ export const EliteModal = () => {
     }
     setIsProcessing(true);
     try {
-      const res = await fetch(`http://localhost:6200/api/payments/create-order`, {
+      const res = await fetch(`${API_BASE}/payments/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: price })
@@ -92,7 +94,7 @@ export const EliteModal = () => {
         order_id: data.data.id,
         handler: async function (response) {
           try {
-            const verifyRes = await fetch(`http://localhost:6200/api/payments/verify`, {
+            const verifyRes = await fetch(`${API_BASE}/payments/verify`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

@@ -16,12 +16,14 @@ import {
 } from 'lucide-react';
 
 export const SalonAnalyticsPage = () => {
-  const { metrics, salonProfile, showToast } = useSalon();
+  const { salonProfile, payouts = [], showToast, requestPayout } = useSalon();
   const [dbMetrics, setDbMetrics] = React.useState(null);
+  const latestPayout = [...payouts].sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0];
 
   React.useEffect(() => {
     if (salonProfile?.id) {
-      fetch(`http://localhost:6200/api/salons/${salonProfile.id}/analytics`)
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+      fetch(`${apiBase}/salons/${salonProfile.id}/analytics`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) setDbMetrics(json.data);
@@ -31,7 +33,12 @@ export const SalonAnalyticsPage = () => {
   }, [salonProfile?.id]);
 
   const handleRequestPayout = () => {
-    showToast(`Instant payout request of ₹${(dbMetrics?.availablePayout || 0).toLocaleString()} submitted to HDFC Bank (A/C **4892)`);
+    const amount = Number(dbMetrics?.availablePayout || 0);
+    if (amount < 500) {
+      showToast('Minimum payout request is ₹500', 'error');
+      return;
+    }
+    requestPayout(amount);
   };
 
   return (
@@ -78,12 +85,14 @@ export const SalonAnalyticsPage = () => {
 
           <div className="pt-2.5 border-t border-stone-100 grid grid-cols-2 gap-2 text-[10.5px]">
             <div>
-              <span className="text-stone-400 font-medium">Next Auto-Settlement:</span>
-              <p className="font-bold text-stone-800">{metrics.nextPayoutDate}</p>
+              <span className="text-stone-400 font-medium">Latest Payout:</span>
+              <p className="font-bold text-stone-800">{latestPayout ? `${latestPayout.status} • ${latestPayout.date}` : 'No payout requests'}</p>
             </div>
             <div>
               <span className="text-stone-400 font-medium">Bank Account:</span>
-              <p className="font-bold text-stone-800">HDFC Bank (••4892)</p>
+              <p className="font-bold text-stone-800">
+                {salonProfile.bankName || 'Bank not added'}{salonProfile.accountNumber ? ` (••${salonProfile.accountNumber.slice(-4)})` : ''}
+              </p>
             </div>
           </div>
         </div>
@@ -101,7 +110,7 @@ export const SalonAnalyticsPage = () => {
             </span>
             <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
               <ArrowUpRight className="w-3 h-3 stroke-[2.5]" />
-              <span>+24% this month</span>
+              <span>Current month</span>
             </p>
           </div>
 
@@ -149,7 +158,7 @@ export const SalonAnalyticsPage = () => {
         <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-stone-900">
-              Station Demand by Time of Day
+              Bookings by Time of Day
             </h3>
             <span className="text-[10px] text-stone-400 font-medium">30 Days</span>
           </div>
@@ -158,30 +167,30 @@ export const SalonAnalyticsPage = () => {
             <div>
               <div className="flex justify-between text-[11px] text-stone-600 mb-1">
                 <span>Morning (10:00 AM – 1:00 PM)</span>
-                <span className="font-semibold text-stone-800">75%</span>
+                <span className="font-semibold text-stone-800">{dbMetrics?.timeOfDayDemand?.morning?.count || 0} bookings ({dbMetrics?.timeOfDayDemand?.morning?.percent || 0}%)</span>
               </div>
               <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
-                <div className="h-full bg-stone-700 rounded-full w-[75%]" />
+                <div className="h-full bg-stone-700 rounded-full" style={{ width: `${dbMetrics?.timeOfDayDemand?.morning?.percent || 0}%` }} />
               </div>
             </div>
 
             <div>
               <div className="flex justify-between text-[11px] text-amber-900 mb-1">
-                <span className="font-medium">Afternoon Non-Peak (1:00 PM – 4:00 PM)</span>
-                <span className="font-bold text-amber-800">35% (Slow Hours)</span>
+                <span className="font-medium">Afternoon (1:00 PM – 4:00 PM)</span>
+                <span className="font-bold text-amber-800">{dbMetrics?.timeOfDayDemand?.afternoon?.count || 0} bookings ({dbMetrics?.timeOfDayDemand?.afternoon?.percent || 0}%)</span>
               </div>
               <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-400 rounded-full w-[35%]" />
+                <div className="h-full bg-amber-400 rounded-full" style={{ width: `${dbMetrics?.timeOfDayDemand?.afternoon?.percent || 0}%` }} />
               </div>
             </div>
 
             <div>
               <div className="flex justify-between text-[11px] text-stone-600 mb-1">
                 <span>Evening Rush (4:00 PM – 8:30 PM)</span>
-                <span className="font-semibold text-emerald-700">92%</span>
+                <span className="font-semibold text-emerald-700">{dbMetrics?.timeOfDayDemand?.evening?.count || 0} bookings ({dbMetrics?.timeOfDayDemand?.evening?.percent || 0}%)</span>
               </div>
               <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-600 rounded-full w-[92%]" />
+                <div className="h-full bg-emerald-600 rounded-full" style={{ width: `${dbMetrics?.timeOfDayDemand?.evening?.percent || 0}%` }} />
               </div>
             </div>
           </div>

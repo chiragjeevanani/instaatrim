@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { X, Copy, Share2, Gift, Check } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 export const ReferEarnModal = () => {
   const { isReferModalOpen, setIsReferModalOpen, user, showToast } = useCustomer();
   const [copied, setCopied] = useState(false);
@@ -10,7 +12,7 @@ export const ReferEarnModal = () => {
 
   useEffect(() => {
     if (isReferModalOpen) {
-      fetch('http://localhost:6200/api/referral/active')
+      fetch(`${API_BASE}/referral/active`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {

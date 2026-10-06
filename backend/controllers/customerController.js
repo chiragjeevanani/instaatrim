@@ -1,5 +1,23 @@
 const Customer = require('../models/Customer');
 
+const toCustomerResponse = (customer) => ({
+    id: customer._id,
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email || null,
+    gender: customer.gender,
+    dob: customer.dob || null,
+    is_elite: customer.is_elite,
+    referral_code: customer.referral_code || null,
+    referred_by_code: customer.referred_by_code || null,
+    favorite_salon_ids: (customer.favorite_salon_ids || []).map((id) => String(id)),
+    saved_locations: customer.saved_locations || [],
+    cart_items: customer.cart_items || [],
+    booking_slot: customer.booking_slot || null,
+    auth_provider: customer.auth_provider,
+    createdAt: customer.createdAt,
+});
+
 // GET /api/customers/me  (protected)
 // Returns the logged-in customer's profile
 const getMyProfile = async (req, res) => {
@@ -8,20 +26,7 @@ const getMyProfile = async (req, res) => {
         const customer = req.customer;
         return res.status(200).json({
             success: true,
-            customer: {
-                id: customer._id,
-                name: customer.name,
-                phone: customer.phone,
-                email: customer.email || null,
-                gender: customer.gender,
-                dob: customer.dob || null,
-                is_elite: customer.is_elite,
-                referral_code: customer.referral_code || null,
-                referred_by_code: customer.referred_by_code || null,
-                favorite_salon_ids: customer.favorite_salon_ids || [],
-                auth_provider: customer.auth_provider,
-                createdAt: customer.createdAt,
-            }
+            customer: toCustomerResponse(customer)
         });
     } catch (error) {
         console.error('getMyProfile error:', error);
@@ -33,29 +38,24 @@ const getMyProfile = async (req, res) => {
 // Update logged-in customer's profile
 const updateMyProfile = async (req, res) => {
     try {
-        const { name, email, gender, dob } = req.body;
+        const { name, email, gender, dob, favoriteSalonIds, savedLocations, cartItems, bookingSlot } = req.body;
         const customer = req.customer;
 
         if (name !== undefined) customer.name = name.trim();
         if (email !== undefined) customer.email = email.trim();
         if (gender !== undefined) customer.gender = gender;
         if (dob !== undefined) customer.dob = dob;
+        if (favoriteSalonIds !== undefined) customer.favorite_salon_ids = favoriteSalonIds;
+        if (savedLocations !== undefined) customer.saved_locations = savedLocations;
+        if (cartItems !== undefined) customer.cart_items = cartItems;
+        if (bookingSlot !== undefined) customer.booking_slot = bookingSlot;
 
         await customer.save();
 
         return res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
-            customer: {
-                id: customer._id,
-                name: customer.name,
-                phone: customer.phone,
-                email: customer.email || null,
-                gender: customer.gender,
-                dob: customer.dob || null,
-                is_elite: customer.is_elite,
-                referral_code: customer.referral_code || null,
-            }
+            customer: toCustomerResponse(customer)
         });
     } catch (error) {
         console.error('updateMyProfile error:', error);

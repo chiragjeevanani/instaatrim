@@ -20,6 +20,7 @@ const salonSchema = new mongoose.Schema({
     bankName: { type: String },
     accountNumber: { type: String },
     ifscCode: { type: String },
+    payoutCycle: { type: String },
     isVerified: { type: Boolean, default: false },
     verificationStatus: { type: String, default: 'Pending' },
     commissionRate: { type: String, default: 'Pending Admin Approval' },

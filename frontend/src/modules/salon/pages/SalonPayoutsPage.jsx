@@ -26,9 +26,9 @@ export const SalonPayoutsPage = () => {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const availableBalance = metrics.availablePayout || 28450;
-  const commissionRate = salonProfile.commissionRate || '12%';
-  const rateNum = Number(commissionRate.replace(/\D/g, '')) || 12;
+  const availableBalance = metrics.availablePayout || 0;
+  const commissionRate = salonProfile.commissionRate || 'Pending Admin Approval';
+  const rateNum = Number(String(commissionRate).replace(/[^0-9.]/g, '')) || 0;
 
   const numericAmount = Number(requestAmount) || 0;
   const estimatedCommission = Math.round((numericAmount * rateNum) / 100);
@@ -44,9 +44,9 @@ export const SalonPayoutsPage = () => {
     e.preventDefault();
     if (numericAmount < 500) return;
     setIsSubmitting(true);
-    await requestPayout(numericAmount, notes);
+    const submitted = await requestPayout(numericAmount, notes);
     setIsSubmitting(false);
-    setIsRequestModalOpen(false);
+    if (submitted) setIsRequestModalOpen(false);
   };
 
   return (
@@ -117,13 +117,13 @@ export const SalonPayoutsPage = () => {
             </div>
             <div>
               <div className="text-xs font-bold text-stone-900 flex items-center gap-1">
-                <span>{salonProfile.bankName || 'HDFC Bank'}</span>
+                <span>{salonProfile.bankName || 'Bank not added'}</span>
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               </div>
               <p className="text-[11px] font-mono text-stone-600 mt-0.5">
-                A/C: {salonProfile.accountNumber || '•••• •••• 4892'}
+                A/C: {salonProfile.accountNumber || 'Not added'}
               </p>
-              <p className="text-[10px] text-stone-500 font-mono">IFSC: {salonProfile.ifscCode || 'HDFC0001032'}</p>
+              <p className="text-[10px] text-stone-500 font-mono">IFSC: {salonProfile.ifscCode || 'Not added'}</p>
             </div>
           </div>
           <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-2 py-1 rounded-lg">

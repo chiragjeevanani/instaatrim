@@ -1342,34 +1342,33 @@ const ads = {
     dispatch({ type: 'SET_ADS_LOADING', payload: true });
     try {
       const res = await fetch(`${API_BASE}/ads`, { headers: authHeaders() });
-      if (res.ok) {
-        const json = await res.json();
-        const apiAds = json.data.map(ad => ({
-          ...ad,
-          id: ad._id,
-          // Extract the first image to display in the UI as 'image' property
-          image: (ad.images && ad.images.length > 0) ? ad.images[0] : ad.image
-        }));
-        // Extract hero banners and set desc from description
-        const heroBanners = apiAds
-          .filter(ad => ad.campaignType === 'hero_banner')
-          .map(ad => ({ ...ad, desc: ad.description }));
-
-        dispatch({ type: 'SET_HERO_BANNERS', payload: heroBanners });
-
-        // The remaining ads can go to SET_ADVERTISEMENTS (or all of them, depending on how TopAdCarousel filters)
-        // Usually TopAdCarousel can just take all ads, or we can filter it. Let's just set all.
-        dispatch({ type: 'SET_ADVERTISEMENTS', payload: apiAds });
-        dispatch({ type: 'SET_ADS_LOADING', payload: false });
-        const s = getState();
-        return {
-          advertisements: apiAds,
-          brandPartners: clone(s.brandPartners || []),
-          heroBanners: heroBanners.length ? heroBanners : clone(s.heroBanners || []),
-          midPageCampaigns: clone(s.midPageCampaigns || []),
-          midPageCampaign: clone(s.midPageCampaign || {})
-        };
+      const json = await res.json();
+      if (!res.ok || json.success !== true || !Array.isArray(json.data)) {
+        throw new Error(json.message || `Ads request failed (${res.status})`);
       }
+      const apiAds = json.data.map(ad => ({
+        ...ad,
+        id: ad._id,
+        // Extract the first image to display in the UI as 'image' property
+        image: (ad.images && ad.images.length > 0) ? ad.images[0] : ad.image
+      }));
+      // Extract hero banners and set desc from description
+      const heroBanners = apiAds
+        .filter(ad => ad.campaignType === 'hero_banner')
+        .map(ad => ({ ...ad, desc: ad.description }));
+
+      dispatch({ type: 'SET_HERO_BANNERS', payload: heroBanners });
+
+      dispatch({ type: 'SET_ADVERTISEMENTS', payload: apiAds });
+      dispatch({ type: 'SET_ADS_LOADING', payload: false });
+      const s = getState();
+      return {
+        advertisements: apiAds,
+        brandPartners: clone(s.brandPartners || []),
+        heroBanners: heroBanners.length ? heroBanners : clone(s.heroBanners || []),
+        midPageCampaigns: clone(s.midPageCampaigns || []),
+        midPageCampaign: clone(s.midPageCampaign || {})
+      };
     } catch (e) {
       console.error('Failed to fetch ads from backend:', e);
     }

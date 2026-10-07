@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef } from 'react';
 import { appReducer, buildInitialState } from './reducer';
 import { loadPersistedState, savePersistedState } from './persist';
 import { subscribeToRemoteChanges, broadcastChange } from './broadcast';
@@ -28,7 +28,7 @@ export const AppDataProvider = ({ children }) => {
 
   // Register the plain-module bridge once, then keep it current on every
   // render so `api.js` always dispatches into the latest reducer instance.
-  useEffect(() => {
+  useLayoutEffect(() => {
     registerStoreBridge({
       getState: () => stateRef.current,
       dispatch

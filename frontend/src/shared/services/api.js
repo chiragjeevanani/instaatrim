@@ -1339,6 +1339,7 @@ const admin = {
 // =============================================================================
 const ads = {
   getAll: async () => {
+    dispatch({ type: 'SET_ADS_LOADING', payload: true });
     try {
       const res = await fetch(`${API_BASE}/ads`, { headers: authHeaders() });
       if (res.ok) {
@@ -1359,6 +1360,7 @@ const ads = {
         // The remaining ads can go to SET_ADVERTISEMENTS (or all of them, depending on how TopAdCarousel filters)
         // Usually TopAdCarousel can just take all ads, or we can filter it. Let's just set all.
         dispatch({ type: 'SET_ADVERTISEMENTS', payload: apiAds });
+        dispatch({ type: 'SET_ADS_LOADING', payload: false });
         const s = getState();
         return {
           advertisements: apiAds,
@@ -1371,6 +1373,8 @@ const ads = {
     } catch (e) {
       console.error('Failed to fetch ads from backend:', e);
     }
+    dispatch({ type: 'SET_ADVERTISEMENTS', payload: [] });
+    dispatch({ type: 'SET_ADS_LOADING', payload: false });
     const s = getState();
     return {
       advertisements: clone(s.advertisements || []),

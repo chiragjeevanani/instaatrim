@@ -6,6 +6,7 @@ import { ADMIN_CREDENTIALS } from '../../../shared/data/seed';
 import { io } from 'socket.io-client';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE.replace(/\/api\/?$/, '');
 
 const AdminContext = createContext();
 
@@ -27,7 +28,7 @@ export const AdminProvider = ({ children }) => {
         .catch(console.error);
 
       // Fetch services for admin
-      fetch('http://localhost:6200/api/services')
+      fetch(`${API_BASE}/services`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {
@@ -50,7 +51,7 @@ export const AdminProvider = ({ children }) => {
       });
 
       // Fetch customers from DB
-      fetch('http://localhost:6200/api/customers/all')
+      fetch(`${API_BASE}/customers/all`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {
@@ -63,7 +64,7 @@ export const AdminProvider = ({ children }) => {
       api.elitePlan.get().catch(console.error);
       
       // Fetch all bookings for admin analytics
-      fetch('http://localhost:6200/api/bookings/all')
+      fetch(`${API_BASE}/bookings/all`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {
@@ -90,7 +91,7 @@ export const AdminProvider = ({ children }) => {
       }).catch(console.error);
 
       // Fetch hero banners
-      fetch('http://localhost:6200/api/herobanners')
+      fetch(`${API_BASE}/herobanners`)
         .then(res => res.json())
         .then(json => {
           if (json.success && json.data) {
@@ -101,7 +102,7 @@ export const AdminProvider = ({ children }) => {
         .catch(console.error);
 
       // Socket.io integration
-      const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:6200');
+      const socket = io(SOCKET_URL);
       socket.on('ticket_created', (ticket) => {
         const mapped = { ...ticket, id: ticket._id || ticket.id };
         dispatch({ type: 'ADD_TICKET', payload: mapped });

@@ -50,6 +50,7 @@ export const buildInitialState = () => ({
   reviews: [],
   locations: LOCATIONS,
   advertisements: TOP_ADVERTISEMENTS.map((ad) => ({ ...ad, isActive: ad.isActive !== false })),
+  adsLoading: true,
   brandPartners: BRAND_PARTNERS.map((bp) => ({ ...bp, isActive: bp.isActive !== false })),
   midPageCampaign: { ...MID_PAGE_CAMPAIGN, isActive: MID_PAGE_CAMPAIGN.isActive !== false },
   midPageCampaigns: MID_PAGE_CAMPAIGNS.map((c) => ({ ...c, isActive: c.isActive !== false })),
@@ -441,6 +442,9 @@ export function appReducer(state, action) {
     case 'SET_ADVERTISEMENTS': {
       return { ...state, advertisements: action.payload };
     }
+    case 'SET_ADS_LOADING': {
+      return { ...state, adsLoading: action.payload };
+    }
     case 'ADD_ADVERTISEMENT':
     case 'ADS_CREATE': {
       return { ...state, advertisements: [action.payload, ...(state.advertisements || [])] };
@@ -568,7 +572,7 @@ export function appReducer(state, action) {
       return {
         ...state,
         midPageCampaigns: nextList,
-        midPageCampaign: nextList[0] || state.midPageCampaign
+        midPageCampaign: nextList[0] || null
       };
     }
     case 'TOGGLE_MID_CAMPAIGN_ACTIVE': {

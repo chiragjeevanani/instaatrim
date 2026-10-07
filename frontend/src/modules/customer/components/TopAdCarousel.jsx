@@ -21,7 +21,7 @@ export const TopAdCarousel = ({ onSelectAd }) => {
     return () => clearInterval(timer);
   }, [ads.length]);
 
-  if (!ads || ads.length === 0) return null;
+  if (state.adsLoading || !ads || ads.length === 0) return null;
 
   const validIndex = currentIndex >= ads.length ? 0 : currentIndex;
   const ad = ads[validIndex];

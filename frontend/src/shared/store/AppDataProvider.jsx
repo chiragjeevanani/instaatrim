@@ -13,7 +13,9 @@ const init = () => {
   // Shallow-merge so new seed collections introduced later (e.g. a phase
   // that adds `tickets`) still appear for a browser with old persisted
   // state, instead of being permanently missing.
-  const merged = { ...seed, ...persisted };
+  // Advertisements must always be reloaded from the API; never hydrate stale
+  // local seed or cached ads into customer/admin screens.
+  const merged = { ...seed, ...persisted, advertisements: [], adsLoading: true };
   
   return merged;
 };

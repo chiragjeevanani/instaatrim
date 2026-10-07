@@ -1373,7 +1373,6 @@ const ads = {
     } catch (e) {
       console.error('Failed to fetch ads from backend:', e);
     }
-    dispatch({ type: 'SET_ADVERTISEMENTS', payload: [] });
     dispatch({ type: 'SET_ADS_LOADING', payload: false });
     const s = getState();
     return {

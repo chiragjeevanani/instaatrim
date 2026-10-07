@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BANNERS as mockBanners } from '../../../shared/data/seed';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { useNavigate } from 'react-router-dom';
 
 export const HeroCarousel = () => {
   const { state } = useAppData();
-  const rawBanners = state.heroBanners && state.heroBanners.length > 0 
-    ? state.heroBanners 
-    : (state.advertisements && state.advertisements.length > 0 
-        ? state.advertisements.map(ad => ({ ...ad, desc: ad.description })) 
-        : mockBanners);
-        
+  // Keep the lower carousel in sync with the same active database ads used above.
+  const spotlightBanners = (state.advertisements || [])
+    .filter((ad) => ad.isActive !== false && ad.campaignType !== 'hero_banner')
+    .map((ad) => ({ ...ad, desc: ad.description }));
+
   const activeBanners = useMemo(() => {
-    const list = rawBanners.filter((b) => b.isActive !== false);
-    return list.length > 0 ? list : mockBanners;
-  }, [rawBanners]);
+    return spotlightBanners.filter((b) => b.isActive !== false);
+  }, [spotlightBanners]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();
@@ -34,6 +31,8 @@ export const HeroCarousel = () => {
     }, 5500);
     return () => clearInterval(timer);
   }, [activeBanners.length]);
+
+  if (state.adsLoading || activeBanners.length === 0) return null;
 
   const banner = activeBanners[currentIndex] || activeBanners[0];
 

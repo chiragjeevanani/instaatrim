@@ -25,7 +25,7 @@ import {
   DEFAULT_TICKETS,
   DEFAULT_NOTIFICATIONS
 } from '../data/seed';
-import { TOP_ADVERTISEMENTS, BRAND_PARTNERS, MID_PAGE_CAMPAIGN, MID_PAGE_CAMPAIGNS } from '../data/advertisements';
+import { BRAND_PARTNERS, MID_PAGE_CAMPAIGN, MID_PAGE_CAMPAIGNS } from '../data/advertisements';
 import { canTransition } from '../lib/bookingStatus';
 import { dateKey } from '../lib/time';
 
@@ -49,7 +49,7 @@ export const buildInitialState = () => ({
   coupons: COUPONS,
   reviews: [],
   locations: LOCATIONS,
-  advertisements: TOP_ADVERTISEMENTS.map((ad) => ({ ...ad, isActive: ad.isActive !== false })),
+  advertisements: [],
   adsLoading: true,
   brandPartners: BRAND_PARTNERS.map((bp) => ({ ...bp, isActive: bp.isActive !== false })),
   midPageCampaign: { ...MID_PAGE_CAMPAIGN, isActive: MID_PAGE_CAMPAIGN.isActive !== false },

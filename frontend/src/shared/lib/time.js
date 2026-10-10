@@ -98,10 +98,11 @@ export const formatDateKeyFriendly = (key) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diffDays = Math.round((target - today) / 86400000);
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
-  return target.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const formattedDate = target.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  if (diffDays === 0) return `Today, ${formattedDate}`;
+  if (diffDays === 1) return `Tomorrow, ${formattedDate}`;
+  if (diffDays === -1) return `Yesterday, ${formattedDate}`;
+  return formattedDate;
 };
 
 export const nowMinutesOfDay = (date = new Date()) => date.getHours() * 60 + date.getMinutes();

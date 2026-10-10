@@ -55,7 +55,7 @@ exports.registerSalon = async (req, res) => {
             name, ownerName, mobile, email, password, category,
             city, area, address, openTime, closeTime, totalChairs,
             amenities, coverImage, gstin, shopActLicense, bankName,
-            accountNumber, ifscCode, payoutCycle
+            accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb
         } = req.body;
 
         // Check if salon already exists
@@ -100,7 +100,7 @@ exports.registerSalon = async (req, res) => {
             name, ownerName, mobile, email, password: hashedPassword, category,
             city, area, address, openTime, closeTime, totalChairs,
             amenities, coverImage: finalCoverImage, gstin, shopActLicense, bankName,
-            accountNumber, ifscCode, payoutCycle
+            accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb
         });
 
         await salon.save();
@@ -124,7 +124,7 @@ exports.registerSalon = async (req, res) => {
 
 exports.loginSalon = async (req, res) => {
     try {
-        const { loginId, password } = req.body;
+        const { loginId, password, fcmtoken, fcmtokenweb } = req.body;
         if (!loginId || !password) {
             return res.status(400).json({ success: false, message: 'Please provide email/mobile and password' });
         }
@@ -141,6 +141,13 @@ exports.loginSalon = async (req, res) => {
         const isMatch = await bcrypt.compare(password, salon.password);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Update FCM tokens if provided
+        if (fcmtoken || fcmtokenweb) {
+            if (fcmtoken) salon.fcmtoken = fcmtoken;
+            if (fcmtokenweb) salon.fcmtokenweb = fcmtokenweb;
+            await salon.save();
         }
 
         // Generate token
@@ -357,5 +364,58 @@ exports.updateOfferStatus = async (req, res) => {
         res.status(200).json({ success: true, data: salon.offers[offerIndex] });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.saveFcmToken = async (req, res) => {
+    try {
+        const { token, platform } = req.body;
+        
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'Not authorized' });
+        }
+        
+        const jwtToken = authHeader.split(' ')[1];
+        if (!jwtToken || jwtToken === 'undefined' || jwtToken === 'null') {
+            return res.status(401).json({ success: false, message: 'Invalid or missing token string' });
+        }
+        
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(jwtToken, process.env.JWT_SECRET || 'secret123');
+        const userId = decoded.id;
+        
+        if (!token || !platform) {
+            return res.status(400).json({ success: false, message: 'token and platform are required' });
+        }
+
+        const allowedPlatforms = ['web', 'app', 'ios', 'android'];
+        const currentPlatform = platform.toLowerCase();
+
+        if (!allowedPlatforms.includes(currentPlatform)) {
+            return res.status(400).json({ success: false, message: 'Invalid platform. Allowed values: web, app, ios, android' });
+        }
+
+        const salon = await Salon.findById(userId);
+        if (!salon) {
+            return res.status(404).json({ success: false, message: 'Salon not found' });
+        }
+
+        const isWeb = platform.toLowerCase() === 'web';
+        
+        if (isWeb) {
+            salon.fcmtokenweb = token;
+        } else {
+            salon.fcmtoken = token;
+        }
+        
+        await salon.save();
+        
+        console.log(`[Salon] FCM Token saved successfully for platform: ${platform} | Salon ID: ${userId}`);
+        
+        return res.status(200).json({ success: true, message: 'FCM Token saved successfully' });
+    } catch (error) {
+        console.error('saveFcmToken error:', error);
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
 };

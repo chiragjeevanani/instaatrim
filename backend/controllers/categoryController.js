@@ -23,7 +23,7 @@ exports.uploadCategoryMiddleware = upload.single('image');
 
 exports.createCategory = async (req, res) => {
     try {
-        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan } = req.body;
+        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan, price } = req.body;
         
         let imageUrl = '';
         if (req.file) {
@@ -60,6 +60,7 @@ exports.createCategory = async (req, res) => {
             description,
             isActive: isActive === 'true' || isActive === true,
             colSpan: colSpan ? Number(colSpan) : 1,
+            price: price ? Number(price) : 0,
             image: imageUrl
         });
 
@@ -83,7 +84,7 @@ exports.getCategories = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
     try {
-        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan } = req.body;
+        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan, price } = req.body;
         
         const updateData = {
             name,
@@ -93,6 +94,7 @@ exports.updateCategory = async (req, res) => {
             description,
             isActive: isActive === 'true' || isActive === true,
             colSpan: colSpan ? Number(colSpan) : 1,
+            price: price ? Number(price) : 0,
         };
 
         if (serviceCategories) {

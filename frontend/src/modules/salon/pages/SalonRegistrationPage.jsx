@@ -21,6 +21,9 @@ import {
   Upload
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
+import { requestFirebaseToken } from '../../../shared/lib/firebase';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const CATEGORY_OPTIONS = [];
 

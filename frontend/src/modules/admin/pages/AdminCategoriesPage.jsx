@@ -78,6 +78,7 @@ export const AdminCategoriesPage = () => {
       serviceCategoriesText: '',
       image: '',
       description: '',
+      price: 0,
       isActive: true
     };
   });
@@ -161,6 +162,7 @@ export const AdminCategoriesPage = () => {
       serviceCategoriesText: '',
       image: '',
       description: '',
+      price: 0,
       isActive: true
     });
     setFormError('');
@@ -180,6 +182,7 @@ export const AdminCategoriesPage = () => {
         : category.serviceCategories || '',
       image: category.image || '',
       description: category.description || '',
+      price: category.price || 0,
       isActive: category.isActive !== false
     });
     setFormError('');
@@ -220,6 +223,7 @@ export const AdminCategoriesPage = () => {
     payload.append('serviceCategories', JSON.stringify(serviceCategories));
     
     payload.append('description', formData.description.trim());
+    payload.append('price', formData.price);
     payload.append('isActive', formData.isActive);
 
     if (formData.imageFile) {
@@ -373,6 +377,7 @@ export const AdminCategoriesPage = () => {
                   <th className="py-3.5 px-5 font-semibold">Category Details</th>
                   <th className="py-3.5 px-4 font-semibold">Slug Identifier</th>
                   <th className="py-3.5 px-4 font-semibold">Target Audience</th>
+                  <th className="py-3.5 px-4 font-semibold">Base Price</th>
                   <th className="py-3.5 px-4 font-semibold">Salon Service Taxonomies</th>
                   <th className="py-3.5 px-4 font-semibold">Listed Services</th>
                   <th className="py-3.5 px-4 font-semibold">Status</th>
@@ -446,6 +451,11 @@ export const AdminCategoriesPage = () => {
                           >
                             {cat.gender || 'unisex'}
                           </span>
+                        </td>
+
+                        {/* Base Price */}
+                        <td className="py-3.5 px-4 font-semibold text-emerald-400">
+                          ₹{cat.price || 0}
                         </td>
 
                         {/* Service Category Taxonomies */}
@@ -673,6 +683,21 @@ export const AdminCategoriesPage = () => {
                   )}
                 </div>
 
+              </div>
+
+              {/* Price */}
+              <div>
+                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
+                  Base Price (₹)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 499"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
+                />
               </div>
 
               {/* Description */}

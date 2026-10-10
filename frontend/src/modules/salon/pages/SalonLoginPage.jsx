@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../../shared/services/api';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { requestFirebaseToken } from '../../../shared/lib/firebase';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
 export const SalonLoginPage = () => {
   const navigate = useNavigate();
@@ -20,7 +23,26 @@ export const SalonLoginPage = () => {
     setIsSubmitting(true);
     setError(null);
     try {
-      await api.salons.login(loginId.trim(), password);
+      const res = await api.salons.login(loginId.trim(), password);
+      
+      requestFirebaseToken().then((fcmToken) => {
+        if (fcmToken) {
+          fetch(`${API_URL}/salons/save-fcm-token`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('instaatrim_partner_token')}`
+            },
+            body: JSON.stringify({ token: fcmToken, platform: 'web' })
+          }).then(r => r.json()).then(result => {
+             console.log('%c Salon Firebase FCM Token: ', 'background: #222; color: #00FF00; font-size: 16px;', fcmToken);
+             if (result.success) {
+               console.log('%c ✅ SUCCESSFULLY SAVED FCM TOKEN IN DATABASE!', 'background: green; color: white; font-size: 16px; font-weight: bold;');
+               alert('✅ Salon Firebase Notification Token saved successfully in Database!');
+             }
+          }).catch(console.error);
+        }
+      });
       navigate('/salon');
     } catch (err) {
       setError(err.message || 'Incorrect email/mobile or password. Please try again.');

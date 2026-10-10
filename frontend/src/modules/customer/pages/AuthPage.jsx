@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Loader2, User, Mail, Calendar } from 'lucide-react';
+import { requestFirebaseToken } from '../../../shared/lib/firebase';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
@@ -118,7 +119,27 @@ export const AuthPage = () => {
       if (data.token) {
         localStorage.setItem('instaatrim_token', data.token);
         localStorage.setItem('instaatrim_customer', JSON.stringify(data.customer));
-        setAuthToken(data.token);
+
+        // Request FCM token and save to backend
+        requestFirebaseToken().then((fcmToken) => {
+          if (fcmToken) {
+            fetch(`${API_URL}/auth/save-fcm-token`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${data.token}`
+              },
+              body: JSON.stringify({ token: fcmToken, platform: 'web' })
+            }).then(r => r.json()).then(res => {
+              console.log('%c Firebase FCM Token: ', 'background: #222; color: #00FF00; font-size: 16px;', fcmToken);
+              console.log('FCM Token Save Result:', res);
+              if (res.success) {
+                console.log('%c ✅ SUCCESSFULLY SAVED FCM TOKEN IN DATABASE!', 'background: green; color: white; font-size: 16px; font-weight: bold;');
+                alert('✅ Firebase Notification Token saved successfully in Database!');
+              }
+            }).catch(console.error);
+          }
+        });
       }
 
       if (data.isNewUser || !data.customer?.name || data.customer?.name === 'Customer') {

@@ -57,7 +57,7 @@ const sendOTP = async (req, res) => {
 // Body: { phone, otp, name (optional for new users) }
 const verifyOTP = async (req, res) => {
     try {
-        const { phone, otp, name } = req.body;
+        const { phone, otp, name, fcmtoken, fcmtokenweb } = req.body;
 
         if (!phone || !otp) {
             return res.status(400).json({ success: false, message: 'Phone and OTP are required' });
@@ -87,6 +87,11 @@ const verifyOTP = async (req, res) => {
         // Clear OTP after successful verification
         customer.otp = undefined;
         customer.otpExpiry = undefined;
+        
+        // Update FCM tokens if provided
+        if (fcmtoken) customer.fcmtoken = fcmtoken;
+        if (fcmtokenweb) customer.fcmtokenweb = fcmtokenweb;
+        
         await customer.save();
 
         // Generate JWT
@@ -127,4 +132,45 @@ const logout = async (req, res) => {
     return res.status(200).json({ success: true, message: 'Logged out successfully' });
 };
 
-module.exports = { sendOTP, verifyOTP, logout };
+// POST /api/auth/save-fcm-token
+const saveFcmToken = async (req, res) => {
+    try {
+        const { token, platform } = req.body;
+        const userId = req.customer._id;
+        
+        if (!token || !platform) {
+            return res.status(400).json({ success: false, message: 'token and platform are required' });
+        }
+
+        const allowedPlatforms = ['web', 'app', 'ios', 'android'];
+        const currentPlatform = platform.toLowerCase();
+
+        if (!allowedPlatforms.includes(currentPlatform)) {
+            return res.status(400).json({ success: false, message: 'Invalid platform. Allowed values: web, app, ios, android' });
+        }
+
+        const customer = await Customer.findById(userId);
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'Customer not found' });
+        }
+
+        const isWeb = platform.toLowerCase() === 'web';
+        
+        if (isWeb) {
+            customer.fcmtokenweb = token;
+        } else {
+            customer.fcmtoken = token;
+        }
+        
+        await customer.save();
+        
+        console.log(`[Customer] FCM Token saved successfully for platform: ${platform} | User: ${userId}`);
+        
+        return res.status(200).json({ success: true, message: 'FCM Token saved successfully' });
+    } catch (error) {
+        console.error('saveFcmToken error:', error);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+module.exports = { sendOTP, verifyOTP, logout, saveFcmToken };

@@ -20,16 +20,48 @@ exports.getSalonAnalytics = async (req, res) => {
         const cancelledBookings = bookings.filter(b => b.status === 'Cancelled');
         const totalTerminal = completedBookings.length + cancelledBookings.length;
 
-        // GMV Calculation (All time)
-        const totalGmv = completedBookings.reduce((sum, b) => sum + (b.finalPaid || b.totalAmount || 0), 0);
+        // Revenue Calculations based on Business Rules
+        let totalGmv = 0; // Total Customer Paid
+        let totalSalonRevenue = 0;
+        let instaaTrimDirectRevenue = 0;
+        let instaaTrimIndirectRevenue = 0;
+
+        completedBookings.forEach(b => {
+            const billValue = b.totalAmount || 0;
+            const finalPaid = b.finalPaid !== undefined ? b.finalPaid : billValue;
+
+            // 1. Promotional and Discount Rules
+            const salonPromoBudget = billValue * 0.50; // 50% of bill value
+            const customerVisibleDiscount = billValue * 0.40; // 40% of bill value
+
+            // 2. Split of Customer Visible Discount
+            const instantDiscount = customerVisibleDiscount * 0.50;
+            const walletCashbackIssued = customerVisibleDiscount * 0.50;
+
+            // 3. Deduction Logic
+            // Wallet Redeemed is whatever discount remains after instant discount
+            const walletRedeemed = Math.max(0, (billValue - finalPaid) - instantDiscount);
+
+            // 4. Revenue Sharing
+            const customerPays = finalPaid;
+            const salonRevenue = billValue - salonPromoBudget;
+
+            // 5. InstaaTrim Revenue Accounting (Direct = Cash in hand after paying salon & issuing cashback, plus recovered redeemed wallet)
+            const directRevenue = customerPays - salonRevenue - walletCashbackIssued + walletRedeemed;
+
+            totalGmv += customerPays;
+            totalSalonRevenue += salonRevenue;
+            instaaTrimDirectRevenue += directRevenue;
+            instaaTrimIndirectRevenue += (walletCashbackIssued - walletRedeemed);
+        });
 
         // Payouts Settled or Pending
         const totalPayouts = payouts
             .filter(p => ['Transferred', 'Pending', 'Approved'].includes(p.status))
             .reduce((sum, p) => sum + p.grossAmount, 0);
 
-        // Available Payout
-        const availablePayout = Math.max(0, totalGmv - totalPayouts);
+        // Available Payout for Salon is based on actual Salon Revenue, not GMV
+        const availablePayout = Math.max(0, totalSalonRevenue - totalPayouts);
 
         // MTD Revenue
         const mtdBookings = completedBookings.filter(b => new Date(b.createdAt) >= startOfMonth);

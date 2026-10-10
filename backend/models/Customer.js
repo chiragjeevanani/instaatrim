@@ -58,6 +58,12 @@ const customerSchema = new mongoose.Schema({
     otp: {
         type: String,
     },
+    fcmtoken: {
+        type: String,
+    },
+    fcmtokenweb: {
+        type: String,
+    },
     otpExpiry: {
         type: Date,
     }

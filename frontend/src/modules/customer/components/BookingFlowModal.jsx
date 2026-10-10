@@ -554,15 +554,21 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                           {daySlots.map((slot) => (
                             <button
                               key={slot.time}
+                              disabled={!slot.available}
                               onClick={() => setSelectedSlot(slot)}
-                              className={`py-1.5 px-1 text-[11px] rounded-lg font-medium text-center border transition-all flex items-center justify-center gap-1 ${
-                                selectedSlot?.time === slot.time
-                                  ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
-                                  : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+                              className={`py-1.5 px-1 text-[11px] rounded-lg font-medium text-center border transition-all flex flex-col items-center justify-center gap-0.5 ${
+                                !slot.available 
+                                  ? 'border-stone-100 bg-stone-50 text-stone-400 opacity-60 cursor-not-allowed'
+                                  : selectedSlot?.time === slot.time
+                                    ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
+                                    : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50 cursor-pointer'
                               }`}
                             >
-                              {selectedSlot?.time === slot.time && <CheckCircle2 className="w-3 h-3" />}
-                              <span>{slot.time}</span>
+                              <div className="flex items-center gap-1">
+                                {selectedSlot?.time === slot.time && <CheckCircle2 className="w-3 h-3" />}
+                                <span>{slot.time}</span>
+                              </div>
+                              {!slot.available && <span className="text-[8.5px] font-bold text-rose-500 uppercase">Booked</span>}
                             </button>
                           ))}
                         </div>

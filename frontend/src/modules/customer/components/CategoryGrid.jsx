@@ -81,6 +81,11 @@ export const CategoryGrid = ({ genderFilter = 'all' }) => {
               <span className="text-[10px] font-semibold text-stone-800 mt-1.5 block leading-tight tracking-tight line-clamp-1">
                 {cat.shortName || cat.name}
               </span>
+              {cat.price > 0 && (
+                <span className="text-[9px] font-medium text-stone-500 mt-0.5 block leading-tight">
+                  Starts ₹{cat.price}
+                </span>
+              )}
             </motion.div>
           ))}
 

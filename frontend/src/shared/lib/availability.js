@@ -98,7 +98,8 @@ export function getDaySlots({ salon, staffList, durationMinutes, category, booki
   const nowMin = isToday ? nowMinutesOfDay(new Date()) : 0;
   const BUFFER_MINUTES = 30; // minimum lead time before a slot can be booked
 
-  for (let t = salonWindow.openMin; t + duration <= salonWindow.closeMin; t += duration) {
+  // Always increment slots by 1 hour (60 minutes) to show fixed hourly intervals
+  for (let t = salonWindow.openMin; t + duration <= salonWindow.closeMin; t += 60) {
     // Skip past slots and slots within the buffer window for today
     if (isToday && t < nowMin + BUFFER_MINUTES) continue;
 

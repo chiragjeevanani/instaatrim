@@ -5,6 +5,7 @@ const { protectAdmin } = require('../middlewares/authMiddleware');
 
 router.post('/register', salonController.registerSalon);
 router.post('/login', salonController.loginSalon);
+router.post('/save-fcm-token', salonController.saveFcmToken);
 router.get('/', salonController.getAllSalons);
 router.get('/:id', salonController.getSalonById);
 router.delete('/:id', protectAdmin, salonController.deleteSalon);

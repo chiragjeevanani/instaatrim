@@ -32,6 +32,8 @@ const salonSchema = new mongoose.Schema({
     boostRank: { type: Number },
     sponsorBadge: { type: String },
     boostReason: { type: String },
+    fcmtoken: { type: String },
+    fcmtokenweb: { type: String },
     offers: [{ type: mongoose.Schema.Types.Mixed }]
 }, { timestamps: true });
 

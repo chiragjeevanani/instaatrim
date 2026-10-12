@@ -14,6 +14,7 @@ import { AccountPage } from '../pages/AccountPage';
 import { EditProfilePage } from '../pages/EditProfilePage';
 import { SkincarePage } from '../pages/SkincarePage';
 import { TrendsPage } from '../pages/TrendsPage';
+import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage';
 export const CustomerRoutes = () => {
   return (
     <Routes>
@@ -30,6 +31,8 @@ export const CustomerRoutes = () => {
       <Route path="/edit-profile" element={<EditProfilePage />} />
       <Route path="/skincare" element={<SkincarePage />} />
       <Route path="/trends" element={<TrendsPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
       {/* Fallback to Customer Home */}
       <Route path="*" element={<Navigate to="/customer" replace />} />
     </Routes>

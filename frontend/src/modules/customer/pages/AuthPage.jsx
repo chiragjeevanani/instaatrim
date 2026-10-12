@@ -515,7 +515,7 @@ export const AuthPage = () => {
           By continuing, you agree to our{' '}
           <a className="text-brand-maroon font-semibold hover:underline" href="#terms">Terms &amp; Conditions</a>{' '}
           and{' '}
-          <a className="text-brand-maroon font-semibold hover:underline" href="#privacy">Privacy Policy</a>
+          <a className="text-brand-maroon font-semibold hover:underline" href="/customer/privacy-policy">Privacy Policy</a>
         </footer>
       </main>
     </motion.div>

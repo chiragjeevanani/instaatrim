@@ -18,10 +18,11 @@ import { AddServicePage } from '../pages/AddServicePage';
 import { SalonPayoutsPage } from '../pages/SalonPayoutsPage';
 import { SalonStaffPage } from '../pages/SalonStaffPage';
 import { SalonReviewsPage } from '../pages/SalonReviewsPage';
+import { SalonPrivacyPolicyPage } from '../pages/SalonPrivacyPolicyPage';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Routes reachable without a partner session — login and registration/onboarding
-const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding', '/salon/register'];
+// Routes reachable without a partner session — login and registration/onboarding, privacy policy
+const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding', '/salon/register', '/salon/privacy-policy', '/salon/privacy'];
 
 export const SalonRoutes = () => {
   const location = useLocation();
@@ -62,7 +63,8 @@ export const SalonRoutes = () => {
     location.pathname.includes('/salon/profile/business') ||
     location.pathname.includes('/salon/payouts') ||
     location.pathname.includes('/salon/staff') ||
-    location.pathname.includes('/salon/reviews');
+    location.pathname.includes('/salon/reviews') ||
+    location.pathname.includes('/salon/privacy');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none">
@@ -88,6 +90,8 @@ export const SalonRoutes = () => {
             <Route path="/profile" element={<SalonProfilePage />} />
             <Route path="/profile/business" element={<SalonBusinessProfilePage />} />
             <Route path="/profile/edit" element={<EditSalonProfilePage />} />
+            <Route path="/privacy-policy" element={<SalonPrivacyPolicyPage />} />
+            <Route path="/privacy" element={<SalonPrivacyPolicyPage />} />
             <Route path="/onboarding" element={<SalonOnboardingPage />} />
           </Routes>
         </div>

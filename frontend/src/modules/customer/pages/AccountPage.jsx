@@ -38,7 +38,6 @@ export const AccountPage = () => {
   } = useCustomer();
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
-  const [isSafetyOpen, setIsSafetyOpen] = useState(false);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
 
   const handleLogoutOrLogin = async () => {
@@ -220,7 +219,7 @@ export const AccountPage = () => {
 
           {/* Privacy & Policies */}
           <div
-            onClick={() => setIsSafetyOpen(true)}
+            onClick={() => navigate('/customer/privacy-policy')}
             className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
@@ -280,20 +279,6 @@ export const AccountPage = () => {
             <p><b className="text-stone-800">Is payment refunded on cancellation?</b> Full refund within the free window; see the cancellation policy at checkout.</p>
           </div>
         </div>
-      </InfoSheet>
-
-      <InfoSheet
-        isOpen={isSafetyOpen}
-        onClose={() => setIsSafetyOpen(false)}
-        icon={<Shield className="w-4 h-4" />}
-        title="Safety & Privacy Policy"
-      >
-        <p>DrimStyle only lists salons that have completed our verification process — business documents, in-person hygiene review and an active commercial agreement.</p>
-        <ul className="list-disc pl-4 space-y-1 text-stone-600">
-          <li>Sanitised tools and single-use kits at every verified partner</li>
-          <li>Your booking, contact and payment details are never shared with a salon beyond what's needed to serve you</li>
-          <li>Reviews are only left by customers with a completed, verified booking</li>
-        </ul>
       </InfoSheet>
     </div>
   );

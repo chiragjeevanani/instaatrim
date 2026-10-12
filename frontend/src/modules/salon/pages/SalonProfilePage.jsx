@@ -231,6 +231,20 @@ export const SalonProfilePage = () => {
           </div>
 
           <div
+            onClick={() => navigate('/salon/privacy-policy')}
+            className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+              <div>
+                <p className="font-bold text-stone-900 text-xs">Partner Privacy Policy</p>
+                <p className="text-[10px] text-stone-500">Commercial data protection &amp; payout security</p>
+              </div>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+          </div>
+
+          <div
             onClick={() => navigate('/customer')}
             className="p-3 flex items-center justify-between cursor-pointer bg-rose-50/50 hover:bg-rose-100/60 transition-colors"
           >

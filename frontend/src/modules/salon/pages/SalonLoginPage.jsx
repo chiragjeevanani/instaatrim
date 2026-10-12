@@ -222,7 +222,7 @@ export const SalonLoginPage = () => {
             Terms &amp; Conditions
           </a>{' '}
           and{' '}
-          <a className="text-brand-maroon font-semibold hover:underline" href="#privacy">
+          <a className="text-brand-maroon font-semibold hover:underline" href="/salon/privacy-policy">
             Privacy Policy
           </a>
         </footer>

@@ -290,7 +290,7 @@ export function appReducer(state, action) {
     case 'DELETE_SERVICE': {
       return {
         ...state,
-        services: state.services.filter((s) => s.id !== action.payload.serviceId)
+        services: state.services.filter((s) => s.id !== action.payload.serviceId && s._id !== action.payload.serviceId)
       };
     }
 

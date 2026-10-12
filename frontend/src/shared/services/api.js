@@ -19,6 +19,7 @@ import { dateKey } from '../lib/time';
 import { ADMIN_CREDENTIALS } from '../data/seed';
 
 const clone = (v) => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
 // =============================================================================
 // Salons
@@ -384,10 +385,14 @@ const services = {
 
   update: async (serviceId, patch) => {
     try {
-      const res = await fetch(`${API_BASE}/services/${serviceId}`, {
+      const cleanId = typeof serviceId === 'object' ? (serviceId?.id || serviceId?._id) : serviceId;
+      const cleanPatch = { ...patch };
+      delete cleanPatch._id;
+      delete cleanPatch.id;
+      const res = await fetch(`${API_BASE}/services/${cleanId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch)
+        body: JSON.stringify(cleanPatch)
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to update service');
@@ -403,13 +408,14 @@ const services = {
 
   remove: async (serviceId) => {
     try {
-      const res = await fetch(`${API_BASE}/services/${serviceId}`, {
+      const cleanId = typeof serviceId === 'object' ? (serviceId?.id || serviceId?._id) : serviceId;
+      const res = await fetch(`${API_BASE}/services/${cleanId}`, {
         method: 'DELETE'
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to delete service');
 
-      dispatch({ type: 'DELETE_SERVICE', payload: { serviceId } });
+      dispatch({ type: 'DELETE_SERVICE', payload: { serviceId: cleanId } });
       return true;
     } catch (e) {
       console.error(e);
@@ -1141,7 +1147,7 @@ const authHeaders = () => ({
   Authorization: `Bearer ${getAuthToken()}`,
 });
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+
 
 const mapCustomerFromApi = (customer, fallback = {}) => ({
   ...fallback,

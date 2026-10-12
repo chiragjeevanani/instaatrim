@@ -16,11 +16,33 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification.title;
+  const notificationTitle = payload.notification?.title || payload.data?.title || 'DrimStyle Booking Update';
+  const tag = payload.data?.tag || (payload.data?.bookingId ? `booking-${payload.data.bookingId}` : 'drimstyle-booking-notification');
   const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/logo.png'
+    body: payload.notification?.body || payload.data?.body || '',
+    icon: '/DrimStylelogo.png',
+    badge: '/DrimStylelogo.png',
+    tag: tag,
+    renotify: true,
+    data: payload.data || {}
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.link || '/salon/bookings';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(urlToOpen) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
 });

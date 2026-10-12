@@ -47,7 +47,7 @@ export const SalonServicesPage = () => {
       showToast('Admin approval required to edit services', 'error');
       return;
     }
-    navigate('/salon/services/new', { state: { serviceId: service.id } });
+    navigate('/salon/services/new', { state: { serviceId: service.id || service._id } });
   };
 
   const handleAddNew = () => {
@@ -265,7 +265,7 @@ export const SalonServicesPage = () => {
                   {/* Instant Booking Switch for this specific service */}
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => toggleInstantEligible(service.id)}
+                      onClick={() => toggleInstantEligible(service.id || service._id)}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9.5px] font-bold border transition-colors ${
                         service.isInstantEligible
                           ? 'bg-amber-50 text-amber-800 border-amber-200'
@@ -284,7 +284,7 @@ export const SalonServicesPage = () => {
                       {service.isActive ? 'Active' : 'Hidden'}
                     </span>
                     <button
-                      onClick={() => toggleServiceActive(service.id)}
+                      onClick={() => toggleServiceActive(service.id || service._id)}
                       className={`w-8 h-[18px] rounded-full p-0.5 transition-colors cursor-pointer relative shadow-inner ${
                         service.isActive ? 'bg-rose-900' : 'bg-stone-300'
                       }`}
@@ -338,9 +338,9 @@ export const SalonServicesPage = () => {
                 </button>
                 <button
                   onClick={async () => {
-                    await deleteService(deleteModal.id);
+                    const targetId = deleteModal.id || deleteModal._id;
+                    await deleteService(targetId);
                     setDeleteModal(null);
-                    showToast('Service deleted successfully');
                   }}
                   className="flex-1 py-3 px-4 rounded-xl text-[13px] font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors"
                 >

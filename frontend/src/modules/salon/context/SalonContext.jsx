@@ -3,6 +3,13 @@ import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { BOOKING_STATUS } from '../../../shared/lib/bookingStatus';
 import { dateKey, minutesToClock, nowMinutesOfDay } from '../../../shared/lib/time';
+import { io } from 'socket.io-client';
+import { requestFirebaseToken, messaging } from '../../../shared/lib/firebase';
+import { onMessage } from 'firebase/messaging';
+import { handleRealtimeBookingAlert, requestBrowserNotificationPermission } from '../../../shared/lib/soundNotification';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE.replace(/\/api\/?$/, '');
 
 // Phase 0 note: this context used to own a second, independent copy of
 // bookings and services with its own ID scheme (BK-####) that the customer
@@ -143,6 +150,82 @@ export const SalonProvider = ({ children }) => {
     setTimeout(() => setToast(null), 3200);
   }, []);
 
+  // Real-time socket & FCM notifications for Salon (ringtone on booking, alert on cancel)
+  useEffect(() => {
+    if (!isAuthenticated || !salonId || salonId === 'sal-1') return;
+
+    // 1. Request browser notification permission
+    requestBrowserNotificationPermission();
+
+    // 2. Ensure FCM token is saved in backend
+    requestFirebaseToken().then((token) => {
+      if (token) {
+        fetch(`${API_BASE}/salons/save-fcm-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('instaatrim_partner_token')}`
+          },
+          body: JSON.stringify({ token, platform: 'web' })
+        }).catch(console.error);
+      }
+    }).catch(console.error);
+
+    // 3. Socket.io listeners
+    const socket = io(SOCKET_URL);
+
+    socket.on('booking_created', (booking) => {
+      if (String(booking.salonId) === String(salonId)) {
+        console.log('[Salon Socket] New booking received:', booking);
+        const mapped = { ...booking, id: booking._id || booking.id };
+        dispatch({ type: 'ADD_BOOKING', payload: mapped });
+        handleRealtimeBookingAlert({ type: 'BOOKING_CREATED', booking: mapped, role: 'salon' });
+        showToast(`🔔 New Booking from ${mapped.customerName || 'Customer'}!`, 'success');
+      }
+    });
+
+    socket.on('booking_cancelled', (booking) => {
+      if (String(booking.salonId) === String(salonId)) {
+        console.log('[Salon Socket] Booking cancelled:', booking);
+        const mapped = { ...booking, id: booking._id || booking.id };
+        dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId: mapped.id, status: 'Cancelled', patch: mapped } });
+        handleRealtimeBookingAlert({ type: 'BOOKING_CANCELLED', booking: mapped, role: 'salon' });
+        showToast(`⚠️ Booking #${mapped.id} was cancelled`, 'error');
+      }
+    });
+
+    socket.on('booking_updated', (booking) => {
+      if (String(booking.salonId) === String(salonId)) {
+        const mapped = { ...booking, id: booking._id || booking.id };
+        dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId: mapped.id, status: mapped.status, patch: mapped } });
+      }
+    });
+
+    // 4. Foreground FCM listener
+    let unsubscribeFCM = null;
+    if (messaging) {
+      unsubscribeFCM = onMessage(messaging, (payload) => {
+        console.log('[Salon FCM Foreground]:', payload);
+        const data = payload.data || {};
+        const type = data.type;
+        if ((type === 'BOOKING_CREATED' || type === 'BOOKING_CANCELLED') && (!data.salonId || String(data.salonId) === String(salonId))) {
+          const booking = {
+            _id: data.bookingId,
+            id: data.bookingId,
+            salonId: data.salonId,
+            customerName: payload.notification?.body || data.body || 'Customer'
+          };
+          handleRealtimeBookingAlert({ type, booking, role: 'salon' });
+        }
+      });
+    }
+
+    return () => {
+      socket.disconnect();
+      if (typeof unsubscribeFCM === 'function') unsubscribeFCM();
+    };
+  }, [isAuthenticated, salonId, dispatch, showToast]);
+
   const updateBookingStatus = useCallback(
     (bookingId, newStatus, extra = {}) => {
       api.bookings
@@ -240,7 +323,7 @@ export const SalonProvider = ({ children }) => {
       api.services
         .update(serviceId, updatedData)
         .then(() => showToast('Service updated successfully'))
-        .catch(() => showToast('Could not update service', 'error'));
+        .catch((e) => showToast(e?.message || 'Could not update service', 'error'));
     },
     [showToast]
   );
@@ -250,33 +333,33 @@ export const SalonProvider = ({ children }) => {
       api.services
         .remove(serviceId)
         .then(() => showToast('Service removed from menu'))
-        .catch(() => showToast('Could not remove service', 'error'));
+        .catch((e) => showToast(e?.message || 'Could not remove service', 'error'));
     },
     [showToast]
   );
 
   const toggleServiceActive = useCallback(
     (serviceId) => {
-      const svc = state.services.find((s) => s.id === serviceId);
+      const svc = state.services.find((s) => (s.id && s.id === serviceId) || (s._id && s._id === serviceId));
       if (!svc) return;
       const next = !svc.isActive;
       api.services
         .update(serviceId, { isActive: next })
         .then(() => showToast(`Service ${next ? 'activated' : 'paused'} in menu`))
-        .catch(() => showToast('Could not update service', 'error'));
+        .catch((e) => showToast(e?.message || 'Could not update service', 'error'));
     },
     [state.services, showToast]
   );
 
   const toggleInstantEligible = useCallback(
     (serviceId) => {
-      const svc = state.services.find((s) => s.id === serviceId);
+      const svc = state.services.find((s) => (s.id && s.id === serviceId) || (s._id && s._id === serviceId));
       if (!svc) return;
       const next = !svc.isInstantEligible;
       api.services
         .update(serviceId, { isInstantEligible: next })
         .then(() => showToast(`Instant Booking ${next ? 'enabled' : 'disabled'} for this service`))
-        .catch(() => showToast('Could not update service', 'error'));
+        .catch((e) => showToast(e?.message || 'Could not update service', 'error'));
     },
     [state.services, showToast]
   );

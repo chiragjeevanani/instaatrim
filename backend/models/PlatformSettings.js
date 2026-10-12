@@ -17,6 +17,10 @@ const platformSettingsSchema = new mongoose.Schema({
     partnerSupportTopics: {
         type: [String],
         default: ['Payout & Billing', 'Booking Issue / No-Show', 'Menu & Service Edits', 'KYC & Account Verification', 'Emergency Technical Support']
+    },
+    adminFcmTokens: {
+        type: [String],
+        default: []
     }
 }, { timestamps: true });
 

@@ -4,6 +4,9 @@ import { api } from '../../../shared/services/api';
 import { ADMIN_CREDENTIALS } from '../../../shared/data/seed';
 
 import { io } from 'socket.io-client';
+import { requestFirebaseToken, messaging } from '../../../shared/lib/firebase';
+import { onMessage } from 'firebase/messaging';
+import { handleRealtimeBookingAlert, requestBrowserNotificationPermission } from '../../../shared/lib/soundNotification';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE.replace(/\/api\/?$/, '');
@@ -101,7 +104,7 @@ export const AdminProvider = ({ children }) => {
         })
         .catch(console.error);
 
-      // Socket.io integration
+      // Socket.io integration for tickets and bookings
       const socket = io(SOCKET_URL);
       socket.on('ticket_created', (ticket) => {
         const mapped = { ...ticket, id: ticket._id || ticket.id };
@@ -110,6 +113,56 @@ export const AdminProvider = ({ children }) => {
       socket.on('ticket_updated', (ticket) => {
         dispatch({ type: 'UPDATE_TICKET', payload: { ticketId: ticket._id, patch: ticket } });
       });
+
+      // Real-time booking alerts for Admin
+      socket.on('booking_created', (booking) => {
+        console.log('[Admin Socket] booking_created received:', booking);
+        const mapped = { ...booking, id: booking._id || booking.id };
+        dispatch({ type: 'ADD_BOOKING', payload: mapped });
+        handleRealtimeBookingAlert({ type: 'BOOKING_CREATED', booking: mapped, role: 'admin' });
+      });
+
+      socket.on('booking_cancelled', (booking) => {
+        console.log('[Admin Socket] booking_cancelled received:', booking);
+        const mapped = { ...booking, id: booking._id || booking.id };
+        dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId: mapped.id, status: 'Cancelled', patch: mapped } });
+        handleRealtimeBookingAlert({ type: 'BOOKING_CANCELLED', booking: mapped, role: 'admin' });
+      });
+
+      socket.on('booking_updated', (booking) => {
+        const mapped = { ...booking, id: booking._id || booking.id };
+        dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId: mapped.id, status: mapped.status, patch: mapped } });
+      });
+
+      // Request browser notification permission & register Admin FCM Token
+      requestBrowserNotificationPermission();
+      requestFirebaseToken().then((token) => {
+        if (token) {
+          fetch(`${API_BASE}/admin/save-fcm-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+          }).catch(console.error);
+        }
+      }).catch(console.error);
+
+      // Listen for FCM foreground push notifications
+      if (messaging) {
+        onMessage(messaging, (payload) => {
+          console.log('[Admin FCM Foreground]:', payload);
+          const data = payload.data || {};
+          const type = data.type;
+          if (type === 'BOOKING_CREATED' || type === 'BOOKING_CANCELLED') {
+            const booking = {
+              _id: data.bookingId,
+              id: data.bookingId,
+              salonName: data.salonName || 'Salon Partner',
+              customerName: payload.notification?.body || data.body || 'Customer'
+            };
+            handleRealtimeBookingAlert({ type, booking, role: 'admin' });
+          }
+        });
+      }
 
       return () => {
         socket.disconnect();

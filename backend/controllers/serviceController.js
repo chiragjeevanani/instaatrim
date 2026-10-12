@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Service = require('../models/Service');
 
 exports.getServices = async (req, res) => {
@@ -19,7 +20,7 @@ exports.createService = async (req, res) => {
             return res.status(400).json({ success: false, message: 'SalonId, name, and price are required' });
         }
 
-        // Parse duration string into number (e.g. "1 hr 30 mins" -> 90)
+        // Parse duration string into number (e.g. "1 hr 30 mins" -> 90, "45" -> 45)
         let parsedDuration = 30;
         if (typeof duration === 'number') {
             parsedDuration = duration;
@@ -29,7 +30,12 @@ exports.createService = async (req, res) => {
             let totalMins = 0;
             if (hrMatch) totalMins += parseInt(hrMatch[1], 10) * 60;
             if (minMatch) totalMins += parseInt(minMatch[1], 10);
-            if (totalMins > 0) parsedDuration = totalMins;
+            if (totalMins > 0) {
+                parsedDuration = totalMins;
+            } else {
+                const numMatch = duration.match(/\d+/);
+                if (numMatch) parsedDuration = parseInt(numMatch[0], 10);
+            }
         }
 
         // Handle Base64 Image Upload
@@ -72,15 +78,23 @@ exports.createService = async (req, res) => {
         res.status(201).json({ success: true, data: newService });
     } catch (error) {
         console.error('createService error:', error);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ success: false, message: error.message || 'Server Error' });
     }
 };
 
 exports.updateService = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!id || id === 'undefined' || id === 'null') {
+            return res.status(400).json({ success: false, message: 'Valid service ID is required' });
+        }
+
         let updateData = { ...req.body };
         
+        // Never allow updating immutable MongoDB _id / id
+        delete updateData._id;
+        delete updateData.id;
+
         // Map name back to title for schema compatibility if present
         if (updateData.name) {
             updateData.title = updateData.name;
@@ -88,15 +102,19 @@ exports.updateService = async (req, res) => {
         }
 
         // Handle duration string parsing if it exists
-        if (updateData.duration) {
+        if (updateData.duration !== undefined) {
             if (typeof updateData.duration === 'string') {
                 const hrMatch = updateData.duration.match(/(\d+)\s*hr/);
                 const minMatch = updateData.duration.match(/(\d+)\s*min/);
                 let totalMins = 0;
                 if (hrMatch) totalMins += parseInt(hrMatch[1], 10) * 60;
                 if (minMatch) totalMins += parseInt(minMatch[1], 10);
-                if (totalMins > 0) updateData.duration = totalMins;
-                else updateData.duration = 30;
+                if (totalMins > 0) {
+                    updateData.duration = totalMins;
+                } else {
+                    const numMatch = updateData.duration.match(/\d+/);
+                    updateData.duration = numMatch ? parseInt(numMatch[0], 10) : 30;
+                }
             }
         }
 
@@ -121,7 +139,8 @@ exports.updateService = async (req, res) => {
             }
         }
 
-        const updatedService = await Service.findByIdAndUpdate(id, updateData, { new: true });
+        const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { id: id };
+        const updatedService = await Service.findOneAndUpdate(query, updateData, { new: true });
         
         if (!updatedService) {
             return res.status(404).json({ success: false, message: 'Service not found' });
@@ -130,14 +149,19 @@ exports.updateService = async (req, res) => {
         res.status(200).json({ success: true, data: updatedService });
     } catch (error) {
         console.error('updateService error:', error);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ success: false, message: error.message || 'Server Error' });
     }
 };
 
 exports.deleteService = async (req, res) => {
     try {
         const { id } = req.params;
-        const deletedService = await Service.findByIdAndDelete(id);
+        if (!id || id === 'undefined' || id === 'null') {
+            return res.status(400).json({ success: false, message: 'Valid service ID is required' });
+        }
+
+        const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { id: id };
+        const deletedService = await Service.findOneAndDelete(query);
         
         if (!deletedService) {
             return res.status(404).json({ success: false, message: 'Service not found' });
@@ -146,6 +170,6 @@ exports.deleteService = async (req, res) => {
         res.status(200).json({ success: true, message: 'Service deleted' });
     } catch (error) {
         console.error('deleteService error:', error);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ success: false, message: error.message || 'Server Error' });
     }
 };

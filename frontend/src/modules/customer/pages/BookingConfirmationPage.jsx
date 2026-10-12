@@ -1,17 +1,39 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { formatDateKeyFriendly } from '../../../shared/lib/time';
 import confetti from 'canvas-confetti';
-import { Calendar, Clock, MapPin, Check, ArrowRight, Home, Sparkles } from 'lucide-react';
+import { Calendar, Clock, MapPin, Check, ArrowRight, Home, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const BookingConfirmationPage = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
-  const { bookings, showToast } = useCustomer();
+  const { bookings = [], showToast } = useCustomer();
 
-  const booking = bookings.find((b) => b.id === bookingId) || bookings[0];
+  const stateBooking = bookings.find((b) => b.id === bookingId || b._id === bookingId);
+  const [fetchedBooking, setFetchedBooking] = useState(null);
+  const [loading, setLoading] = useState(!stateBooking);
+
+  useEffect(() => {
+    if (stateBooking) {
+      setLoading(false);
+      return;
+    }
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+    fetch(`${apiBase}/bookings/${bookingId}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          const b = json.data;
+          setFetchedBooking({ ...b, id: b._id || b.id });
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [bookingId, stateBooking]);
+
+  const booking = stateBooking || fetchedBooking || (bookings.length > 0 ? bookings[0] : null);
 
   useEffect(() => {
     try {
@@ -24,6 +46,19 @@ export const BookingConfirmationPage = () => {
       // ignore
     }
   }, []);
+
+  if (loading && !booking) {
+    return (
+      <div className="w-full max-w-[480px] min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex items-center justify-center mx-auto p-4">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-8 h-8 text-brand-maroon animate-spin mx-auto" />
+          <p className="text-xs font-bold text-stone-700">Loading booking confirmation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const idDisplay = booking?.id || booking?._id || bookingId;
 
   return (
     <motion.div
@@ -58,21 +93,21 @@ export const BookingConfirmationPage = () => {
         {/* Unique Booking ID Badge */}
         <div className="inline-block bg-white/80 px-3 py-1 rounded-full border border-stone-300/80">
           <span className="text-[10px] text-stone-500 font-semibold mr-1">Booking ID:</span>
-          <span className="text-xs font-black text-stone-900 tracking-wider">{booking.id}</span>
+          <span className="text-xs font-black text-stone-900 tracking-wider">{idDisplay}</span>
         </div>
 
         {/* Booking Card Details */}
         <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-xs text-left space-y-3">
           <div className="flex justify-between items-start pb-2 border-b border-stone-100">
             <div>
-              <h2 className="font-bold text-stone-900 text-sm">{booking.salonName}</h2>
+              <h2 className="font-bold text-stone-900 text-sm">{booking?.salonName || 'Partner Salon'}</h2>
               <p className="text-[10.5px] text-stone-500 flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3 h-3 text-brand-maroon" />
-                {booking.address}
+                {booking?.address || 'Indore'}
               </p>
             </div>
             <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-              {booking.status}
+              {booking?.status || 'Confirmed'}
             </span>
           </div>
 
@@ -81,14 +116,14 @@ export const BookingConfirmationPage = () => {
               <Calendar className="w-3.5 h-3.5 text-brand-maroon" />
               <div>
                 <span className="text-[9px] text-stone-400 font-bold uppercase block">Date</span>
-                <span className="text-xs font-bold text-stone-800">{formatDateKeyFriendly(booking.dateKey)}</span>
+                <span className="text-xs font-bold text-stone-800">{booking?.dateKey ? formatDateKeyFriendly(booking.dateKey) : 'Today'}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-3.5 h-3.5 text-brand-maroon" />
               <div>
                 <span className="text-[9px] text-stone-400 font-bold uppercase block">Time</span>
-                <span className="text-xs font-bold text-stone-800">{booking.time}</span>
+                <span className="text-xs font-bold text-stone-800">{booking?.time || 'Immediate'}</span>
               </div>
             </div>
           </div>
@@ -98,7 +133,7 @@ export const BookingConfirmationPage = () => {
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
               Booked Services
             </span>
-            {booking.services?.map((item, idx) => (
+            {(booking?.services || []).map((item, idx) => (
               <div key={idx} className="flex justify-between text-xs text-stone-700">
                 <span className="text-[11px]">{item.name || item.title}</span>
                 <span className="font-bold text-xs">₹{item.price}</span>
@@ -106,7 +141,7 @@ export const BookingConfirmationPage = () => {
             ))}
           </div>
 
-          {booking.preferredProduct && (
+          {booking?.preferredProduct && (
             <div className="bg-purple-50/80 border border-purple-200/70 p-2.5 rounded-xl flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-brand-maroon" />
@@ -124,12 +159,12 @@ export const BookingConfirmationPage = () => {
           {/* Paid Summary */}
           <div className="pt-2 border-t border-stone-100 flex justify-between items-center text-xs">
             <div>
-              <span className="text-[10.5px] text-stone-500">Paid via {booking.paymentMethod}</span>
-              {booking.couponApplied && (
+              <span className="text-[10.5px] text-stone-500">Paid via {booking?.paymentMethod || 'Online'}</span>
+              {booking?.couponApplied && (
                 <p className="text-[9.5px] text-emerald-600 font-bold">Coupon {booking.couponApplied} applied</p>
               )}
             </div>
-            <span className="text-sm font-black text-stone-900">₹{booking.finalPaid}</span>
+            <span className="text-sm font-black text-stone-900">₹{booking?.finalPaid ?? booking?.totalAmount ?? 0}</span>
           </div>
         </div>
 
@@ -139,14 +174,12 @@ export const BookingConfirmationPage = () => {
           <div className="bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 flex items-center justify-between text-emerald-900 shadow-2xs">
             <span className="text-xs font-black flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-              Booking Confirmed! ID: #{booking.id}
+              Booking Confirmed! ID: #{idDisplay}
             </span>
             <span className="text-[9px] bg-emerald-200/80 text-emerald-950 font-extrabold px-2 py-0.5 rounded-full">
               Ready For Visit
             </span>
           </div>
-
-
         </div>
       </main>
 

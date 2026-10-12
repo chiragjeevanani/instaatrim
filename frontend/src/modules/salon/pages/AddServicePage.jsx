@@ -27,7 +27,7 @@ export const AddServicePage = () => {
   const isRejected = salonProfile?.verificationStatus === 'Rejected';
 
   const editingServiceId = location.state?.serviceId;
-  const existingService = services.find((s) => s.id === editingServiceId);
+  const existingService = services.find((s) => (s.id && s.id === editingServiceId) || (s._id && s._id === editingServiceId));
 
   // Available categories defined by admin
   const availableCategories = (dynamicCategories && dynamicCategories.length > 0)
@@ -110,7 +110,7 @@ export const AddServicePage = () => {
     };
 
     if (existingService) {
-      updateService(existingService.id, servicePayload);
+      updateService(existingService.id || existingService._id, servicePayload);
     } else {
       addService(servicePayload);
     }

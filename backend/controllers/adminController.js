@@ -39,3 +39,33 @@ exports.getDashboardStats = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+const PlatformSettings = require('../models/PlatformSettings');
+
+exports.saveFcmToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ success: false, message: 'Token is required' });
+        }
+
+        let settings = await PlatformSettings.findOne();
+        if (!settings) {
+            settings = await PlatformSettings.create({});
+        }
+
+        if (!settings.adminFcmTokens) {
+            settings.adminFcmTokens = [];
+        }
+
+        if (!settings.adminFcmTokens.includes(token)) {
+            settings.adminFcmTokens.push(token);
+            await settings.save();
+        }
+
+        res.status(200).json({ success: true, message: 'Admin FCM token registered' });
+    } catch (error) {
+        console.error('admin saveFcmToken error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};

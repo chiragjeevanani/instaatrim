@@ -29,30 +29,25 @@ const sendPushNotification = async (token, title, body, data = {}) => {
         });
     }
 
-    const tag = stringifiedData.tag || (stringifiedData.bookingId ? `booking-${stringifiedData.bookingId}` : 'drimstyle-booking-notification');
+    const tag = stringifiedData.tag || (stringifiedData.bookingId ? `booking-${stringifiedData.bookingId}` : 'drimstyle-notification');
 
+    // Data-only FCM message to prevent double notifications:
+    // Omitting top-level 'notification' and 'webpush.notification' ensures the OS/Browser
+    // does not auto-render Notification #1. Service Worker alone displays exactly 1 notification.
     const message = {
-        notification: {
-            title,
-            body
-        },
         data: {
             ...stringifiedData,
             title: String(title),
             body: String(body),
+            tag: String(tag),
+            icon: "/DrimStylelogo.png",
+            badge: "/DrimStylelogo.png",
+            link: String(stringifiedData.link || "/salon/bookings"),
             click_action: "FLUTTER_NOTIFICATION_CLICK"
         },
         webpush: {
             headers: {
                 Urgency: "high"
-            },
-            notification: {
-                title,
-                body,
-                icon: "/DrimStylelogo.png",
-                badge: "/DrimStylelogo.png",
-                tag: tag,
-                renotify: true
             },
             fcmOptions: {
                 link: stringifiedData.link || "/salon/bookings"

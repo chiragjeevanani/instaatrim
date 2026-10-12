@@ -14,17 +14,28 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification?.title || payload.data?.title || 'DrimStyle Booking Update';
-  const tag = payload.data?.tag || (payload.data?.bookingId ? `booking-${payload.data.bookingId}` : 'drimstyle-booking-notification');
+  console.log('[firebase-messaging-sw.js] Received background message:', payload);
+  const data = payload.data || {};
+  const notificationTitle = data.title || payload.notification?.title || 'DrimStyle Update';
+  const notificationBody = data.body || payload.notification?.body || '';
+  const tag = data.tag || (data.bookingId ? `booking-${data.bookingId}` : 'drimstyle-notification');
+
   const notificationOptions = {
-    body: payload.notification?.body || payload.data?.body || '',
-    icon: '/DrimStylelogo.png',
-    badge: '/DrimStylelogo.png',
+    body: notificationBody,
+    icon: data.icon || '/DrimStylelogo.png',
+    badge: data.badge || '/DrimStylelogo.png',
     tag: tag,
     renotify: true,
-    data: payload.data || {}
+    data: data
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

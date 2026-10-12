@@ -3,7 +3,10 @@ import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/store/selectors';
 
-// Phase 0 note: this context used to be the sole owner of bookings,
+import { io } from 'socket.io-client';
+import { requestFirebaseToken, messaging } from '../../../shared/lib/firebase';
+import { onMessage } from 'firebase/messaging';
+import { requestBrowserNotificationPermission, handleRealtimeBookingAlert } from '../../../shared/lib/soundNotification';
 // locations and favourites in a private useState — which is exactly why
 // the salon partner panel could never see a customer's booking or vice
 // versa (Defect D7 in the SRS gap audit). It is now a thin view over the
@@ -130,6 +133,21 @@ export const CustomerProvider = ({ children }) => {
 
     // Fetch platform settings for commercial rules
     api.platformSettings.get().catch(console.error);
+
+    // Fetch dynamic notifications from DB for customer app
+    fetch(`${API_BASE}/admin/notifications`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && Array.isArray(json.data)) {
+          const mapped = json.data.map(n => ({
+            ...n,
+            id: n._id || n.id,
+            time: new Date(n.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+          }));
+          dispatch({ type: 'SET_NOTIFICATIONS', payload: mapped });
+        }
+      })
+      .catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -142,6 +160,54 @@ export const CustomerProvider = ({ children }) => {
     if (user?.id) {
       api.bookings.listByCustomer(user.id).catch(console.error);
     }
+
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE.replace(/\/api\/?$/, '');
+
+    const socket = io(SOCKET_URL);
+    socket.on('system_broadcast', (broadcast) => {
+      const isForCustomer = broadcast.audience === 'all' || broadcast.audience === 'customer' || broadcast.audience === 'customers';
+      if (isForCustomer) {
+        const item = {
+          ...broadcast,
+          id: broadcast._id || broadcast.id,
+          time: 'Just now',
+          createdAt: broadcast.createdAt || new Date().toISOString()
+        };
+        dispatch({ type: 'ADD_NOTIFICATION', payload: item });
+        handleRealtimeBookingAlert({
+          type: 'SYSTEM_BROADCAST',
+          booking: { _id: item.id, customerName: broadcast.title || 'Announcement', salonName: broadcast.message || '' },
+          role: 'customer'
+        });
+      }
+    });
+
+    let unsubscribeFCM = null;
+    if (messaging) {
+      unsubscribeFCM = onMessage(messaging, (payload) => {
+        const data = payload.data || {};
+        const title = payload.notification?.title || data.title;
+        const body = payload.notification?.body || data.body;
+        if (title && body) {
+          const item = {
+            id: data.id || `fcm-${Date.now()}`,
+            title,
+            message: body,
+            audience: data.audience || 'customer',
+            createdAt: new Date().toISOString(),
+            time: 'Just now'
+          };
+          dispatch({ type: 'ADD_NOTIFICATION', payload: item });
+        }
+      });
+    }
+
+    return () => {
+      socket.disconnect();
+      if (typeof unsubscribeFCM === 'function') unsubscribeFCM();
+    };
+
   }, [user?.id]);
 
   // ---------------- Locations (shared store) ----------------
@@ -492,9 +558,9 @@ export const CustomerProvider = ({ children }) => {
 
   // ---------------- Notifications & Broadcasts ----------------
   const notifications = useMemo(
-    () => user ? (state.notifications || []).filter(
-      (n) => n.audience === 'all' || (n.audience === 'customer' && (!n.audienceId || n.audienceId === user.id))
-    ) : [],
+    () => (state.notifications || []).filter(
+      (n) => n.audience === 'all' || n.audience === 'customer' || n.audience === 'customers' || (user && n.audienceId === user.id)
+    ),
     [state.notifications, user?.id]
   );
 

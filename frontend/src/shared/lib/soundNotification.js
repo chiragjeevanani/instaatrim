@@ -15,8 +15,8 @@ export const unlockAudio = () => {
       silent.currentTime = 0;
       isAudioUnlocked = true;
       console.log('[Sound] Audio unlocked for real-time notifications');
-    }).catch(() => {});
-  } catch (e) {}
+    }).catch(() => { });
+  } catch (e) { }
 };
 
 if (typeof window !== 'undefined') {
@@ -67,19 +67,25 @@ const recentAlerts = new Map();
  */
 export const handleRealtimeBookingAlert = ({ type, booking, role = 'salon' }) => {
   if (!booking) return;
-  const bookingId = booking._id || booking.id || 'unknown';
-  const alertKey = `${type}_${bookingId}`;
+  const bookingId = String(booking._id || booking.id || 'unknown');
+  const alertKey = `alert_${type}_${bookingId}`;
 
   const now = Date.now();
-  if (recentAlerts.has(alertKey) && now - recentAlerts.get(alertKey) < 10000) {
-    console.log(`[Alert] Suppressed duplicate alert: ${alertKey}`);
-    return;
-  }
-  recentAlerts.set(alertKey, now);
 
-  // Clean stale keys
-  for (const [k, time] of recentAlerts.entries()) {
-    if (now - time > 20000) recentAlerts.delete(k);
+  // Cross-listener / cross-tab deduplication using sessionStorage
+  try {
+    const lastAlertTime = sessionStorage.getItem(alertKey);
+    if (lastAlertTime && now - Number(lastAlertTime) < 15000) {
+      console.log(`[Alert] Suppressed duplicate alert via storage: ${alertKey}`);
+      return;
+    }
+    sessionStorage.setItem(alertKey, String(now));
+  } catch (e) {
+    if (recentAlerts.has(alertKey) && now - recentAlerts.get(alertKey) < 15000) {
+      console.log(`[Alert] Suppressed duplicate alert: ${alertKey}`);
+      return;
+    }
+    recentAlerts.set(alertKey, now);
   }
 
   const isCreated = type === 'BOOKING_CREATED';
@@ -95,7 +101,10 @@ export const handleRealtimeBookingAlert = ({ type, booking, role = 'salon' }) =>
       let body = '';
       const tag = `${isCreated ? 'booking' : 'cancel'}-${bookingId}`;
 
-      if (isCreated) {
+      if (type === 'SYSTEM_BROADCAST') {
+        title = booking.customerName || 'DrimStyle Announcement 📢';
+        body = booking.salonName || 'You have a new update from DrimStyle.';
+      } else if (isCreated) {
         title = role === 'admin'
           ? `New Booking: ${booking.salonName || 'Partner Salon'} 🎉`
           : `New Booking Received! 🎉`;

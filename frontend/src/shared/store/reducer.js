@@ -599,6 +599,9 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Notifications (Phase 4) ----------------
+    case 'SET_NOTIFICATIONS': {
+      return { ...state, notifications: Array.isArray(action.payload) ? action.payload : [] };
+    }
     case 'ADD_NOTIFICATION': {
       return { ...state, notifications: [action.payload, ...state.notifications] };
     }

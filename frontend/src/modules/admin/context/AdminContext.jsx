@@ -104,6 +104,21 @@ export const AdminProvider = ({ children }) => {
         })
         .catch(console.error);
 
+      // Fetch real platform broadcast notifications from DB
+      fetch(`${API_BASE}/admin/notifications`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && Array.isArray(json.data)) {
+            const mapped = json.data.map(n => ({
+              ...n,
+              id: n._id || n.id,
+              time: new Date(n.createdAt).toLocaleString()
+            }));
+            dispatch({ type: 'SET_NOTIFICATIONS', payload: mapped });
+          }
+        })
+        .catch(console.error);
+
       // Socket.io integration for tickets and bookings
       const socket = io(SOCKET_URL);
       socket.on('ticket_created', (ticket) => {
@@ -426,7 +441,11 @@ export const AdminProvider = ({ children }) => {
   // Broadcast notification
   const sendBroadcastNotification = useCallback(async ({ title, message, audience = 'all' }) => {
     try {
-      await api.notifications.create({
+      const res = await fetch(`${API_BASE}/admin/broadcast`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, message, audience }) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to send notification');
+      if (json.data) dispatch({ type: 'ADD_NOTIFICATION', payload: { ...json.data, id: json.data._id || json.data.id, time: 'Just now' } });
+      if (false) await api.notifications.create({
         title,
         message,
         audience,
@@ -434,7 +453,7 @@ export const AdminProvider = ({ children }) => {
         type: 'broadcast',
         time: 'Just now'
       });
-      showToast(`Broadcast notification dispatched to "${audience}"`, 'success');
+      showToast(json.message || `Broadcast notification dispatched to "${audience}"`, 'success');
     } catch (err) {
       showToast(err.message || 'Failed to send notification', 'error');
     }

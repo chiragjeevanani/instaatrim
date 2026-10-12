@@ -1,13 +1,18 @@
-const admin = require('firebase-admin');
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 const path = require('path');
 
-try {
-    const serviceAccount = require('./drimstyle-48987-firebase-adminsdk-fbsvc-4d166f9470.json');
+let messagingInstance = null;
 
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('Firebase Admin SDK initialized successfully');
+try {
+    const serviceAccount = require('./drimstyle-48987-firebase-adminsdk-fbsvc-7614ff8d89.json');
+
+    const app = getApps().length === 0 ? initializeApp({
+        credential: cert(serviceAccount)
+    }) : getApps()[0];
+
+    messagingInstance = getMessaging(app);
+    console.log('Firebase Admin SDK messaging initialized successfully');
 } catch (error) {
     console.error('Failed to initialize Firebase Admin SDK:', error);
 }
@@ -57,7 +62,11 @@ const sendPushNotification = async (token, title, body, data = {}) => {
     };
 
     try {
-        const response = await admin.messaging().send(message);
+        if (!messagingInstance) {
+            console.error('[FCM] Firebase messagingInstance is not initialized.');
+            return null;
+        }
+        const response = await messagingInstance.send(message);
         console.log('[FCM] Successfully sent message to token:', token.substring(0, 15) + '...', response);
         return response;
     } catch (error) {
@@ -66,4 +75,4 @@ const sendPushNotification = async (token, title, body, data = {}) => {
     }
 };
 
-module.exports = { admin, sendPushNotification };
+module.exports = { messagingInstance, sendPushNotification };

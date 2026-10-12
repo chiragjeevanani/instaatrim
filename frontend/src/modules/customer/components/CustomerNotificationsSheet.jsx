@@ -50,10 +50,9 @@ export const CustomerNotificationsSheet = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs truncate text-stone-900">{n.title}</span>
                     <span className="text-[10px] text-stone-400 font-mono">
-                      {new Date(n.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short'
-                      })}
+                      {n.createdAt && !isNaN(new Date(n.createdAt))
+                        ? new Date(n.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                        : n.time || 'Recent'}
                     </span>
                   </div>
                   <p className="text-[11px] leading-relaxed text-stone-700">{n.message}</p>

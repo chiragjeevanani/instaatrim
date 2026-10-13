@@ -1159,6 +1159,7 @@ const mapCustomerFromApi = (customer, fallback = {}) => ({
   gender: customer.gender || fallback.gender || 'female',
   dob: customer.dob || fallback.dob || null,
   is_elite: customer.is_elite ?? fallback.is_elite ?? false,
+  wallet_balance: customer.wallet_balance !== undefined ? customer.wallet_balance : (fallback.wallet_balance || 0),
   referral_code: customer.referral_code || fallback.referral_code || null,
   favoriteSalonIds: (customer.favorite_salon_ids || fallback.favoriteSalonIds || []).map(String),
   savedLocations: (customer.saved_locations || fallback.savedLocations || []).map((location) => ({

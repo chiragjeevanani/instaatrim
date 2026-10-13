@@ -25,6 +25,10 @@ const customerSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    wallet_balance: {
+        type: Number,
+        default: 0,
+    },
     referral_code: {
         type: String,
         unique: true,

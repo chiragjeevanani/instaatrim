@@ -63,6 +63,34 @@ exports.createBooking = async (req, res) => {
 
         const savedBooking = await booking.save();
 
+        // Update Customer Wallet Balance strictly as per commercial model:
+        // Visible Discount = totalAmount * 0.40
+        // Instant Discount = Visible Discount * 0.50
+        // Wallet Cashback Issued = Visible Discount * 0.50
+        // Wallet Redeemed = Math.max(0, (totalAmount - finalPaid) - Instant Discount)
+        // Net New Wallet Balance = prev_wallet - Wallet Redeemed + Wallet Cashback Issued
+        if (savedBooking.customerId) {
+            try {
+                const billValue = savedBooking.totalAmount || 0;
+                const finalPaid = savedBooking.finalPaid !== undefined ? savedBooking.finalPaid : billValue;
+                const customerVisibleDiscount = billValue * 0.40;
+                const instantDiscount = customerVisibleDiscount * 0.50;
+                const walletCashbackIssued = customerVisibleDiscount * 0.50;
+                const walletRedeemed = Math.max(0, (billValue - finalPaid) - instantDiscount);
+
+                const Customer = require('../models/Customer');
+                const customerDoc = await Customer.findById(savedBooking.customerId);
+                if (customerDoc) {
+                    const currentBal = customerDoc.wallet_balance || 0;
+                    const updatedBal = Math.max(0, currentBal - walletRedeemed) + walletCashbackIssued;
+                    customerDoc.wallet_balance = updatedBal;
+                    await customerDoc.save();
+                }
+            } catch (walletErr) {
+                console.error('Wallet balance update error:', walletErr);
+            }
+        }
+
         // 1. Real-time Socket.io Broadcast to Salon & Admin
         const io = getSocketIO();
         if (io) {

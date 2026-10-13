@@ -11,7 +11,8 @@ import {
   Check,
   ShieldCheck,
   Save,
-  Crown
+  Crown,
+  Wallet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -126,6 +127,31 @@ export const EditProfilePage = () => {
                 {formData.phone ? `+91 ${formData.phone}` : 'No phone linked'}
               </p>
               <p className="text-[10px] text-stone-400 truncate">{formData.email || 'No email linked'}</p>
+            </div>
+          </div>
+
+          {/* Customer Wallet Card */}
+          <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-3.5 text-white shadow-xs flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold tracking-wide uppercase text-amber-100 block leading-tight">
+                  Wallet Cashback Balance
+                </span>
+                <p className="text-xl font-black tracking-tight leading-tight mt-0.5">
+                  ₹{user?.wallet_balance || 0}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[9.5px] bg-white/20 px-2 py-0.5 rounded-full font-medium text-white block">
+                Auto-redeemable 50%
+              </span>
+              <span className="text-[9px] text-amber-100 block mt-1">
+                Active &amp; Ready
+              </span>
             </div>
           </div>
 

@@ -8,6 +8,7 @@ const toCustomerResponse = (customer) => ({
     gender: customer.gender,
     dob: customer.dob || null,
     is_elite: customer.is_elite,
+    wallet_balance: customer.wallet_balance || 0,
     referral_code: customer.referral_code || null,
     referred_by_code: customer.referred_by_code || null,
     favorite_salon_ids: (customer.favorite_salon_ids || []).map((id) => String(id)),

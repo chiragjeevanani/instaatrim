@@ -33,7 +33,8 @@ export const CheckoutPage = () => {
     currentLocation,
     appliedCoupon,
     createBooking,
-    showToast
+    showToast,
+    user
   } = useCustomer();
   const { state } = useAppData();
 
@@ -42,6 +43,24 @@ export const CheckoutPage = () => {
   const [paymentError, setPaymentError] = useState(null);
   const [holdExpired, setHoldExpired] = useState(false);
   const [showSuccessTick, setShowSuccessTick] = useState(false);
+
+  // Exact Business Commercial Calculation (as per spreadsheet):
+  // Salon Bill Value = cartSummary.subtotal
+  // Customer Visible Discount = 40% of bill value
+  // Instant Discount = 50% of visible discount (i.e. 20% of bill value)
+  // Wallet Cashback Issued = 50% of visible discount (i.e. 20% of bill value)
+  const billValue = cartSummary.subtotal || 0;
+  const visibleDiscount = Math.round(billValue * 0.40);
+  const instantDiscount = Math.round(visibleDiscount * 0.50);
+  const walletCashbackIssued = Math.round(visibleDiscount * 0.50);
+
+  // Wallet Redeemed: 50% of available wallet balance can be redeemed
+  const walletBalance = Number(user?.wallet_balance) || 0;
+  const walletRedeemed = Math.min(Math.round(walletBalance * 0.50), Math.max(0, billValue - instantDiscount));
+  const walletCashbackLeft = Math.max(0, walletBalance - walletRedeemed);
+  const totalDirectDiscount = instantDiscount + walletRedeemed + (cartSummary.discount || 0);
+  const calculatedPayable = Math.max(0, billValue - instantDiscount - walletRedeemed);
+  const newEndingWalletBalance = walletCashbackLeft + walletCashbackIssued;
 
   if (showSuccessTick) {
     return (
@@ -107,7 +126,8 @@ export const CheckoutPage = () => {
         paymentStatus,
         transactionId,
         holdId: bookingSlot.holdId,
-        staffId: bookingSlot.staffId
+        staffId: bookingSlot.staffId,
+        finalPaid: calculatedPayable + (cartSummary.taxAmount || 0)
       });
 
       await releaseHold(bookingSlot.holdId);
@@ -149,10 +169,11 @@ export const CheckoutPage = () => {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
       
       // 1. Create order on backend
+      const payableAmount = calculatedPayable + (cartSummary.taxAmount || 0);
       const res = await fetch(`${API_BASE}/payments/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: cartSummary.finalAmount })
+        body: JSON.stringify({ amount: payableAmount })
       });
       const data = await res.json();
       
@@ -371,42 +392,56 @@ export const CheckoutPage = () => {
         </div>
 
         {/* Price Breakdown */}
-        <div className="bg-white rounded-2xl p-3 border border-stone-200 shadow-xs space-y-1.5 text-xs">
+        <div className="bg-white rounded-2xl p-3 border border-stone-200 shadow-xs space-y-2 text-xs">
           <span className="font-bold text-stone-800 block text-xs">Price Details</span>
           <div className="flex justify-between text-stone-600 text-[11px]">
-            <span>Item Total</span>
-            <span>₹{cartSummary.subtotal}</span>
+            <span>Salon Bill Value</span>
+            <span>₹{billValue}</span>
           </div>
-          {cartSummary.discount > 0 && (
+
+          <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
+            <span>Instant Discount (50% of Promo)</span>
+            <span>-₹{instantDiscount}</span>
+          </div>
+
+          {walletRedeemed > 0 && (
+            <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
+              <span>Wallet Redeemed (50% of balance)</span>
+              <span>-₹{walletRedeemed}</span>
+            </div>
+          )}
+
+          {cartSummary.discount > 0 && appliedCoupon && (
             <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
               <span>Coupon Savings ({appliedCoupon?.code})</span>
               <span>-₹{cartSummary.discount}</span>
             </div>
           )}
+
           {cartSummary.taxAmount > 0 && (
             <div className="flex justify-between text-stone-600 text-[11px]">
               <span>Taxes & GST ({cartSummary.taxRatePercent}%)</span>
               <span>₹{cartSummary.taxAmount}</span>
             </div>
           )}
-          {cartSummary.convenienceFee > 0 ? (
-            <div className="flex justify-between text-stone-600 text-[11px]">
-              <span>Platform Fee</span>
-              <span>₹{cartSummary.convenienceFee}</span>
-            </div>
-          ) : (
-            <div className="flex justify-between text-stone-600 text-[11px]">
-              <span>Platform Fee</span>
-              <span className="text-emerald-600 font-bold">FREE (Elite)</span>
-            </div>
-          )}
-          <div className="flex justify-between text-stone-600 text-[11px]">
-            <span>Safety Kit</span>
-            <span className="text-emerald-600 font-bold">FREE</span>
-          </div>
+
           <div className="border-t border-stone-200 pt-1.5 flex justify-between text-xs font-black text-stone-900">
-            <span>Total Payable</span>
-            <span>₹{cartSummary.finalAmount}</span>
+            <span>Customer Pays</span>
+            <span>₹{Math.max(0, calculatedPayable + (cartSummary.taxAmount || 0))}</span>
+          </div>
+
+          {/* Cashback & Wallet Summary Box (Exact flow) */}
+          <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2.5 mt-2 space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-amber-900 font-bold flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-600" /> Wallet Cashback Earned:
+              </span>
+              <span className="font-black text-amber-700">+₹{walletCashbackIssued}</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-amber-800 pt-0.5 border-t border-amber-200/60">
+              <span>Remaining Wallet Balance after booking:</span>
+              <span className="font-bold">₹{newEndingWalletBalance}</span>
+            </div>
           </div>
         </div>
       </main>
@@ -433,7 +468,7 @@ export const CheckoutPage = () => {
           ) : (
             <>
               <ShieldCheck className="w-4 h-4" />
-              <span>Pay ₹{cartSummary.finalAmount} &amp; Confirm Booking</span>
+              <span>Pay ₹{Math.max(0, calculatedPayable + (cartSummary.taxAmount || 0))} &amp; Confirm Booking</span>
             </>
           )}
         </button>

@@ -22,7 +22,8 @@ import {
   Mail,
   MessageCircle,
   LifeBuoy,
-  Edit3
+  Edit3,
+  Wallet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -34,8 +35,13 @@ export const AccountPage = () => {
     currentLocation,
     favoriteSalonIds,
     setIsReferModalOpen,
-    setIsEliteModalOpen
+    setIsEliteModalOpen,
+    fetchMyProfile
   } = useCustomer();
+
+  React.useEffect(() => {
+    if (fetchMyProfile) fetchMyProfile();
+  }, [fetchMyProfile]);
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
@@ -110,6 +116,31 @@ export const AccountPage = () => {
         </div>
       </header>
 
+      {/* Live Customer Wallet Balance Card */}
+      <div className="mx-3.5 mt-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-3.5 text-white shadow-sm flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
+            <Wallet className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <span className="text-[10px] font-semibold tracking-wide uppercase text-amber-100 block leading-tight">
+              Wallet Cashback Balance
+            </span>
+            <p className="text-xl font-black tracking-tight leading-tight mt-0.5">
+              ₹{user?.wallet_balance || 0}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="text-[9.5px] bg-white/20 px-2 py-0.5 rounded-full font-medium text-white block">
+            Auto-redeemable 50%
+          </span>
+          <span className="text-[9px] text-amber-100 block mt-1">
+            Valid on next booking
+          </span>
+        </div>
+      </div>
+
       {/* Account Menu Items */}
       <main className="p-3.5 flex-1 space-y-3">
         {/* Quick Shortcut Tiles - Compact */}
@@ -149,6 +180,22 @@ export const AccountPage = () => {
 
         {/* Detailed Options Group - Compact */}
         <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs divide-y divide-stone-100 overflow-hidden text-xs">
+          {/* DrimStyle Wallet & Cashback */}
+          <div className="p-3 flex items-center justify-between bg-amber-50/40">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+                <Wallet className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <p className="font-bold text-stone-900 text-xs">DrimStyle Wallet</p>
+                <p className="text-[10px] text-amber-700 font-medium">50% cashback auto-applied on checkout</p>
+              </div>
+            </div>
+            <span className="text-xs font-black text-amber-700 bg-amber-100/80 px-2.5 py-1 rounded-lg">
+              ₹{user?.wallet_balance || 0}
+            </span>
+          </div>
+
           {/* Edit Profile */}
           <div
             onClick={() => navigate('/customer/profile')}

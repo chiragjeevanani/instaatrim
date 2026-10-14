@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../../shared/services/api';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
@@ -227,13 +227,13 @@ export const SalonLoginPage = () => {
         {/* Footer Terms */}
         <footer className="w-full text-center text-[10.5px] text-stone-500 leading-relaxed px-2 pt-4">
           By continuing, you agree to our{' '}
-          <a className="text-brand-maroon font-semibold hover:underline" href="#terms">
+          <Link className="text-brand-maroon font-semibold hover:underline" to="/salon/terms">
             Terms &amp; Conditions
-          </a>{' '}
+          </Link>{' '}
           and{' '}
-          <a className="text-brand-maroon font-semibold hover:underline" href="/salon/privacy-policy">
+          <Link className="text-brand-maroon font-semibold hover:underline" to="/salon/privacy-policy">
             Privacy Policy
-          </a>
+          </Link>
         </footer>
       </main>
       </div>

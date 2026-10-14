@@ -13,7 +13,7 @@ import { AccountPage } from '../pages/AccountPage';
 import { EditProfilePage } from '../pages/EditProfilePage';
 import { SkincarePage } from '../pages/SkincarePage';
 import { TrendsPage } from '../pages/TrendsPage';
-import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage';
+import { AppLegalPage } from '../../landing/AppLegalPage';
 import { DesktopHeader, DesktopFooter } from '../components/DesktopHeader';
 import { CartDrawer } from '../components/CartDrawer';
 import { ReferEarnModal } from '../components/ReferEarnModal';
@@ -51,8 +51,9 @@ export const CustomerRoutes = () => {
           <Route path="/edit-profile" element={<EditProfilePage />} />
           <Route path="/skincare" element={<SkincarePage />} />
           <Route path="/trends" element={<TrendsPage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/privacy-policy" element={<AppLegalPage docKey="privacy" base="/customer" />} />
+          <Route path="/privacy" element={<AppLegalPage docKey="privacy" base="/customer" />} />
+          <Route path="/terms" element={<AppLegalPage docKey="terms" base="/customer" />} />
           {/* Fallback to Customer Home */}
           <Route path="*" element={<Navigate to="/customer" replace />} />
         </Routes>

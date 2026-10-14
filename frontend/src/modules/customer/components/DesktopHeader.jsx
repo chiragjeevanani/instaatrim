@@ -206,6 +206,7 @@ export const DesktopFooter = () => {
     { label: 'Skincare', to: '/customer/skincare' },
     { label: 'My Bookings', to: '/customer/bookings' },
     { label: 'Privacy Policy', to: '/customer/privacy-policy' },
+    { label: 'Terms', to: '/customer/terms' },
     { label: 'Partner with us', to: '/salon/register' }
   ];
 

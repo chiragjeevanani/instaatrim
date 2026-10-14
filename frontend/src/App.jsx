@@ -9,7 +9,10 @@ import { AdminProvider } from './modules/admin/context/AdminContext';
 import { AdminRoutes } from './modules/admin/routes/AdminRoutes';
 import { DevPanel } from './shared/components/DevPanel';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
+import { ScrollToTop } from './shared/components/ScrollToTop';
 import { LandingPage } from './modules/landing/LandingPage';
+import { LegalPage } from './modules/landing/LegalPage';
+import { AboutPage } from './modules/landing/AboutPage';
 
 function App() {
   return (
@@ -25,6 +28,7 @@ function App() {
     <ErrorBoundary>
       <AppDataProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <CustomerProvider>
             <SalonProvider>
               <AdminProvider>
@@ -40,6 +44,10 @@ function App() {
 
                   {/* Public marketing landing page (content managed in Admin → Landing Page) */}
                   <Route path="/" element={<LandingPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/privacy-policy" element={<LegalPage docKey="privacy" />} />
+                  <Route path="/privacy" element={<LegalPage docKey="privacy" />} />
+                  <Route path="/terms" element={<LegalPage docKey="terms" />} />
                   <Route path="*" element={<Navigate to="/customer" replace />} />
                 </Routes>
                 <DevPanel />

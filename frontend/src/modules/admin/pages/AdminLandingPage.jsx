@@ -81,6 +81,48 @@ const SECTIONS = [
     fields: [{ path: 'highlights.items', label: 'Items', type: 'list', item: featureItem, max: 4, newItem: { icon: 'shield', title: 'Title', text: 'Short description' } }]
   },
   {
+    key: 'about',
+    label: 'About page',
+    description: 'Content of the standalone About page at /about, linked from the header and footer. Switching it off hides the page and its links.',
+    fields: [
+      { path: 'about.eyebrow', label: 'Eyebrow' },
+      { path: 'about.title', label: 'Title' },
+      { path: 'about.paragraphs', label: 'Story paragraphs', type: 'stringList', multiline: true, max: 6 },
+      {
+        type: 'group',
+        label: 'Highlight badge (big number)',
+        fields: [
+          { path: 'about.badgeValue', label: 'Number', hint: 'e.g. 15' },
+          { path: 'about.badgeUnit', label: 'Unit', hint: 'e.g. min' },
+          { path: 'about.badgeLabel', label: 'Caption', type: 'textarea' }
+        ]
+      },
+      {
+        type: 'group',
+        label: 'Vision',
+        fields: [
+          { path: 'about.vision.title', label: 'Heading' },
+          { path: 'about.vision.text', label: 'Text', type: 'textarea' }
+        ]
+      },
+      {
+        type: 'group',
+        label: 'Mission',
+        fields: [
+          { path: 'about.mission.title', label: 'Heading' },
+          { path: 'about.mission.text', label: 'Text', type: 'textarea' }
+        ]
+      },
+      { path: 'about.whyTitle', label: '"Why" section heading' },
+      { path: 'about.customersTitle', label: 'Customers card heading' },
+      { path: 'about.customerPoints', label: 'Customer benefits', type: 'stringList', max: 10 },
+      { path: 'about.partnersTitle', label: 'Salon partners card heading' },
+      { path: 'about.partnerPoints', label: 'Salon partner benefits', type: 'stringList', max: 10 },
+      { path: 'about.purposeTitle', label: 'Purpose heading' },
+      { path: 'about.purpose', label: 'Purpose text', type: 'textarea' }
+    ]
+  },
+  {
     key: 'categories',
     label: 'Services',
     description: 'Service tiles are pulled live from Admin → Categories (first 8 active).',
@@ -152,13 +194,15 @@ const SECTIONS = [
         label: 'Questions',
         type: 'list',
         item: [
-          { key: 'audience', label: 'Audience', type: 'select', options: [['customer', 'Customers'], ['salon', 'Salon owners']] },
+          { key: 'audience', label: 'Shown to', type: 'select', options: [['all', 'Everyone (both tabs)'], ['customer', 'Customers tab'], ['salon', 'Salon owners tab']] },
           { key: 'question', label: 'Question' },
           { key: 'answer', label: 'Answer', type: 'textarea' }
         ],
-        max: 20,
-        newItem: { audience: 'customer', question: '', answer: '' }
-      }
+        max: 30,
+        newItem: { audience: 'all', question: '', answer: '' }
+      },
+      { path: 'faq.disclaimerTitle', label: 'Disclaimer heading' },
+      { path: 'faq.disclaimer', label: 'Disclaimer text (shown under the questions)', type: 'textarea' }
     ]
   },
   {
@@ -175,6 +219,46 @@ const SECTIONS = [
     ]
   },
   {
+    key: 'privacy',
+    label: 'Privacy Policy',
+    description: 'Public page at /privacy-policy, also used inside the customer and partner apps.',
+    alwaysOn: true,
+    fields: [
+      { path: 'legal.privacy.title', label: 'Page title' },
+      {
+        path: 'legal.privacy.sections',
+        label: 'Sections (numbered automatically in this order)',
+        type: 'list',
+        item: [
+          { key: 'title', label: 'Heading' },
+          { key: 'body', label: 'Text', type: 'textarea' }
+        ],
+        max: 60,
+        newItem: { title: '', body: '' }
+      }
+    ]
+  },
+  {
+    key: 'terms',
+    label: 'Terms & Conditions',
+    description: 'Public page at /terms, also used inside the customer and partner apps.',
+    alwaysOn: true,
+    fields: [
+      { path: 'legal.terms.title', label: 'Page title' },
+      {
+        path: 'legal.terms.sections',
+        label: 'Sections (numbered automatically in this order)',
+        type: 'list',
+        item: [
+          { key: 'title', label: 'Heading' },
+          { key: 'body', label: 'Text', type: 'textarea' }
+        ],
+        max: 60,
+        newItem: { title: '', body: '' }
+      }
+    ]
+  },
+  {
     key: 'site',
     label: 'Nav, footer & SEO',
     description: 'Leave phone / email empty to use the support contacts from Platform Settings.',
@@ -183,8 +267,10 @@ const SECTIONS = [
       { path: 'nav.customerCta', label: 'Header button (customers)' },
       { path: 'nav.salonCta', label: 'Header link (salon login)' },
       { path: 'footer.tagline', label: 'Footer tagline' },
+      { path: 'footer.about', label: 'Footer "about us" blurb', type: 'textarea' },
+      { path: 'footer.legalName', label: 'Company legal name (copyright line)' },
       { path: 'footer.phone', label: 'Footer phone', hint: 'Empty = Platform Settings support phone' },
-      { path: 'footer.email', label: 'Footer email', hint: 'Empty = Platform Settings support email' },
+      { path: 'footer.email', label: 'Footer email', hint: 'Also used in the FAQ contact card and legal pages' },
       { path: 'footer.address', label: 'Footer address' },
       { path: 'seo.title', label: 'Browser tab / search title' },
       { path: 'seo.description', label: 'Search description', type: 'textarea' }
@@ -320,7 +406,7 @@ const ListEditor = ({ field, value = [], onChange }) => {
               </div>
             </div>
             {isStrings ? (
-              <TextInput value={item} onChange={(v) => onChange(value.map((x, idx) => (idx === i ? v : x)))} />
+              <TextInput value={item} multiline={field.multiline} onChange={(v) => onChange(value.map((x, idx) => (idx === i ? v : x)))} />
             ) : (
               <div className="grid sm:grid-cols-2 gap-2.5">
                 {field.item.map((def) => (
@@ -346,7 +432,7 @@ const Field = ({ field, content, setField }) => {
         <p className="text-[12px] font-bold uppercase tracking-wider text-purple-400">{field.label}</p>
         <div className="grid sm:grid-cols-2 gap-3">
           {field.fields.map((f) => (
-            <div key={f.path} className={f.type === 'textarea' ? 'sm:col-span-2' : ''}>
+            <div key={f.path} className={f.type === 'textarea' || f.type === 'list' || f.type === 'stringList' ? 'sm:col-span-2' : ''}>
               <Field field={f} content={content} setField={setField} />
             </div>
           ))}

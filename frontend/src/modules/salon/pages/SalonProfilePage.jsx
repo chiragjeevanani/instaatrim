@@ -237,8 +237,22 @@ export const SalonProfilePage = () => {
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
               <div>
-                <p className="font-bold text-stone-900 text-xs">Partner Privacy Policy</p>
-                <p className="text-[10px] text-stone-500">Commercial data protection &amp; payout security</p>
+                <p className="font-bold text-stone-900 text-xs">Privacy Policy</p>
+                <p className="text-[10px] text-stone-500">How we collect, use &amp; protect data</p>
+              </div>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+          </div>
+
+          <div
+            onClick={() => navigate('/salon/terms')}
+            className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-700" />
+              <div>
+                <p className="font-bold text-stone-900 text-xs">Terms &amp; Conditions</p>
+                <p className="text-[10px] text-stone-500">Rules for using DrimStyle</p>
               </div>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-stone-400" />

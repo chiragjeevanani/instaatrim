@@ -19,11 +19,11 @@ import { AddServicePage } from '../pages/AddServicePage';
 import { SalonPayoutsPage } from '../pages/SalonPayoutsPage';
 import { SalonStaffPage } from '../pages/SalonStaffPage';
 import { SalonReviewsPage } from '../pages/SalonReviewsPage';
-import { SalonPrivacyPolicyPage } from '../pages/SalonPrivacyPolicyPage';
+import { AppLegalPage } from '../../landing/AppLegalPage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Routes reachable without a partner session — login and registration/onboarding, privacy policy
-const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding', '/salon/register', '/salon/privacy-policy', '/salon/privacy'];
+const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding', '/salon/register', '/salon/privacy-policy', '/salon/privacy', '/salon/terms'];
 
 export const SalonRoutes = () => {
   const location = useLocation();
@@ -65,7 +65,8 @@ export const SalonRoutes = () => {
     location.pathname.includes('/salon/payouts') ||
     location.pathname.includes('/salon/staff') ||
     location.pathname.includes('/salon/reviews') ||
-    location.pathname.includes('/salon/privacy');
+    location.pathname.includes('/salon/privacy') ||
+    location.pathname.includes('/salon/terms');
 
   // Desktop (lg+) sidebar for the signed-in partner console; auth screens stay full-bleed.
   const showSidebar =
@@ -98,8 +99,9 @@ export const SalonRoutes = () => {
             <Route path="/profile" element={<SalonProfilePage />} />
             <Route path="/profile/business" element={<SalonBusinessProfilePage />} />
             <Route path="/profile/edit" element={<EditSalonProfilePage />} />
-            <Route path="/privacy-policy" element={<SalonPrivacyPolicyPage />} />
-            <Route path="/privacy" element={<SalonPrivacyPolicyPage />} />
+            <Route path="/privacy-policy" element={<AppLegalPage docKey="privacy" base="/salon" />} />
+            <Route path="/privacy" element={<AppLegalPage docKey="privacy" base="/salon" />} />
+            <Route path="/terms" element={<AppLegalPage docKey="terms" base="/salon" />} />
             <Route path="/onboarding" element={<SalonOnboardingPage />} />
           </Routes>
         </div>

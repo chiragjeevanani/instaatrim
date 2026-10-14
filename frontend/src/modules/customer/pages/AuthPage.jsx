@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Loader2, User, Mail, Calendar } from 'lucide-react';
@@ -522,9 +522,9 @@ export const AuthPage = () => {
         {/* Footer Terms */}
         <footer className="w-full text-center text-[10.5px] text-stone-500 leading-relaxed px-2 pt-4">
           By continuing, you agree to our{' '}
-          <a className="text-brand-maroon font-semibold hover:underline" href="#terms">Terms &amp; Conditions</a>{' '}
+          <Link className="text-brand-maroon font-semibold hover:underline" to="/customer/terms">Terms &amp; Conditions</Link>{' '}
           and{' '}
-          <a className="text-brand-maroon font-semibold hover:underline" href="/customer/privacy-policy">Privacy Policy</a>
+          <Link className="text-brand-maroon font-semibold hover:underline" to="/customer/privacy-policy">Privacy Policy</Link>
         </footer>
       </main>
       </div>

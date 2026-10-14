@@ -272,8 +272,25 @@ export const AccountPage = () => {
                 <Shield className="w-3.5 h-3.5" />
               </div>
               <div>
-                <p className="font-bold text-stone-900 text-xs">Safety &amp; Privacy Policy</p>
-                <p className="text-[10px] text-stone-500">Hygiene guidelines &amp; data security</p>
+                <p className="font-bold text-stone-900 text-xs">Privacy Policy</p>
+                <p className="text-[10px] text-stone-500">How we collect, use &amp; protect your data</p>
+              </div>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+          </div>
+
+          {/* Terms & Conditions */}
+          <div
+            onClick={() => navigate('/customer/terms')}
+            className="p-3 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <p className="font-bold text-stone-900 text-xs">Terms &amp; Conditions</p>
+                <p className="text-[10px] text-stone-500">Rules for using DrimStyle</p>
               </div>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-stone-400" />

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   motion,
   AnimatePresence,
@@ -26,15 +26,16 @@ import {
   Crown,
   Clock,
   Sparkles,
-  MessageCircle
+  MessageCircle,
+  Eye,
+  Target
 } from 'lucide-react';
-import { api } from '../../shared/services/api';
 import { useAppData } from '../../shared/store/AppDataProvider';
-import { LANDING_DEFAULTS, mergeLandingContent } from '../../shared/data/landingDefaults';
 import { SafeImage } from '../../shared/components/SafeImage';
 import { LandingIcon } from './landingIcons';
 import { useLenis, scrollToSection } from './useLenis';
 import { BookingFlow } from './BookingFlow';
+import { useLandingContent } from './useLandingContent';
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -125,16 +126,16 @@ const Eyebrow = ({ children, dark = false }) => (
   </span>
 );
 
-const SectionHeading = ({ eyebrow, title, subtitle, dark = false, center = true }) => (
+const SectionHeading = ({ eyebrow, title, subtitle, dark = false, center = true, as: Heading = 'h2' }) => (
   <Reveal className={`${center ? 'text-center mx-auto' : ''} max-w-2xl`}>
     {eyebrow && <Eyebrow dark={dark}>{eyebrow}</Eyebrow>}
-    <h2
+    <Heading
       className={`mt-3 font-serif font-bold tracking-tight text-[32px] sm:text-[42px] lg:text-[48px] leading-[1.06] ${
         dark ? 'text-white' : 'text-stone-900'
       }`}
     >
       {title}
-    </h2>
+    </Heading>
     {subtitle && (
       <p className={`mt-4 text-[15px] sm:text-[17px] leading-relaxed ${dark ? 'text-rose-100/75' : 'text-stone-600'}`}>
         {subtitle}
@@ -200,12 +201,17 @@ const SpotlightCard = ({ children, className = '', dark = false }) => {
 // Navigation
 // ---------------------------------------------------------------------------
 
-const NAV_LINKS = [
-  { label: 'For customers', to: '#how-it-works' },
-  { label: 'For salons', to: '#for-salons' },
-  { label: 'Services', to: '#services' },
-  { label: 'FAQ', to: '#faq' }
-];
+// Section anchors: "#id" on the landing page itself, "/#id" from other pages (legal pages).
+const buildNavLinks = (content, onLanding) => {
+  const h = (id) => (onLanding ? `#${id}` : `/#${id}`);
+  return [
+    content.about.enabled && { label: 'About', to: '/about' },
+    content.customers.enabled && { label: 'For customers', to: h('how-it-works') },
+    content.salons.enabled && { label: 'For salons', to: h('for-salons') },
+    content.categories.enabled && { label: 'Services', to: h('services') },
+    content.faq.enabled && { label: 'FAQ', to: h('faq') }
+  ].filter(Boolean);
+};
 
 const ScrollProgress = () => {
   const { scrollYProgress } = useScroll();
@@ -218,7 +224,7 @@ const ScrollProgress = () => {
   );
 };
 
-const LandingNav = ({ nav }) => {
+const LandingNav = ({ nav, links }) => {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -245,7 +251,7 @@ const LandingNav = ({ nav }) => {
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
-          {NAV_LINKS.map((l) => (
+          {links.map((l) => (
             <SmartLink
               key={l.to}
               to={l.to}
@@ -289,7 +295,7 @@ const LandingNav = ({ nav }) => {
             className="lg:hidden overflow-hidden border-t border-rose-100 bg-white"
           >
             <div className="px-4 py-4 space-y-1">
-              {NAV_LINKS.map((l, i) => (
+              {links.map((l, i) => (
                 <motion.div key={l.to} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.04 * i }}>
                   <SmartLink
                     to={l.to}
@@ -891,6 +897,120 @@ const Highlights = ({ data }) => {
   );
 };
 
+// Company profile: story, vision/mission, who benefits, and purpose.
+const AboutBadge = ({ data }) => {
+  const reduce = useReducedMotion();
+  const num = Number(data.badgeValue);
+  return (
+    <div className="relative mx-auto w-full max-w-sm aspect-square flex items-center justify-center">
+      <motion.div
+        className="absolute inset-0 rounded-full border border-dashed border-rose-300/70"
+        animate={reduce ? undefined : { rotate: 360 }}
+        transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}
+      >
+        <span className="absolute -top-1.5 left-1/2 w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_0_6px_rgba(251,191,36,0.25)]" />
+      </motion.div>
+      <motion.div
+        className="absolute inset-6 rounded-full border border-rose-200/80"
+        animate={reduce ? undefined : { rotate: -360 }}
+        transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
+      />
+      <div className="relative w-[78%] aspect-square rounded-full bg-gradient-to-br from-[#4c0519] via-[#5b0a26] to-[#1e1035] text-white flex flex-col items-center justify-center text-center p-6 shadow-[0_40px_80px_-30px_rgba(76,5,25,0.6)]">
+        <p className="font-serif font-bold leading-none text-amber-300">
+          <span className="text-[80px] sm:text-[96px]">{Number.isFinite(num) && data.badgeValue !== '' ? <CountUp value={num} /> : data.badgeValue}</span>
+          <span className="text-[26px] sm:text-[30px] ml-1 italic">{data.badgeUnit}</span>
+        </p>
+        <p className="mt-3 text-[13px] sm:text-[14px] text-rose-100/80 leading-snug max-w-[200px]">{data.badgeLabel}</p>
+      </div>
+    </div>
+  );
+};
+
+const CheckList = ({ points, dark = false }) => (
+  <ul className="mt-5 space-y-3">
+    {points.map((pt, i) => (
+      <Reveal key={i} delay={0.05 + i * 0.07} x={-14} y={0}>
+        <li className="flex items-start gap-3 text-[14.5px] sm:text-[15px]">
+          <span className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-amber-400 text-stone-950' : 'bg-rose-50 text-brand-maroon'}`}>
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
+          </span>
+          <span className={dark ? 'text-rose-50/90' : 'text-stone-700'}>{pt}</span>
+        </li>
+      </Reveal>
+    ))}
+  </ul>
+);
+
+export const About = ({ data, page = false }) => (
+  <section id="about" className={`relative scroll-mt-20 overflow-hidden ${page ? 'pt-28 sm:pt-36 pb-16 lg:pb-24' : 'py-16 lg:py-24'}`}>
+    <div className="absolute -right-40 top-10 w-[480px] h-[480px] rounded-full bg-rose-100/70 blur-3xl" />
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-12 lg:gap-16 items-center">
+        <div>
+          <SectionHeading eyebrow={data.eyebrow} title={data.title} center={false} as={page ? 'h1' : 'h2'} />
+          <div className="mt-6 space-y-4 max-w-2xl">
+            {(data.paragraphs || []).map((para, i) => (
+              <Reveal key={i} delay={0.08 + i * 0.08}>
+                <p className="text-[15px] sm:text-[17px] leading-relaxed text-stone-600">{para}</p>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+        <Reveal delay={0.1}>
+          <AboutBadge data={data} />
+        </Reveal>
+      </div>
+
+      <div className="mt-14 grid md:grid-cols-2 gap-4 sm:gap-5">
+        {[
+          { icon: Eye, ...data.vision },
+          { icon: Target, ...data.mission }
+        ].map((item, i) => (
+          <Reveal key={i} delay={i * 0.1} className="h-full">
+            <SpotlightCard className="h-full rounded-[28px] bg-white border border-rose-100 p-7 sm:p-9 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-28px_rgba(76,5,25,0.35)]">
+              <span className="w-12 h-12 rounded-2xl bg-rose-50 text-brand-maroon flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6">
+                <item.icon className="w-6 h-6" />
+              </span>
+              <h3 className="mt-5 font-serif font-bold text-[24px] sm:text-[28px] text-stone-900">{item.title}</h3>
+              <p className="mt-3 text-[14.5px] sm:text-[15.5px] leading-relaxed text-stone-600">{item.text}</p>
+            </SpotlightCard>
+          </Reveal>
+        ))}
+      </div>
+
+      <div className="mt-16 sm:mt-20">
+        <SectionHeading title={data.whyTitle} />
+        <div className="mt-10 grid md:grid-cols-2 gap-4 sm:gap-5">
+          <Reveal className="h-full">
+            <div className="h-full rounded-[28px] bg-white border border-rose-100 p-7 sm:p-9">
+              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-brand-maroon">{data.customersTitle}</p>
+              <CheckList points={data.customerPoints || []} />
+            </div>
+          </Reveal>
+          <Reveal delay={0.1} className="h-full">
+            <div className="relative h-full overflow-hidden rounded-[28px] bg-gradient-to-br from-[#4c0519] to-[#1e1035] text-white p-7 sm:p-9">
+              <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-amber-400/20 blur-3xl" />
+              <div className="relative">
+                <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-amber-300">{data.partnersTitle}</p>
+                <CheckList points={data.partnerPoints || []} dark />
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+
+      {data.purpose && (
+        <Reveal className="mt-14 sm:mt-16">
+          <div className="rounded-[32px] border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-8 sm:p-12 lg:p-14 text-center">
+            <Eyebrow>{data.purposeTitle}</Eyebrow>
+            <p className="mt-5 mx-auto max-w-3xl font-serif text-[20px] sm:text-[26px] lg:text-[30px] leading-snug text-stone-900">{data.purpose}</p>
+          </div>
+        </Reveal>
+      )}
+    </div>
+  </section>
+);
+
 const Categories = ({ data }) => {
   const { state } = useAppData();
   const navigate = useNavigate();
@@ -1147,7 +1267,7 @@ const Testimonials = ({ data }) => (
 const Faq = ({ data, contact }) => {
   const [audience, setAudience] = useState('customer');
   const [openIndex, setOpenIndex] = useState(0);
-  const items = data.items.filter((f) => (f.audience || 'customer') === audience);
+  const items = data.items.filter((f) => (f.audience || 'customer') === 'all' || (f.audience || 'customer') === audience);
 
   return (
     <section id="faq" className="py-16 lg:py-20 scroll-mt-20">
@@ -1244,13 +1364,21 @@ const Faq = ({ data, contact }) => {
               );
             })}
           </AnimatePresence>
+          {data.disclaimer && (
+            <Reveal className="pt-3">
+              <div className="rounded-2xl bg-amber-50/70 border border-amber-200/70 px-5 sm:px-6 py-4">
+                <p className="text-[11.5px] font-bold uppercase tracking-[0.16em] text-amber-900">{data.disclaimerTitle || 'Disclaimer'}</p>
+                <p className="mt-1.5 text-[13.5px] leading-relaxed text-amber-950/80">{data.disclaimer}</p>
+              </div>
+            </Reveal>
+          )}
         </div>
       </div>
     </section>
   );
 };
 
-const FinalCta = ({ data }) => (
+export const FinalCta = ({ data }) => (
   <section className="pb-16 lg:pb-24">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 grid md:grid-cols-2 gap-5">
       <Reveal className="h-full">
@@ -1281,7 +1409,8 @@ const FinalCta = ({ data }) => (
   </section>
 );
 
-const Footer = ({ data, nav, contact }) => {
+const Footer = ({ data, nav, contact, onLanding, showAbout = true }) => {
+  const h = (id) => (onLanding ? `#${id}` : `/#${id}`);
   const columns = [
     {
       title: 'Customers',
@@ -1296,16 +1425,17 @@ const Footer = ({ data, nav, contact }) => {
       title: 'Salon partners',
       links: [
         ['Register your salon', '/salon/register'],
-        [nav.salonCta, '/salon/login'],
-        ['Partner privacy policy', '/salon/privacy-policy']
+        [nav.salonCta, '/salon/login']
       ]
     },
     {
       title: 'Company',
       links: [
-        ['How it works', '#how-it-works'],
-        ['FAQ', '#faq'],
-        ['Privacy policy', '/customer/privacy-policy']
+        ...(showAbout ? [['About us', '/about']] : []),
+        ['How it works', h('how-it-works')],
+        ['FAQ', h('faq')],
+        ['Privacy Policy', '/privacy-policy'],
+        ['Terms & Conditions', '/terms']
       ]
     }
   ];
@@ -1315,7 +1445,10 @@ const Footer = ({ data, nav, contact }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 grid gap-10 lg:grid-cols-[1.3fr_2fr]">
         <div>
           <img src="/DrimStylelogo.png" alt="DrimStyle" className="h-14 w-[190px] object-cover object-center -ml-2" />
-          <p className="mt-3 text-[14px] text-stone-500 max-w-xs">{data.tagline}</p>
+          {data.about && <p className="mt-3 text-[14px] leading-relaxed text-stone-600 max-w-sm">{data.about}</p>}
+          {showAbout && <SmartLink to="/about" className="group mt-3 inline-flex items-center gap-1 text-[13.5px] font-bold text-brand-maroon">
+            More about us <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+          </SmartLink>}
           <ul className="mt-6 space-y-2.5 text-[14px] text-stone-700">
             {contact.phone && (
               <li>
@@ -1332,8 +1465,8 @@ const Footer = ({ data, nav, contact }) => {
               </li>
             )}
             {data.address && (
-              <li className="inline-flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-brand-maroon" /> {data.address}
+              <li className="flex items-start gap-2 max-w-sm">
+                <MapPin className="w-4 h-4 mt-0.5 text-brand-maroon shrink-0" /> <span>{data.address}</span>
               </li>
             )}
           </ul>
@@ -1357,7 +1490,7 @@ const Footer = ({ data, nav, contact }) => {
       </div>
       <div className="border-t border-rose-100 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-[12.5px] text-stone-500">© {new Date().getFullYear()} DrimStyle. All rights reserved.</p>
+          <p className="text-[12.5px] text-stone-500">© {new Date().getFullYear()} {data.legalName || 'DrimStyle'}. All rights reserved.</p>
           <p className="font-serif italic text-[13px] text-brand-maroon">{data.tagline}</p>
         </div>
       </div>
@@ -1366,56 +1499,63 @@ const Footer = ({ data, nav, contact }) => {
 };
 
 // ---------------------------------------------------------------------------
-// Page
+// Page shell + landing page
 // ---------------------------------------------------------------------------
 
-export const LandingPage = () => {
-  useLenis();
-  const { state } = useAppData();
-  const [saved, setSaved] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    api.landing
-      .get()
-      .then(({ content }) => !cancelled && setSaved(content))
-      .catch(() => {
-        /* Backend unreachable — the built-in defaults still render a complete page */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const content = useMemo(() => mergeLandingContent(LANDING_DEFAULTS, saved), [saved]);
-  const contact = {
-    phone: content.footer.phone || state.platformSettings?.supportPhone || '',
-    email: content.footer.email || state.platformSettings?.supportEmail || ''
-  };
-
+// Sets the browser-tab title and meta description while a page is mounted.
+export const PageSeo = ({ title, description }) => {
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = content.seo.title;
+    if (title) document.title = title;
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement('meta');
       meta.setAttribute('name', 'description');
       document.head.appendChild(meta);
     }
-    meta.setAttribute('content', content.seo.description);
+    if (description) meta.setAttribute('content', description);
     return () => {
       document.title = prevTitle;
     };
-  }, [content.seo.title, content.seo.description]);
+  }, [title, description]);
+  return null;
+};
 
-  const trustPoints = content.highlights.enabled ? content.highlights.items.slice(0, 3).map((h) => h.title) : [];
+// Header, scroll progress, smooth scrolling and footer shared by the landing
+// page and the public legal pages. `children` receives the merged content.
+export const LandingShell = ({ onLanding = false, children }) => {
+  useLenis();
+  const { content, contact } = useLandingContent();
+  const { hash } = useLocation();
+
+  // Arriving from another page with "#section": scroll to it; otherwise start at the top.
+  useEffect(() => {
+    if (!hash) {
+      window.scrollTo(0, 0);
+      return undefined;
+    }
+    const t = setTimeout(() => scrollToSection(hash.slice(1)), 400);
+    return () => clearTimeout(t);
+  }, [hash]);
 
   return (
     <div className="min-h-screen bg-[#fbf8fc] text-stone-900 font-sans antialiased select-text overflow-x-hidden">
       <ScrollProgress />
-      <LandingNav nav={content.nav} />
+      <LandingNav nav={content.nav} links={buildNavLinks(content, onLanding)} />
+      {children(content, contact)}
+      <Footer data={content.footer} nav={content.nav} contact={contact} onLanding={onLanding} showAbout={content.about.enabled} />
+    </div>
+  );
+};
+
+export const LandingPage = () => (
+  <LandingShell onLanding>
+    {(content, contact) => (
       <main>
-        {content.hero.enabled && <Hero hero={content.hero} trustPoints={trustPoints} />}
+        <PageSeo title={content.seo.title} description={content.seo.description} />
+        {content.hero.enabled && (
+          <Hero hero={content.hero} trustPoints={content.highlights.enabled ? content.highlights.items.slice(0, 3).map((h) => h.title) : []} />
+        )}
         {content.categories.enabled && <Marquee />}
         {content.highlights.enabled && <Highlights data={content.highlights} />}
         {content.categories.enabled && <Categories data={content.categories} />}
@@ -1426,7 +1566,6 @@ export const LandingPage = () => {
         {content.faq.enabled && <Faq data={content.faq} contact={contact} />}
         {content.finalCta.enabled && <FinalCta data={content.finalCta} />}
       </main>
-      <Footer data={content.footer} nav={content.nav} contact={contact} />
-    </div>
-  );
-};
+    )}
+  </LandingShell>
+);

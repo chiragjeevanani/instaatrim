@@ -2,6 +2,8 @@
 // this from Admin → Landing Page; saved content is deep-merged over these
 // defaults (objects merge, arrays replace), so new fields always have a value.
 
+import { PRIVACY_DEFAULTS, TERMS_DEFAULTS } from './legalDefaults';
+
 export const LANDING_DEFAULTS = {
   seo: {
     title: 'DrimStyle — Book salons near you. Save money, save time.',
@@ -61,6 +63,51 @@ export const LANDING_DEFAULTS = {
       { icon: 'card', title: 'Secure online payment', text: 'Pay at checkout with UPI, cards & more' },
       { icon: 'refresh', title: 'Free cancellation', text: 'Up to 1 hour before your slot' }
     ]
+  },
+
+  // Company profile (source: DrimStyle_Company_Profile.docx)
+  about: {
+    enabled: true,
+    eyebrow: 'About DrimStyle',
+    title: 'India’s first real-time grooming infrastructure platform',
+    paragraphs: [
+      'DrimStyle is India’s first real-time grooming infrastructure platform transforming the way people discover, book, and experience salon and grooming services. Our mission is simple — to make quality grooming services available within 15 minutes, whether at a salon or in the comfort of your home.',
+      'DrimStyle connects customers with nearby salons and grooming professionals through real-time technology, enabling users to discover salons, view live availability and waiting times, compare services and offers, and book appointments instantly.',
+      'For salon partners, DrimStyle is much more than a booking platform. We help businesses increase customer footfall, reduce idle capacity, improve visibility, optimize pricing during off-peak hours, and build long-term customer relationships through technology.'
+    ],
+    badgeValue: '15',
+    badgeUnit: 'min',
+    badgeLabel: 'Quality grooming within reach — at a salon or at home',
+    vision: {
+      title: 'Our Vision',
+      text: 'To build India’s most trusted real-time grooming infrastructure that empowers millions of customers with instant access to quality grooming services while enabling salons to maximize their business potential through technology.'
+    },
+    mission: {
+      title: 'Our Mission',
+      text: 'To digitize and connect India’s grooming ecosystem by creating a smart, transparent, and technology-driven platform that benefits customers, salons, and grooming professionals alike.'
+    },
+    whyTitle: 'Why DrimStyle?',
+    customersTitle: 'For Customers',
+    customerPoints: [
+      'Discover nearby salons in real time',
+      'View live availability and waiting times',
+      'Instant or scheduled appointments',
+      'Home grooming services',
+      'Transparent pricing and reviews',
+      'Exclusive offers and dynamic pricing'
+    ],
+    partnersTitle: 'For Salon Partners',
+    partnerPoints: [
+      'Increased local visibility',
+      'Higher customer footfall',
+      'Better utilization of idle capacity',
+      'Real-time booking management',
+      'Repeat customer growth',
+      'Technology-driven business expansion'
+    ],
+    purposeTitle: 'Our Purpose',
+    purpose:
+      'India’s grooming industry serves millions of customers every month, yet the experience often involves uncertainty, long waiting times, and inefficient salon utilization. DrimStyle is building the digital infrastructure that connects demand and supply in real time, creating a smarter, faster, and more transparent grooming ecosystem.'
   },
 
   categories: {
@@ -159,30 +206,41 @@ export const LANDING_DEFAULTS = {
     ]
   },
 
+  // Source: DrimStyle_FAQ_Draft.docx. audience: 'customer' | 'salon' | 'all' (shown in both tabs).
   faq: {
     enabled: true,
     eyebrow: 'FAQ',
     title: 'Questions, answered',
     items: [
       {
-        audience: 'customer',
-        question: 'What is an instant walk-in seat?',
-        answer: 'Salons with instant booking switched on show a live wait time. Book an instant seat and head over — your chair will be ready when you arrive.'
+        audience: 'all',
+        question: 'What is DrimStyle?',
+        answer: 'DrimStyle is a salon discovery and appointment platform that helps customers find nearby salons, view estimated waiting times, select services, and book appointments.'
       },
       {
         audience: 'customer',
-        question: 'Can I cancel or reschedule?',
-        answer: 'Yes. Manage bookings from My Bookings. Cancellations are free up to 1 hour before your slot.'
+        question: 'How do I book an appointment?',
+        answer: 'Browse salons, choose services, select a preferred stylist (if available), and confirm your booking.'
       },
       {
         audience: 'customer',
-        question: 'Is there a booking fee?',
-        answer: 'Browsing is free. A small platform fee may apply at checkout and is waived for Elite members. All charges are shown before you pay.'
+        question: 'Can I modify or cancel my booking?',
+        answer: 'Yes, subject to salon availability and the applicable cancellation policy.'
+      },
+      {
+        audience: 'customer',
+        question: 'What are Reward Points?',
+        answer: 'Reward Points are loyalty benefits earned through eligible bookings, promotions, and campaigns.'
+      },
+      {
+        audience: 'customer',
+        question: 'How can I redeem Reward Points?',
+        answer: 'Reward Points can be redeemed on eligible services as per the reward program terms.'
       },
       {
         audience: 'salon',
-        question: 'How do I join as a partner?',
-        answer: 'Register your salon, upload your KYC documents and add payout details. Our team verifies your application and you can go live once approved.'
+        question: 'How can salons join DrimStyle?',
+        answer: 'Salon owners can register through the website, app, or contact the onboarding team.'
       },
       {
         audience: 'salon',
@@ -193,8 +251,21 @@ export const LANDING_DEFAULTS = {
         audience: 'salon',
         question: 'Can I control when I take walk-ins?',
         answer: 'Yes. Toggle instant walk-ins on or off at any time and set your current wait time from the top bar of your console.'
+      },
+      {
+        audience: 'all',
+        question: 'Is my personal information secure?',
+        answer: 'DrimStyle implements reasonable security measures to protect customer information.'
+      },
+      {
+        audience: 'all',
+        question: 'How can I contact customer support?',
+        answer: 'Support is available through the website, app, email, WhatsApp, or support helpline.'
       }
-    ]
+    ],
+    disclaimerTitle: 'General Disclaimer',
+    disclaimer:
+      'DrimStyle acts as a technology platform connecting customers with independent salon partners. Services are provided by partner salons and are subject to their availability and policies.'
   },
 
   finalCta: {
@@ -209,12 +280,21 @@ export const LANDING_DEFAULTS = {
     salonLink: '/salon/register'
   },
 
-  // Empty phone/email fall back to the support contacts in Platform Settings.
+  // Legal pages (/privacy-policy and /terms), also shown inside the customer and partner apps.
+  legal: {
+    privacy: PRIVACY_DEFAULTS,
+    terms: TERMS_DEFAULTS
+  },
+
+  // An empty phone falls back to the support phone in Platform Settings.
   footer: {
     tagline: 'Save money, save time.',
+    about:
+      'DrimStyle is India’s first real-time grooming infrastructure platform — making quality grooming available within 15 minutes, at a salon or in the comfort of your home.',
+    legalName: 'DrimStyle Pvt. Ltd.',
     phone: '',
-    email: '',
-    address: ''
+    email: 'support@drimstyle.com',
+    address: 'Gr Floor, 242/1&2/38, Tejaswini Soc, D P Road, Baner Gaon, Pune, Maharashtra 411045'
   }
 };
 

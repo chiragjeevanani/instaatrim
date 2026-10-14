@@ -53,7 +53,7 @@ export const BottomNav = () => {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-[65px] left-0 right-0 w-full max-w-[480px] mx-auto z-40 px-4"
+            className="lg:hidden fixed bottom-[calc(68px+env(safe-area-inset-bottom))] left-0 right-0 w-full max-w-[480px] mx-auto z-40 px-4"
           >
             <div 
               onClick={() => setIsCartOpen(true)}
@@ -81,7 +81,7 @@ export const BottomNav = () => {
       </AnimatePresence>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200/90 z-50 shadow-nav px-3 py-2 box-border pb-3"
+        className="lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-stone-200/90 z-50 shadow-nav px-3 pt-2 box-border pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         data-purpose="app-navigation"
       >
       <div className="flex items-center justify-between relative">

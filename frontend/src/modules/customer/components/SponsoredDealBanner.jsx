@@ -105,7 +105,7 @@ export const SponsoredDealBanner = () => {
             exit={{ opacity: 0.8 }}
             transition={{ duration: 0.3 }}
             onClick={handleNavigate}
-            className="relative p-4 text-white cursor-pointer overflow-hidden border border-purple-200/40 rounded-2xl bg-gradient-to-r from-stone-900 via-stone-850 to-purple-950 min-h-[148px] flex flex-col justify-between"
+            className="relative p-4 lg:px-14 lg:py-7 text-white cursor-pointer overflow-hidden border border-purple-200/40 rounded-2xl bg-gradient-to-r from-stone-900 via-stone-850 to-purple-950 min-h-[148px] lg:min-h-[190px] flex flex-col justify-between"
           >
             {/* Background image & gradient overlay */}
             {campaign.bannerImage && (
@@ -128,17 +128,17 @@ export const SponsoredDealBanner = () => {
                 <span className="text-[9px] text-stone-300 font-medium">Limited Seats</span>
               </div>
 
-              <h3 className="text-[14px] font-bold text-white leading-tight">
+              <h3 className="text-base lg:text-2xl font-bold text-white leading-tight">
                 {campaign.title}
               </h3>
 
               {campaign.subtitle && (
-                <p className="text-[10px] text-stone-300 leading-snug line-clamp-1">
+                <p className="text-[11.5px] lg:text-sm text-stone-300 leading-snug line-clamp-1">
                   {campaign.subtitle}
                 </p>
               )}
 
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 mt-2 border border-white/15 flex items-center justify-between gap-2">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl p-2.5 lg:p-3.5 mt-2 lg:max-w-2xl border border-white/15 flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <span className="text-[9px] text-amber-300 font-bold block uppercase tracking-wide">
                     Special Offer

@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../../shared/store/AppDataProvider';
+import { SafeImage } from '../../../shared/components/SafeImage';
+import { salonStartingPrice } from '../../../shared/store/selectors';
 import { findCategoryBySlug } from '../../../shared/data/seed';
 import { BRAND_PARTNERS } from '../../../shared/data/advertisements';
 import { useCustomer } from '../context/CustomerContext';
 import { BottomNav } from '../components/BottomNav';
-import { CartDrawer } from '../components/CartDrawer';
 import { Search, ArrowLeft, Star, Heart, Zap, CheckCircle2, MapPin, X, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -139,44 +140,45 @@ export const SalonListingPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-7xl lg:px-6 min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] lg:bg-none min-h-screen lg:min-h-0 pb-20 lg:pb-12 mx-auto border-x lg:border-x-0 border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Top Bar with Search */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 pt-2 pb-2 border-b border-purple-100">
-        <div className="flex items-center gap-2 mb-2">
-          <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95 cursor-pointer">
+      <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-3.5 lg:px-0 pt-2 lg:pt-8 pb-2 lg:pb-4 border-b border-purple-100">
+        <div className="flex items-center gap-2 mb-2 lg:mb-4">
+          <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center text-stone-700 hover:bg-white/80 active:scale-95 cursor-pointer lg:hidden">
             <ArrowLeft className="w-4 h-4 stroke-[2]" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xs font-bold text-stone-900 truncate">
+            <h1 className="text-[15px] lg:text-[26px] lg:leading-snug lg:tracking-tight font-bold text-stone-900 truncate">
               {activeBrand
                 ? `${activeBrand.name} Certified Salons`
                 : activeCategory
                 ? `${activeCategory.name} in ${currentLocation?.area || 'Indore'}`
                 : 'Discover Salons & Spas'}
             </h1>
-            <p className="text-[10px] text-stone-500 truncate flex items-center gap-1 mt-0.5">
+            <p className="text-[11px] lg:text-[13px] text-stone-500 truncate flex items-center gap-1 mt-0.5 lg:mt-1">
               <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
               {currentLocation?.area || 'South Tukoganj'}
             </p>
           </div>
         </div>
 
+        <div className="lg:flex lg:items-center lg:gap-4">
         {/* Search input */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 text-stone-500 absolute left-3 top-2.5 pointer-events-none stroke-[1.8]" />
+        <div className="relative lg:w-[380px] lg:shrink-0">
+          <Search className="w-4 h-4 text-stone-500 absolute left-3 top-3 pointer-events-none stroke-[1.8]" />
           <input
             type="text"
             placeholder="Search salon, haircut, beard, facial, spa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-[#eaddf3] rounded-xl text-xs text-stone-800 placeholder-stone-500 border border-purple-200/60 focus:outline-none focus:ring-1 focus:ring-brand-maroon"
+            className="w-full pl-9 pr-3 py-2.5 bg-white rounded-xl text-[13.5px] lg:text-[13px] text-stone-800 placeholder-stone-500 border border-purple-200/60 focus:outline-none focus:ring-1 focus:ring-brand-maroon"
           />
         </div>
 
         {/* Active Filter Badges */}
         {(activeCategory || activeBrand) && (
-          <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 mt-2 lg:mt-0 overflow-x-auto no-scrollbar lg:shrink-0">
             {activeCategory && (
               <span className="inline-flex items-center gap-1 bg-brand-maroon/10 text-brand-maroon text-[10.5px] font-bold px-2 py-1 rounded-full shrink-0">
                 {activeCategory.name}
@@ -198,10 +200,10 @@ export const SalonListingPage = () => {
         )}
 
         {/* Filter & Sort Row */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 pb-0.5 text-xs">
+        <div className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto no-scrollbar pt-2 lg:pt-0 pb-0.5 text-xs lg:flex-1">
           <button
             onClick={() => setInstantOnly(!instantOnly)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-colors cursor-pointer ${
+            className={`flex items-center gap-1 px-3.5 py-1.5 lg:py-2 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
               instantOnly
                 ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs'
                 : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
@@ -215,7 +217,7 @@ export const SalonListingPage = () => {
             <button
               key={g}
               onClick={() => setSelectedGender(g)}
-              className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-colors cursor-pointer ${
+              className={`px-3.5 py-1.5 lg:py-2 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
                 selectedGender === g
                   ? 'bg-brand-maroon text-white shadow-xs'
                   : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
@@ -228,7 +230,7 @@ export const SalonListingPage = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-[#eaddf3] text-purple-950 text-[10.5px] font-bold px-2 py-1 rounded-full border border-purple-200/60 outline-none shrink-0 cursor-pointer"
+            className="bg-[#eaddf3] text-purple-950 text-xs font-bold px-3 py-1.5 lg:py-2 rounded-full border border-purple-200/60 outline-none shrink-0 cursor-pointer"
           >
             <option value="Recommended">Recommended</option>
             <option value="Nearest">Nearest</option>
@@ -238,16 +240,17 @@ export const SalonListingPage = () => {
             <option value="Best Offers">Best Offers</option>
           </select>
         </div>
+        </div>
       </header>
 
       {/* Salon Results List */}
-      <main className="flex-1 p-3 space-y-3">
+      <main className="flex-1 p-3 lg:p-0 lg:pt-4 space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-5 lg:content-start">
         {/* TOUCHPOINT 2: BRAND PARTNER STORE STRIP / CERTIFIED SALONS BANNER */}
         {activeBrand && (
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-purple-950 via-stone-900 to-[#78233f] text-white p-3.5 rounded-2xl shadow-md border border-amber-300/80 mb-3"
+            className="bg-gradient-to-r from-purple-950 via-stone-900 to-[#78233f] text-white p-3.5 lg:p-5 rounded-2xl shadow-md border border-amber-300/80 mb-3 lg:mb-0 lg:col-span-full"
           >
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 bg-amber-400 text-stone-950 text-[8.5px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
@@ -280,8 +283,8 @@ export const SalonListingPage = () => {
 
 
 
-        <div className="flex justify-between items-center px-1 pt-1">
-          <span className="text-[11px] font-bold text-stone-600">
+        <div className="flex justify-between items-center px-1 pt-1 lg:pt-0 lg:col-span-full">
+          <span className="text-xs lg:text-[13px] font-bold text-stone-600">
             {filteredSalons.length} {filteredSalons.length === 1 ? 'salon' : 'salons'} available
           </span>
           <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -290,7 +293,7 @@ export const SalonListingPage = () => {
         </div>
 
         {filteredSalons.length === 0 && (
-          <div className="text-center py-14">
+          <div className="text-center py-14 lg:col-span-full">
             <p className="text-sm font-bold text-stone-700">No salons match these filters</p>
             <p className="text-[11px] text-stone-500 mt-1">Try clearing a filter or searching a different service.</p>
           </div>
@@ -314,8 +317,8 @@ export const SalonListingPage = () => {
               }`}
             >
               {/* Image & Badges */}
-              <div className="relative h-36 w-full overflow-hidden bg-stone-100">
-                <img
+              <div className="relative h-36 lg:h-44 w-full overflow-hidden bg-stone-100">
+                <SafeImage
                   src={salon.coverImage}
                   alt={salon.name}
                   className="w-full h-full object-cover"
@@ -339,7 +342,7 @@ export const SalonListingPage = () => {
                   <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span>{salon.rating}</span>
-                    <span className="text-stone-300 font-normal text-[9.5px]">({salon.reviewsCount})</span>
+                    {salon.reviewsCount > 0 && <span className="text-stone-300 font-normal text-[9.5px]">({salon.reviewsCount})</span>}
                   </div>
                 )}
 
@@ -382,23 +385,27 @@ export const SalonListingPage = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-1">
-                      <h2 className="font-bold text-stone-900 text-sm">{salon.name}</h2>
+                      <h2 className="font-bold text-stone-900 text-[15px]">{salon.name}</h2>
                       {salon.isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 fill-white shrink-0" />}
                     </div>
-                    <p className="text-[10.5px] text-stone-500 mt-0.5 leading-snug">{salon.tagline}</p>
+                    {salon.tagline && <p className="text-[11.5px] lg:text-xs text-stone-500 mt-0.5 leading-snug">{salon.tagline}</p>}
                   </div>
                   <span className="text-[10px] font-bold text-stone-500 shrink-0 bg-stone-100 px-2 py-0.5 rounded-full">
                     {salon.distanceKm != null ? `${salon.distanceKm.toFixed(1)} km` : ''}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 mt-2 text-[10.5px] text-stone-600">
+                <div className="flex items-center gap-3 mt-2 text-[11.5px] lg:text-xs text-stone-600">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
                     {salon.area}
                   </span>
-                  <span>•</span>
-                  <span>Starts at <strong className="text-stone-900">₹{salon.startingPrice}</strong></span>
+                  {salonStartingPrice(state, salon) && (
+                    <>
+                      <span>•</span>
+                      <span>Starts at <strong className="text-stone-900">₹{salonStartingPrice(state, salon)}</strong></span>
+                    </>
+                  )}
                 </div>
 
                 {/* Touchpoint 4: Sponsored Boost Perks Banner */}
@@ -422,7 +429,6 @@ export const SalonListingPage = () => {
       </main>
 
       <BottomNav />
-      <CartDrawer />
     </div>
   );
 };

@@ -49,7 +49,7 @@ export const SalonBottomNav = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-purple-200/50 z-50 shadow-nav px-3 py-1.5 box-border"
+      className="lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto bg-white/95 backdrop-blur-md border-t border-purple-200/50 z-50 shadow-nav px-3 py-1.5 box-border"
       data-purpose="salon-navigation"
     >
       <div className="flex items-center justify-between relative">

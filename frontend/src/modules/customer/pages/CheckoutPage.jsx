@@ -21,6 +21,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatDuration } from '../../../shared/store/selectors';
 
 export const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -244,17 +245,17 @@ export const CheckoutPage = () => {
       initial={{ opacity: 0, x: 10 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -10 }}
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-6xl lg:px-6 lg:pt-8 min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] lg:bg-none min-h-screen lg:min-h-0 pb-24 lg:pb-12 mx-auto border-x lg:border-x-0 border-purple-200/50 overflow-x-hidden box-border"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-purple-100 flex items-center justify-between gap-2">
+      <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-3.5 lg:px-0 py-2.5 lg:pt-0 lg:pb-6 border-b lg:border-0 border-purple-100 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button onClick={() => navigate(-1)} className="p-1 text-stone-700 active:scale-95">
+          <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center text-stone-700 hover:bg-white/80 active:scale-95">
             <ArrowLeft className="w-4 h-4 stroke-[2]" />
           </button>
           <div>
-            <h1 className="text-xs font-bold text-stone-900">Review &amp; Payment</h1>
-            <p className="text-[10px] text-stone-500">Secure Checkout</p>
+            <h1 className="text-[15px] lg:text-[26px] lg:tracking-tight font-bold text-stone-900">Review &amp; Payment</h1>
+            <p className="text-[11px] lg:text-[13px] text-stone-500">Secure Checkout</p>
           </div>
         </div>
         {bookingSlot.holdExpiresAt && !holdExpired && (
@@ -263,7 +264,7 @@ export const CheckoutPage = () => {
       </header>
 
       {holdExpired && (
-        <div className="mx-3.5 mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+        <div className="mx-3.5 lg:mx-0 mt-3 lg:mt-0 lg:mb-5 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-bold text-red-800">Your slot hold expired</p>
@@ -278,7 +279,8 @@ export const CheckoutPage = () => {
         </div>
       )}
 
-      <main className="p-3.5 space-y-3">
+      <main className="p-3.5 lg:p-0 space-y-3 lg:space-y-0 lg:grid lg:grid-cols-5 lg:gap-6 lg:items-start">
+        <div className="lg:col-span-3 space-y-3 lg:space-y-4 min-w-0">
         {/* Appointment Slot & Venue Summary */}
         <div className="bg-white rounded-2xl p-3 border border-stone-200 shadow-xs space-y-2">
           <div className="flex items-center justify-between pb-1.5 border-b border-stone-100">
@@ -335,7 +337,7 @@ export const CheckoutPage = () => {
                   <p className="font-bold text-stone-900 text-xs">
                     {item.name || item.title}
                   </p>
-                  <p className="text-[10px] text-stone-500">{item.duration}</p>
+                  <p className="text-[10px] text-stone-500">{formatDuration(item.duration)}</p>
                 </div>
                 <span className="font-black text-stone-900 text-xs">₹{item.price}</span>
               </div>
@@ -391,9 +393,13 @@ export const CheckoutPage = () => {
           </p>
         </div>
 
+        </div>
+
+        {/* Summary column — sticky beside the details on desktop */}
+        <div className="lg:col-span-2 lg:sticky lg:top-24 space-y-3 lg:space-y-4">
         {/* Price Breakdown */}
-        <div className="bg-white rounded-2xl p-3 border border-stone-200 shadow-xs space-y-2 text-xs">
-          <span className="font-bold text-stone-800 block text-xs">Price Details</span>
+        <div className="bg-white rounded-2xl p-3 lg:p-5 border border-stone-200 shadow-xs space-y-2 lg:space-y-2.5 text-xs">
+          <span className="font-bold text-stone-800 block text-xs lg:text-sm">Price Details</span>
           <div className="flex justify-between text-stone-600 text-[11px]">
             <span>Salon Bill Value</span>
             <span>₹{billValue}</span>
@@ -425,7 +431,7 @@ export const CheckoutPage = () => {
             </div>
           )}
 
-          <div className="border-t border-stone-200 pt-1.5 flex justify-between text-xs font-black text-stone-900">
+          <div className="border-t border-stone-200 pt-1.5 lg:pt-3 flex justify-between text-xs lg:text-base font-black text-stone-900">
             <span>Customer Pays</span>
             <span>₹{Math.max(0, calculatedPayable + (cartSummary.taxAmount || 0))}</span>
           </div>
@@ -444,35 +450,37 @@ export const CheckoutPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Pay action: fixed bottom bar on mobile, inline under the price summary on desktop */}
+        <div className="fixed lg:static bottom-0 left-0 right-0 w-full max-w-[480px] lg:max-w-none mx-auto px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:p-0 bg-white/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t lg:border-0 border-stone-200 z-40 shadow-soft-up lg:shadow-none box-border">
+          <button
+            disabled={isProcessing || holdExpired}
+            onClick={handlePayAndConfirm}
+            className="w-full py-3.5 text-[13px] lg:text-sm bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? (
+              <div className="flex items-center gap-2">
+                <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span>Processing...</span>
+              </div>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Pay ₹{Math.max(0, calculatedPayable + (cartSummary.taxAmount || 0))} &amp; Confirm Booking</span>
+              </>
+            )}
+          </button>
+        </div>
+        </div>
       </main>
 
-      {/* Sticky Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto p-3 bg-white/95 backdrop-blur-md border-t border-stone-200 z-40 shadow-soft-up box-border">
-        <button
-          disabled={isProcessing || holdExpired}
-          onClick={handlePayAndConfirm}
-          className="w-full py-3 bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {isProcessing ? (
-            <div className="flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <span>Processing...</span>
-            </div>
-          ) : (
-            <>
-              <ShieldCheck className="w-4 h-4" />
-              <span>Pay ₹{Math.max(0, calculatedPayable + (cartSummary.taxAmount || 0))} &amp; Confirm Booking</span>
-            </>
-          )}
-        </button>
-      </div>
 
     </motion.div>
   );

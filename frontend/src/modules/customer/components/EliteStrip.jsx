@@ -51,7 +51,7 @@ export const EliteStrip = () => {
       <motion.div
         whileTap={{ scale: 0.985 }}
         onClick={() => setIsEliteModalOpen(true)}
-        className="bg-black text-white px-3.5 py-2 rounded-xl flex items-center justify-between shadow-xs cursor-pointer hover:bg-stone-950 transition-colors"
+        className="bg-black text-white px-4 py-3 lg:px-6 lg:py-3.5 rounded-xl flex items-center justify-between shadow-xs cursor-pointer hover:bg-stone-950 transition-colors"
       >
         <div className="flex items-center gap-2">
           <span className="font-serif font-extrabold text-amber-400 tracking-wide text-[13px]">{title}</span>

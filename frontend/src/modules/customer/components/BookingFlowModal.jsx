@@ -7,6 +7,7 @@ import { getDaySlots, getInstantAvailability } from '../../../shared/lib/availab
 import { acquireHold, releaseHold } from '../../../shared/lib/slotLock';
 import { rollingDays, dateKey } from '../../../shared/lib/time';
 import { getRecommendationsForCategories } from '../../../shared/data/productRecommendations';
+import { formatDuration } from '../../../shared/store/selectors';
 import {
   X,
   Trash2,
@@ -236,7 +237,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center lg:p-6">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -252,7 +253,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 27, stiffness: 300 }}
-          className="relative w-full max-w-[480px] bg-[#faf9f6] rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col z-10 overflow-hidden border-t border-x border-stone-300/80"
+          className="relative w-full max-w-[480px] lg:max-w-[560px] bg-[#faf9f6] rounded-t-2xl lg:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col z-10 overflow-hidden border-t border-x lg:border border-stone-300/80"
         >
           {/* Header */}
           <div className="px-4 pt-3 pb-2.5 bg-white/95 border-b border-stone-200/80 backdrop-blur-xs shrink-0">
@@ -357,7 +358,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                             <div className="flex items-center gap-2 mt-1 text-[10.5px] text-stone-500">
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3 text-stone-400" />
-                                {item.duration}
+                                {formatDuration(item.duration)}
                               </span>
                               <span>•</span>
                               <span className="text-purple-900 font-semibold">{item.category || 'Service'}</span>
@@ -752,7 +753,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                           <p className="font-bold text-stone-900 text-xs">
                             {item.name || item.title}
                           </p>
-                          <p className="text-[10px] text-stone-500">{item.duration}</p>
+                          <p className="text-[10px] text-stone-500">{formatDuration(item.duration)}</p>
                         </div>
                         <span className="font-black text-stone-900 text-xs">₹{item.price}</span>
                       </div>
@@ -790,7 +791,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
           </div>
 
           {/* Footer Navigation Bar */}
-          <div className="p-3.5 bg-white border-t border-stone-200 shadow-soft-up shrink-0">
+          <div className="px-3.5 pt-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] lg:pb-3.5 bg-white border-t border-stone-200 shadow-soft-up shrink-0">
             {currentStep === 1 && (
               <div className="flex items-center justify-between gap-3">
                 <div>

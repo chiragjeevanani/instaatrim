@@ -66,9 +66,9 @@ export const SalonTopBar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full max-w-[480px] mx-auto bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2 box-border border-b border-purple-100 shadow-2xs">
+    <header className="sticky top-0 z-30 w-full max-w-[480px] lg:max-w-none mx-auto bg-[#f8f4fb]/95 lg:bg-white/85 backdrop-blur-md px-3.5 py-2 lg:px-8 lg:h-16 box-border border-b border-purple-100 shadow-2xs lg:flex lg:items-center lg:gap-6">
       {/* Top Utility Row: Salon Identity & Standard Profile Menu */}
-      <div className="flex items-center justify-between gap-2 mb-1.5 relative" ref={menuRef}>
+      <div className="flex items-center justify-between gap-2 mb-1.5 lg:mb-0 lg:flex-1 lg:min-w-0 relative" ref={menuRef}>
         {/* Salon Brand Button that triggers Profile Menu */}
         <button
           type="button"
@@ -77,7 +77,7 @@ export const SalonTopBar = () => {
           aria-expanded={isProfileMenuOpen}
           aria-label="Open salon profile menu"
         >
-          <div className="relative w-7 h-7 rounded-lg bg-stone-900 text-white flex items-center justify-center font-bold text-[10px] shadow-2xs shrink-0 overflow-hidden ring-1 ring-purple-200/60">
+          <div className="relative w-7 h-7 lg:w-9 lg:h-9 rounded-lg bg-stone-900 text-white flex items-center justify-center font-bold text-[10px] shadow-2xs shrink-0 overflow-hidden ring-1 ring-purple-200/60">
             <img
               src={salonProfile.coverImage}
               alt={salonProfile.name}
@@ -85,7 +85,7 @@ export const SalonTopBar = () => {
             />
           </div>
           <div className="flex items-center gap-1 min-w-0">
-            <h1 className="font-bold text-[13px] text-stone-900 tracking-tight leading-none truncate group-hover:text-rose-900 transition-colors">
+            <h1 className="font-bold text-[13px] lg:text-[15px] text-stone-900 tracking-tight leading-none truncate group-hover:text-rose-900 transition-colors">
               {salonProfile.name}
             </h1>
             {isApproved ? (
@@ -109,7 +109,7 @@ export const SalonTopBar = () => {
               setIsStoreOpen(!isStoreOpen);
               showToast(isStoreOpen ? 'Salon marked Closed' : 'Salon marked Open');
             }}
-            className={`inline-flex items-center gap-1 text-[9.5px] font-semibold px-2 py-0.5 rounded-full cursor-pointer transition-all border shrink-0 ${
+            className={`inline-flex items-center gap-1 text-[9.5px] lg:text-[11px] font-semibold px-2 py-0.5 lg:px-3 lg:py-1 rounded-full cursor-pointer transition-all border shrink-0 ${
               isStoreOpen
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                 : 'bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200'
@@ -144,7 +144,7 @@ export const SalonTopBar = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.96 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute top-10 left-0 w-72 bg-white rounded-2xl shadow-xl border border-purple-100 p-2 z-50 overflow-hidden"
+              className="absolute top-10 lg:top-12 left-0 w-72 bg-white rounded-2xl shadow-xl border border-purple-100 p-2 z-50 overflow-hidden"
             >
               {/* Profile Card Summary */}
               <div className="p-2.5 bg-gradient-to-r from-purple-50 via-rose-50/40 to-purple-50 rounded-xl mb-1.5 border border-purple-100/60">
@@ -262,7 +262,7 @@ export const SalonTopBar = () => {
       </div>
 
       {/* Instant Booking Master Controller Strip */}
-      <div className="flex items-center justify-between bg-stone-50/90 rounded-lg px-2.5 py-1.5 border border-stone-200/70">
+      <div className="flex items-center justify-between bg-stone-50/90 rounded-lg px-2.5 py-1.5 lg:px-3 lg:py-2 lg:w-[440px] lg:shrink-0 border border-stone-200/70">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors shrink-0 ${
             isInstantBookingEnabled ? 'bg-amber-100 text-amber-800' : 'bg-stone-200/70 text-stone-400'
@@ -270,7 +270,7 @@ export const SalonTopBar = () => {
             <Zap className={`w-3 h-3 stroke-[2] ${isInstantBookingEnabled ? 'fill-amber-500 text-amber-500' : ''}`} />
           </div>
           <div className="flex items-center gap-1.5 truncate">
-            <span className="text-[11px] font-bold text-stone-900 leading-none">Instant Walk-In</span>
+            <span className="text-[11px] lg:text-[12.5px] font-bold text-stone-900 leading-none">Instant Walk-In</span>
             <span className={`text-[8.5px] font-bold px-1 py-0.2 rounded leading-tight ${
               isInstantBookingEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'
             }`}>

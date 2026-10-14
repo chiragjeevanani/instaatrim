@@ -37,10 +37,10 @@ export const SalonReviewsPage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-[#faf7fc] font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border shadow-md"
+      className="w-full max-w-[480px] lg:max-w-6xl min-w-0 bg-[#faf7fc] lg:bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border shadow-md lg:shadow-none"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#faf7fc]/95 backdrop-blur-md px-4 py-3 border-b border-purple-100 flex items-center justify-between">
+      <header className="sticky top-0 lg:static z-30 bg-[#faf7fc]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-4 lg:px-8 py-3 lg:pt-8 lg:pb-0 border-b lg:border-0 border-purple-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate('/salon/profile')}
@@ -49,7 +49,7 @@ export const SalonReviewsPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-base font-bold text-stone-900 leading-tight">Customer Reviews</h1>
+            <h1 className="text-base lg:text-2xl font-bold text-stone-900 leading-tight">Customer Reviews</h1>
             <p className="text-[10px] text-stone-500">{salonProfile.name}</p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export const SalonReviewsPage = () => {
         </div>
       </header>
 
-      <main className="p-4 flex-1 space-y-4">
+      <main className="p-4 lg:p-8 flex-1 space-y-4">
         {/* Rating Overview Card */}
         <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs flex items-center justify-between">
           <div>
@@ -85,9 +85,9 @@ export const SalonReviewsPage = () => {
         </div>
 
         {/* Reviews List */}
-        <div className="space-y-3">
+        <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
           {reviews.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 text-stone-400 text-xs">
+            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 text-stone-400 text-xs lg:col-span-full">
               No customer reviews yet.
             </div>
           ) : (

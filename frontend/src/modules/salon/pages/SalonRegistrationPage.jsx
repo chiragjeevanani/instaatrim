@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 import { requestFirebaseToken } from '../../../shared/lib/firebase';
+import { AuthBrandPanel } from '../../../shared/components/AuthBrandPanel';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -243,7 +244,15 @@ export const SalonRegistrationPage = () => {
       transition={{ duration: 0.2 }}
       className="w-full min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none overflow-x-hidden"
     >
-      <main className="w-full max-w-[480px] min-w-0 min-h-screen flex flex-col justify-between px-4 pt-3 pb-8 relative border-x border-purple-200/50 box-border">
+      <AuthBrandPanel
+        eyebrow="Become a DrimStyle partner"
+        title="Grow your salon with DrimStyle."
+        subtitle="List your services, accept instant and scheduled bookings, and get paid on time."
+        points={['Reach customers searching nearby, right now','Zero-hassle onboarding with KYC verification','Daily (T+1) or weekly settlements to your bank']}
+        image="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80"
+      />
+      <div className="flex-1 min-w-0 flex justify-center lg:items-center lg:px-10 lg:py-10">
+      <main className="w-full max-w-[480px] lg:max-w-[560px] min-w-0 min-h-screen lg:min-h-0 flex flex-col justify-between px-4 lg:px-9 pt-3 lg:pt-7 pb-8 relative border-x lg:border border-purple-200/50 lg:bg-white lg:rounded-3xl lg:shadow-xl lg:shadow-purple-900/5 box-border">
         {/* Top Header */}
         <header className="w-full flex items-center justify-between min-h-[38px] pb-2">
           <button
@@ -984,6 +993,7 @@ export const SalonRegistrationPage = () => {
           </a>
         </footer>
       </main>
+      </div>
     </motion.div>
   );
 };

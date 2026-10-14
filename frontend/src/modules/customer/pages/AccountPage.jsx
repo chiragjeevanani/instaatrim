@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { BottomNav } from '../components/BottomNav';
-import { ReferEarnModal } from '../components/ReferEarnModal';
-import { EliteModal } from '../components/EliteModal';
 import { InfoSheet } from '../../../shared/components/InfoSheet';
 import { CustomerSupportModal } from '../components/CustomerSupportModal';
 import {
@@ -57,10 +55,10 @@ export const AccountPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 lg:max-w-3xl lg:my-8 lg:min-h-0 lg:pb-8 lg:rounded-3xl lg:border lg:shadow-sm flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Compact Header Profile Summary */}
-      <header className="bg-stone-900 text-white px-4 pt-4 pb-3.5 rounded-b-2xl shadow-sm relative overflow-hidden">
+      <header className="bg-stone-900 text-white px-4 pt-4 pb-3.5 lg:px-8 lg:pt-8 lg:pb-6 rounded-b-2xl shadow-sm relative overflow-hidden">
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-0 w-28 h-28 bg-brand-maroon/25 rounded-full blur-xl pointer-events-none"></div>
 
@@ -142,7 +140,7 @@ export const AccountPage = () => {
       </div>
 
       {/* Account Menu Items */}
-      <main className="p-3.5 flex-1 space-y-3">
+      <main className="p-3.5 lg:px-8 lg:pt-6 flex-1 space-y-3">
         {/* Quick Shortcut Tiles - Compact */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <div
@@ -293,8 +291,6 @@ export const AccountPage = () => {
       </main>
 
       <BottomNav />
-      <ReferEarnModal />
-      <EliteModal />
       <CustomerSupportModal
         isOpen={isTicketModalOpen}
         onClose={() => setIsTicketModalOpen(false)}

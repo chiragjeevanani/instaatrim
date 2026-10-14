@@ -55,18 +55,18 @@ export const BookingsPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 lg:max-w-5xl lg:px-6 lg:bg-none lg:min-h-0 lg:pb-12 lg:border-x-0 flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 pt-2.5 pb-2 border-b border-purple-100">
-        <h1 className="text-sm font-bold text-stone-900 tracking-tight">My Bookings</h1>
-        <p className="text-[10.5px] text-stone-500">Manage appointments or view history</p>
+      <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none lg:px-0 lg:pt-8 lg:pb-5 lg:border-0 px-4 pt-3.5 pb-3 border-b border-purple-100">
+        <h1 className="text-lg lg:text-[26px] font-bold text-stone-900 tracking-tight">My Bookings</h1>
+        <p className="text-xs lg:text-[13px] text-stone-500">Manage appointments or view history</p>
 
         {/* Tab Switcher - Compact */}
-        <div className="grid grid-cols-2 gap-1.5 bg-[#eaddf3] border border-purple-200/50 p-1 rounded-xl mt-2">
+        <div className="grid grid-cols-2 gap-1.5 bg-[#eaddf3] border border-purple-200/50 p-1 rounded-xl mt-2 lg:mt-5 lg:max-w-sm">
           <button
             onClick={() => setActiveTab('upcoming')}
-            className={`py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            className={`py-2 text-[13px] font-bold rounded-lg transition-all cursor-pointer ${
               activeTab === 'upcoming' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -74,7 +74,7 @@ export const BookingsPage = () => {
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            className={`py-2 text-[13px] font-bold rounded-lg transition-all cursor-pointer ${
               activeTab === 'history' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -84,16 +84,16 @@ export const BookingsPage = () => {
       </header>
 
       {/* Bookings List */}
-      <main className="p-3.5 flex-1 space-y-3">
+      <main className="p-4 lg:p-0 flex-1 space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5 lg:content-start">
         {activeTab === 'upcoming' ? (
           upcomingBookings.length === 0 ? (
-            <div className="text-center py-14">
+            <div className="text-center py-14 lg:col-span-2">
               <Calendar className="w-10 h-10 text-stone-400 mx-auto mb-1.5" />
               <h3 className="font-bold text-xs text-stone-700">No upcoming appointments</h3>
               <p className="text-[11px] text-stone-500 mt-0.5">Ready for a pampering session?</p>
               <button
                 onClick={() => navigate('/customer')}
-                className="mt-3 px-4 py-1.5 bg-brand-maroon text-white font-bold text-xs rounded-xl shadow-xs"
+                className="mt-4 px-5 py-2.5 bg-brand-maroon text-white font-bold text-[13px] rounded-xl shadow-xs"
               >
                 Book a Service
               </button>

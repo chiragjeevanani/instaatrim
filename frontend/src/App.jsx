@@ -9,6 +9,7 @@ import { AdminProvider } from './modules/admin/context/AdminContext';
 import { AdminRoutes } from './modules/admin/routes/AdminRoutes';
 import { DevPanel } from './shared/components/DevPanel';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
+import { LandingPage } from './modules/landing/LandingPage';
 
 function App() {
   return (
@@ -37,8 +38,8 @@ function App() {
                   {/* Admin Super Console Routes */}
                   <Route path="/admin/*" element={<AdminRoutes />} />
 
-                  {/* Root redirect to Customer App */}
-                  <Route path="/" element={<Navigate to="/customer" replace />} />
+                  {/* Public marketing landing page (content managed in Admin → Landing Page) */}
+                  <Route path="/" element={<LandingPage />} />
                   <Route path="*" element={<Navigate to="/customer" replace />} />
                 </Routes>
                 <DevPanel />

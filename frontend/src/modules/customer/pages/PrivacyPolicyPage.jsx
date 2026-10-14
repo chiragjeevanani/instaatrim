@@ -231,10 +231,10 @@ export const PrivacyPolicyPage = () => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 lg:max-w-3xl lg:my-8 lg:min-h-0 lg:pb-8 lg:rounded-3xl lg:border lg:shadow-sm flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-purple-100 flex items-center justify-between">
+      <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 backdrop-blur-md lg:px-6 lg:py-4 px-3.5 py-2.5 border-b border-purple-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate(-1)}
@@ -259,7 +259,7 @@ export const PrivacyPolicyPage = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="p-3.5 space-y-3.5 flex-1">
+      <main className="p-3.5 lg:p-8 space-y-3.5 flex-1">
         {/* Hero Trust Banner */}
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-stone-900 via-[#261528] to-stone-900 text-white p-4 shadow-md">
           <div className="absolute top-0 right-0 w-36 h-36 bg-brand-maroon/30 rounded-full blur-2xl pointer-events-none" />

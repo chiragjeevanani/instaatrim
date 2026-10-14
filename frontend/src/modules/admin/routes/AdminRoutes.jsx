@@ -19,6 +19,7 @@ import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
 import { AdminPayoutsPage } from '../pages/AdminPayoutsPage';
 import { AdminPlatformSettingsPage } from '../pages/AdminPlatformSettingsPage';
 import { AdminEditorialPage } from '../pages/AdminEditorialPage';
+import { AdminLandingPage } from '../pages/AdminLandingPage';
 
 export const AdminRoutes = () => {
   return (
@@ -44,6 +45,7 @@ export const AdminRoutes = () => {
         <Route path="tickets" element={<AdminTicketsPage />} />
         <Route path="notifications" element={<AdminNotificationsPage />} />
         <Route path="settings" element={<AdminPlatformSettingsPage />} />
+        <Route path="landing" element={<AdminLandingPage />} />
         <Route path="analytics" element={<AdminAnalyticsPage />} />
       </Route>
 

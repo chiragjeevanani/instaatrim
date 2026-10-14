@@ -45,19 +45,21 @@ const cardVariants = {
       ease: [0.16, 1, 0.3, 1]
     }
   },
-  fullscreen: {
+  // On desktop the expanded view is a large centered dialog rather than a
+  // full-height phone-width column.
+  fullscreen: (isDesktop) => ({
     opacity: 1,
     scale: 1,
     y: 0,
-    width: '100%',
-    maxWidth: '480px',
-    height: '100%',
-    borderRadius: '0px',
+    width: isDesktop ? 'calc(100% - 64px)' : '100%',
+    maxWidth: isDesktop ? '720px' : '480px',
+    height: isDesktop ? 'min(860px, 92vh)' : '100%',
+    borderRadius: isDesktop ? '24px' : '0px',
     transition: {
       duration: 0.38,
       ease: [0.19, 1, 0.22, 1]
     }
-  },
+  }),
   exit: {
     opacity: 0,
     scale: 0.92,
@@ -87,6 +89,7 @@ export const ServiceDetailModal = () => {
   const scrollRef = useRef(null);
 
   const isFullscreen = serviceModalStage === 'fullscreen';
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
   const isOpen = serviceModalStage === 'modal' || serviceModalStage === 'fullscreen';
 
   // Find linked salon
@@ -200,6 +203,7 @@ export const ServiceDetailModal = () => {
           <motion.div
             key="boxed-modal-card"
             variants={cardVariants}
+            custom={isDesktop}
             initial="initial"
             animate={isFullscreen ? 'fullscreen' : 'modal'}
             exit="exit"

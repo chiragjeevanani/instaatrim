@@ -60,9 +60,9 @@ export const SalonServicesPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-7xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
-      <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
+      <main className="p-3.5 lg:p-8 space-y-3.5 flex-1 w-full min-w-0">
         {/* Verification Status Banner when not approved */}
         {!isApproved && (
           <motion.div
@@ -120,7 +120,7 @@ export const SalonServicesPage = () => {
         {/* Header with Add Button */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">
+            <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight">
               Service Catalog
             </h1>
             <p className="text-[10.5px] text-stone-400 font-normal">
@@ -147,7 +147,7 @@ export const SalonServicesPage = () => {
         </div>
 
         {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto lg:overflow-visible lg:flex-wrap no-scrollbar py-0.5">
           {categories.map((cat) => {
             const isActive = selectedCategory === cat;
             return (
@@ -167,9 +167,9 @@ export const SalonServicesPage = () => {
         </div>
 
         {/* Services List */}
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4 lg:items-start">
           {filteredServices.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 shadow-xs space-y-3">
+            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 shadow-xs space-y-3 lg:col-span-full">
               <div
                 className={`w-12 h-12 rounded-2xl mx-auto flex items-center justify-center ${
                   !isApproved ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-stone-100 text-stone-400'

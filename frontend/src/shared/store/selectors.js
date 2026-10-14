@@ -78,3 +78,29 @@ export const stationLabelFor = (booking, stations, staff) => {
   const staffMember = staff.find((s) => s.id === station.staffId);
   return staffMember ? `${station.name} (${staffMember.name})` : station.name;
 };
+
+// Display helpers that work with both fixture-shaped and backend-shaped
+// salon records (the API returns mobile/openTime/closeTime, not phone/openHoursLegacy).
+export const salonHoursLabel = (salon) =>
+  salon?.openHoursLegacy || (salon?.openTime && salon?.closeTime ? `${salon.openTime} - ${salon.closeTime}` : '');
+
+export const salonPhone = (salon) => salon?.phone || salon?.mobile || '';
+
+export const salonStartingPrice = (state, salon) => {
+  if (salon?.startingPrice) return salon.startingPrice;
+  const prices = (state.services || [])
+    .filter((s) => s.salonId === salon?.id && s.isActive !== false)
+    .map((s) => Number(s.price))
+    .filter((p) => p > 0);
+  return prices.length ? Math.min(...prices) : null;
+};
+
+// Durations arrive either as display strings ("1 hr 15 mins") or as bare minutes (45).
+export const formatDuration = (d) => {
+  if (d === null || d === undefined || d === '') return '';
+  if (!/^\d+$/.test(String(d).trim())) return d;
+  const n = Number(d);
+  const h = Math.floor(n / 60);
+  const m = n % 60;
+  return h ? `${h} hr${m ? ` ${m} min` : ''}` : `${m} min`;
+};

@@ -4,6 +4,7 @@ import { useCustomer } from '../context/CustomerContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Loader2, User, Mail, Calendar } from 'lucide-react';
 import { requestFirebaseToken } from '../../../shared/lib/firebase';
+import { AuthBrandPanel } from '../../../shared/components/AuthBrandPanel';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
@@ -245,7 +246,15 @@ export const AuthPage = () => {
       transition={{ duration: 0.2 }}
       className="w-full min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none overflow-x-hidden"
     >
-      <main className="w-full max-w-[480px] min-w-0 min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col justify-between px-5 pt-3 pb-6 relative border-x border-purple-200/50 box-border">
+      <AuthBrandPanel
+        eyebrow="Salon & grooming bookings"
+        title="Your next look, booked in seconds."
+        subtitle="Discover verified salons near you, grab instant seats and save on every visit."
+        points={['Verified partner salons with real-time slots', 'Instant walk-in seats, ready in minutes', 'Exclusive offers & Elite member savings']}
+        image="https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80"
+      />
+      <div className="flex-1 min-w-0 flex justify-center lg:items-center lg:px-10 lg:py-10">
+      <main className="w-full max-w-[480px] lg:max-w-[440px] min-w-0 min-h-screen lg:min-h-[620px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] lg:bg-none lg:bg-white flex flex-col justify-between px-5 lg:px-9 pt-3 lg:pt-7 pb-6 lg:pb-7 relative border-x lg:border border-purple-200/50 lg:rounded-3xl lg:shadow-xl lg:shadow-purple-900/5 box-border">
 
         {/* Top Navigation */}
         <header className="w-full flex items-center justify-between min-h-[36px]">
@@ -282,7 +291,7 @@ export const AuthPage = () => {
 
           {/* Brand Logo */}
           <div className="mb-5 flex items-center justify-center gap-2.5 w-full">
-            <img src="/DrimStylelogo.png" alt="DrimStyle — Save Money Save Time" className="h-10 w-36 object-cover object-center" />
+            <img src="/DrimStylelogo.png" alt="DrimStyle — Save Money Save Time" className="h-14 w-48 object-cover object-center" />
           </div>
 
           <AnimatePresence mode="wait">
@@ -518,6 +527,7 @@ export const AuthPage = () => {
           <a className="text-brand-maroon font-semibold hover:underline" href="/customer/privacy-policy">Privacy Policy</a>
         </footer>
       </main>
+      </div>
     </motion.div>
   );
 };

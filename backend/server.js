@@ -64,6 +64,7 @@ app.use('/api/tickets', require('./routes/ticketRoutes'));
 app.use('/api/reviews', reviewRoutes); // ADDED
 app.use('/api/payouts', require('./routes/payoutRoutes'));
 app.use('/api/herobanners', require('./routes/heroBannerRoutes'));
+app.use('/api/landing', require('./routes/landingRoutes'));
 app.get('/', (req, res) => {
     res.send('DrimStyle API is running...');
 });

@@ -24,9 +24,9 @@ export const SalonOffersPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-7xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
-      <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
+      <main className="p-3.5 lg:p-8 space-y-3.5 flex-1 w-full min-w-0">
         {/* Header */}
         <div className="flex items-center gap-2">
           <button
@@ -37,7 +37,7 @@ export const SalonOffersPage = () => {
           </button>
           <div className="flex-1 flex items-center justify-between">
             <div>
-              <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">
+              <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight">
                 Dynamic Pricing &amp; Flash Deals
               </h1>
               <p className="text-[10.5px] text-stone-400 font-normal">
@@ -85,8 +85,8 @@ export const SalonOffersPage = () => {
         </div>
 
         {/* Offers List */}
-        <div className="space-y-2.5 pt-1">
-          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider px-1">
+        <div className="space-y-2.5 pt-1 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4 lg:items-start">
+          <h3 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider px-1 lg:col-span-full">
             Active Campaigns ({offers.length})
           </h3>
 

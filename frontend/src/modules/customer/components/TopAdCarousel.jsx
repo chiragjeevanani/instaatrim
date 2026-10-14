@@ -51,12 +51,12 @@ export const TopAdCarousel = ({ onSelectAd }) => {
             <Sparkles className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
             Sponsored Spotlight
           </span>
-          <span className="text-[10px] text-stone-500 font-medium">Brand Collaborations</span>
+          <span className="text-[10px] lg:text-xs text-stone-500 font-medium">Brand Collaborations</span>
         </div>
         <span className="text-[9px] font-bold text-stone-400">Ad • Verified</span>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl bg-stone-900 shadow-md min-h-[172px] w-full border border-purple-200/50">
+      <div className="relative overflow-hidden rounded-2xl bg-stone-900 shadow-md min-h-[172px] lg:min-h-[280px] w-full border border-purple-200/50">
         <AnimatePresence mode="wait">
           <motion.div
             key={ad.id}
@@ -64,7 +64,7 @@ export const TopAdCarousel = ({ onSelectAd }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0.82 }}
             transition={{ duration: 0.28 }}
-            className="relative min-h-[172px] flex items-stretch cursor-pointer"
+            className="relative min-h-[172px] lg:min-h-[280px] flex items-stretch cursor-pointer"
             onClick={handleAction}
           >
             {/* Background Image */}
@@ -79,7 +79,7 @@ export const TopAdCarousel = ({ onSelectAd }) => {
             <div className="absolute inset-0 bg-gradient-to-r from-stone-950/95 via-stone-900/80 to-transparent w-[78%]"></div>
 
             {/* Content Left Column */}
-            <div className="relative z-10 p-3.5 max-w-[68%] flex flex-col justify-between text-left">
+            <div className="relative z-10 p-3.5 lg:p-7 max-w-[68%] lg:max-w-[60%] flex flex-col justify-between text-left">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[9px] font-extrabold text-amber-400 uppercase tracking-wider bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-xs">
@@ -90,11 +90,11 @@ export const TopAdCarousel = ({ onSelectAd }) => {
                   </span>
                 </div>
 
-                <h3 className="text-[16.5px] font-bold text-white leading-tight tracking-tight whitespace-pre-line drop-shadow-xs">
+                <h3 className="text-[18px] lg:text-[28px] font-bold text-white leading-tight tracking-tight whitespace-pre-line drop-shadow-xs">
                   {ad.title}
                 </h3>
 
-                <p className="text-[9.5px] text-stone-300 mt-1 line-clamp-2 leading-tight">
+                <p className="text-[11px] lg:text-[13px] text-stone-300 mt-1 lg:mt-2 line-clamp-2 leading-tight">
                   {ad.description}
                 </p>
               </div>
@@ -103,7 +103,7 @@ export const TopAdCarousel = ({ onSelectAd }) => {
                 <button
                   type="button"
                   onClick={handleAction}
-                  className="bg-gradient-to-r from-brand-maroon to-brand-darkMaroon hover:from-brand-darkMaroon hover:to-stone-950 text-white text-[10px] font-extrabold tracking-wide px-3.5 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                  className="bg-gradient-to-r from-brand-maroon to-brand-darkMaroon hover:from-brand-darkMaroon hover:to-stone-950 text-white text-[11px] lg:text-xs font-extrabold tracking-wide px-4 py-2 lg:px-5 lg:py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
                 >
                   <span>{ad.ctaText}</span>
                   <ChevronRight className="w-3 h-3 stroke-[2.5]" />

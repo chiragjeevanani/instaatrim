@@ -630,9 +630,35 @@ input[type="number"] {
   color: #0f172a !important;
 }
 
-/* Responsive override: make mobile layouts expand on desktop (web view) */
-@media (min-width: 768px) {
-  .max-w-\[480px\], .max-w-\[440px\] {
-    max-width: 100% !important;
-  }
+/* ==========================================================================
+   Landing page marquee — pure CSS so it runs on the compositor thread and
+   stays smooth while the page scrolls. Two identical tracks translate by
+   their own width (-100%), which makes the loop seamless.
+   ========================================================================== */
+@keyframes ds-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-100%, 0, 0); }
+}
+
+.ds-marquee-track {
+  animation: ds-marquee var(--ds-marquee-duration, 40s) linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.ds-marquee:hover .ds-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-marquee-track { animation: none; }
+}
+
+/* Landing "How booking works" auto-advance timer — its animationend moves the flow to the next step */
+@keyframes ds-flow-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.ds-flow-timer {
+  animation: ds-flow-fill 6.5s linear forwards;
 }

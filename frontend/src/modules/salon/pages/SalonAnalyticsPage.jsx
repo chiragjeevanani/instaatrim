@@ -43,13 +43,13 @@ export const SalonAnalyticsPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-7xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
-      <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
+      <main className="p-3.5 lg:p-8 space-y-3.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start flex-1 w-full min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between lg:col-span-2">
           <div>
-            <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">
+            <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight">
               Payouts &amp; Revenue Analytics
             </h1>
             <p className="text-[10.5px] text-stone-400 font-normal">
@@ -59,7 +59,7 @@ export const SalonAnalyticsPage = () => {
         </div>
 
         {/* Payout Balance Hero Card */}
-        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-3">
+        <div className="bg-white rounded-2xl p-4 lg:p-6 border border-stone-200/80 shadow-xs space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100 font-bold">
@@ -99,7 +99,7 @@ export const SalonAnalyticsPage = () => {
 
         {/* Key Operational KPIs (Section 26) */}
         {/* Key Metrics - Clean & Balanced */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 lg:col-span-2">
           {/* Month GMV */}
           <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs">
             <span className="text-[11px] font-medium text-stone-500 block">
@@ -155,7 +155,7 @@ export const SalonAnalyticsPage = () => {
         </div>
 
         {/* Hourly Chair Traffic Summary */}
-        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-3">
+        <div className="bg-white rounded-2xl p-4 lg:p-6 border border-stone-200/80 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-stone-900">
               Bookings by Time of Day
@@ -197,7 +197,7 @@ export const SalonAnalyticsPage = () => {
         </div>
 
         {/* Top Services */}
-        <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs space-y-3">
+        <div className="bg-white rounded-2xl p-4 lg:p-6 border border-stone-200/80 shadow-xs space-y-3">
           <h3 className="text-xs font-bold text-stone-900">
             Top Performing Services
           </h3>

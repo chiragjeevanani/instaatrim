@@ -60,14 +60,14 @@ export const SalonBookingsPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-7xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
-      <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
+      <main className="p-3.5 lg:p-8 space-y-3.5 flex-1 w-full min-w-0">
         {/* Top Header & Search */}
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 lg:space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">
+              <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight">
                 Appointments Queue
               </h1>
               <p className="text-[10.5px] text-stone-400 font-normal">Real-time scheduling & station check-in</p>
@@ -82,7 +82,8 @@ export const SalonBookingsPage = () => {
           </div>
 
           {/* Search bar */}
-          <div className="relative">
+          <div className="lg:flex lg:items-center lg:gap-4 space-y-2.5 lg:space-y-0">
+          <div className="relative lg:w-[420px] lg:shrink-0">
             <Search className="w-3.5 h-3.5 text-stone-400 stroke-[2] absolute left-3.5 top-3 pointer-events-none" />
             <input
               type="text"
@@ -94,14 +95,14 @@ export const SalonBookingsPage = () => {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
+          <div className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
             {tabs.map((tab) => {
               const isActive = activeTab === tab;
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`text-[10.5px] font-semibold px-3 py-1 rounded-full shrink-0 transition-all ${
+                  className={`text-[10.5px] lg:text-xs font-semibold px-3 py-1 lg:px-4 lg:py-1.5 rounded-full shrink-0 transition-all ${
                     isActive
                       ? 'bg-rose-900 text-white shadow-xs'
                       : 'bg-white text-stone-600 border border-stone-200/80 hover:bg-stone-50 hover:text-stone-900'
@@ -112,12 +113,13 @@ export const SalonBookingsPage = () => {
               );
             })}
           </div>
+          </div>
         </div>
 
         {/* Bookings List */}
-        <div className="space-y-2.5 pt-1">
+        <div className="space-y-2.5 pt-1 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-4 lg:items-start">
           {filteredBookings.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 shadow-xs">
+            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 shadow-xs lg:col-span-full">
               <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-400 mx-auto flex items-center justify-center mb-2">
                 <Calendar className="w-5 h-5 stroke-[2]" />
               </div>

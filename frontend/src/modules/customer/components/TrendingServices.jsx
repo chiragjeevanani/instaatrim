@@ -3,6 +3,8 @@ import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { Clock, Check, Sparkles, Plus, Minus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SafeImage } from '../../../shared/components/SafeImage';
+import { formatDuration } from '../../../shared/store/selectors';
 
 export const TrendingServices = ({ genderFilter = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
@@ -67,16 +69,16 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
   return (
     <section className="mt-5 pt-1 w-full max-w-full min-w-0 overflow-hidden box-border" data-purpose="trending-services">
       <div className="px-4 flex items-center justify-between">
-        <h2 className="text-[14px] font-bold text-stone-900 tracking-tight">
+        <h2 className="text-base lg:text-lg font-bold text-stone-900 tracking-tight">
           Trending Near You
         </h2>
-        <span className="text-[10px] font-semibold text-stone-500">
+        <span className="text-[11px] font-semibold text-stone-500">
           Top Rated
         </span>
       </div>
 
       {/* Category Filter Pills - Luxury Neutral */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar px-4 mt-2.5 pb-1 w-full max-w-full">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-4 mt-3 pb-1 w-full max-w-full">
         {filterTabs.map((tab) => {
           const isActive = selectedFilter === tab;
           return (
@@ -84,7 +86,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
               key={tab}
               type="button"
               onClick={() => setSelectedFilter(tab)}
-              className={`text-[10.5px] font-medium px-3 py-1 rounded-full shrink-0 transition-all cursor-pointer ${
+              className={`text-xs font-medium px-3.5 py-1.5 lg:px-4 rounded-full shrink-0 transition-all cursor-pointer ${
                 isActive
                   ? 'bg-brand-maroon text-white font-semibold shadow-xs'
                   : 'bg-[#eaddf3] text-purple-900 hover:bg-[#e2d2ed]'
@@ -99,7 +101,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
       {filteredServices.length === 0 ? (
         <p className="px-4 mt-4 text-[11px] text-stone-500">No trending services in this category right now.</p>
       ) : (
-        <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 mt-3 pb-2 w-full max-w-full">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 mt-3 pb-2 w-full max-w-full snap-x snap-mandatory scroll-px-4 lg:snap-none lg:grid lg:grid-cols-5 lg:gap-4 lg:overflow-visible lg:[&>*:nth-child(n+11)]:hidden">
           {filteredServices.map((service) => {
             const isInCart = cartItems.some((item) => item.id === service.id);
 
@@ -108,13 +110,13 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                 key={service.id}
                 whileHover={{ y: -2 }}
                 onClick={() => openServiceDetail && openServiceDetail(service)}
-                className="w-[152px] shrink-0 bg-white rounded-xl p-2.5 border border-stone-200/90 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer group"
+                className="w-[160px] lg:w-auto shrink-0 snap-start bg-white rounded-2xl p-2.5 lg:p-3 border border-stone-200/90 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer group"
                 data-purpose="service-item"
               >
                 <div>
                   {/* Image */}
-                  <div className="relative rounded-lg overflow-hidden bg-stone-100 h-[96px] w-full">
-                    <img
+                  <div className="relative rounded-xl overflow-hidden bg-stone-100 h-[104px] lg:h-[140px] w-full">
+                    <SafeImage
                       alt={service.title}
                       className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                       src={service.image}
@@ -123,24 +125,24 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-[11.5px] font-semibold text-stone-900 mt-2 line-clamp-1 leading-snug group-hover:text-stone-950">
+                  <h3 className="text-[12.5px] lg:text-[13px] font-semibold text-stone-900 mt-2 line-clamp-1 leading-snug group-hover:text-stone-950">
                     {service.title}
                   </h3>
 
                   {/* Duration */}
-                  <div className="flex items-center gap-1 text-[10px] text-stone-500 mt-0.5 font-medium">
-                    <Clock className="w-2.5 h-2.5 stroke-[2]" />
-                    <span>{service.duration}</span>
+                  <div className="flex items-center gap-1 text-[11px] text-stone-500 mt-0.5 font-medium">
+                    <Clock className="w-3 h-3 stroke-[2]" />
+                    <span>{formatDuration(service.duration)}</span>
                   </div>
 
                   {/* Price Row */}
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="font-bold text-xs text-stone-900">₹{service.price}</span>
+                    <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.price}</span>
                     {service.originalPrice && (
                       <span className="text-[9.5px] text-stone-400 line-through">₹{service.originalPrice}</span>
                     )}
                     {service.discount && (
-                      <span className="text-[9px] font-semibold text-emerald-800 ml-auto">
+                      <span className="text-[10px] font-semibold text-emerald-700 ml-auto">
                         {service.discount}
                       </span>
                     )}
@@ -151,7 +153,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
               {isInCart ? (
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="mt-2.5 w-full h-[28px] border border-brand-maroon/50 text-brand-maroon bg-rose-50/30 font-bold text-[10.5px] rounded-lg flex items-center justify-between overflow-hidden shadow-2xs"
+                  className="mt-2.5 w-full h-8 border border-brand-maroon/50 text-brand-maroon bg-rose-50/30 font-bold text-xs rounded-lg flex items-center justify-between overflow-hidden shadow-2xs"
                 >
                   <button
                     type="button"
@@ -176,7 +178,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                       e.stopPropagation();
                       addToCart(service, { id: service.salonId, name: service.salonName });
                     }}
-                    className="mt-2.5 w-full h-[28px] border border-brand-maroon/50 text-brand-maroon bg-white hover:bg-rose-50/70 font-bold text-[10.5px] rounded-lg active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+                    className="mt-2.5 w-full h-8 border border-brand-maroon/50 text-brand-maroon bg-white hover:bg-rose-50/70 font-bold text-xs rounded-lg active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                   >
                     Add To Cart
                   </button>

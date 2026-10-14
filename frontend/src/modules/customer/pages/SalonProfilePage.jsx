@@ -3,11 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { useCustomer } from '../context/CustomerContext';
 import { api } from '../../../shared/services/api';
-import { CartDrawer } from '../components/CartDrawer';
 import { SlotPickerModal } from '../components/SlotPickerModal';
 import { BookingFlowModal } from '../components/BookingFlowModal';
-import { ServiceDetailModal } from '../components/ServiceDetailModal';
-import { reviewSummary } from '../../../shared/store/selectors';
+import { reviewSummary, salonHoursLabel, salonPhone, formatDuration } from '../../../shared/store/selectors';
 import { parseHoursRange, nowMinutesOfDay } from '../../../shared/lib/time';
 import {
   ArrowLeft,
@@ -45,17 +43,15 @@ export const SalonProfilePage = () => {
 
   const salon = state.salons.find((s) => s.id === salonId) || state.salons[0];
   const services = useMemo(
-    () => state.services.filter((s) => s.salonId === salon.id && s.isActive),
-    [state.services, salon.id]
+    () => state.services.filter((s) => s.salonId === salon?.id && s.isActive),
+    [state.services, salon?.id]
   );
-  const reviews = useMemo(() => state.reviews.filter((r) => r.salonId === salon.id), [state.reviews, salon.id]);
+  const reviews = useMemo(() => state.reviews.filter((r) => r.salonId === salon?.id), [state.reviews, salon?.id]);
   const summary = useMemo(() => reviewSummary(reviews), [reviews]);
 
   React.useEffect(() => {
-    api.reviews.listBySalon(salon.id).catch(console.error);
-  }, [salon.id]);
-
-  const isFav = favoriteSalonIds.includes(salon.id);
+    if (salon?.id) api.reviews.listBySalon(salon.id).catch(console.error);
+  }, [salon?.id]);
 
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -66,13 +62,23 @@ export const SalonProfilePage = () => {
   // Open Now is computed from the salon's real hours + the store-open flag
   // instead of a hardcoded literal.
   const isOpenNow = useMemo(() => {
-    if (!salon.isStoreOpen) return false;
-    const { openMin, closeMin, closed } = parseHoursRange(salon.openHoursLegacy);
+    if (!salon?.isStoreOpen) return false;
+    const { openMin, closeMin, closed } = parseHoursRange(salonHoursLabel(salon));
     if (closed) return false;
     const nowMin = nowMinutesOfDay();
     return nowMin >= openMin && nowMin <= closeMin;
-  }, [salon.isStoreOpen, salon.openHoursLegacy]);
+  }, [salon]);
 
+  // Salons load asynchronously — a direct visit / refresh lands here before they arrive.
+  if (!salon) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-purple-200 border-t-brand-maroon animate-spin" />
+      </div>
+    );
+  }
+
+  const isFav = favoriteSalonIds.includes(salon.id);
   const instantReady = salon.hasInstantBooking && salon.isInstantBookingEnabled && salon.isStoreOpen;
 
   return (
@@ -80,41 +86,43 @@ export const SalonProfilePage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 relative overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-7xl lg:px-6 lg:pt-6 min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] lg:bg-none min-h-screen lg:min-h-0 pb-24 lg:pb-12 mx-auto border-x lg:border-x-0 border-purple-200/50 relative overflow-x-hidden box-border"
     >
       {/* Hero Header with Cover Image */}
-      <div className="relative h-52 w-full bg-stone-900">
+      <div className="relative h-60 lg:h-80 w-full bg-stone-900 lg:rounded-3xl lg:overflow-hidden lg:shadow-md">
         <img src={salon.coverImage} alt={salon.name} className="w-full h-full object-cover opacity-85" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"></div>
 
         {/* Top Controls */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+        <div className="absolute top-3 left-3 right-3 lg:top-5 lg:left-5 lg:right-5 flex items-center justify-between z-10">
           <button
             onClick={() => navigate(-1)}
-            className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-stone-900 shadow-sm active:scale-95"
+            aria-label="Go back"
+            className="w-9 h-9 rounded-full bg-white/85 backdrop-blur-xs flex items-center justify-center text-stone-900 shadow-sm active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => toggleFavorite(salon.id)}
-            className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-stone-900 shadow-sm active:scale-95"
+            aria-label={isFav ? 'Remove from saved' : 'Save salon'}
+            className="w-9 h-9 rounded-full bg-white/85 backdrop-blur-xs flex items-center justify-center text-stone-900 shadow-sm active:scale-95"
           >
             <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-600 text-rose-600' : 'text-stone-700'}`} />
           </button>
         </div>
 
         {/* Salon Headline overlay */}
-        <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
+        <div className="absolute bottom-3 left-3.5 right-3.5 lg:bottom-7 lg:left-8 lg:right-8 text-white">
           <div className="flex items-center gap-1.5">
-            <h1 className="text-lg font-bold tracking-tight">{salon.name}</h1>
+            <h1 className="text-xl lg:text-4xl font-bold tracking-tight leading-tight">{salon.name}</h1>
             {salon.isVerified && <CheckCircle2 className="w-4 h-4 text-emerald-400 fill-white" />}
           </div>
-          <p className="text-[11px] text-stone-300 mt-0.5">{salon.tagline}</p>
-          <div className="flex items-center gap-2.5 mt-1.5 text-[11px]">
+          {salon.tagline && <p className="text-xs lg:text-[15px] text-stone-300 mt-0.5 lg:mt-1.5">{salon.tagline}</p>}
+          <div className="flex items-center gap-2.5 mt-1.5 lg:mt-3 text-[11px] lg:text-[13px]">
             <div className="flex items-center gap-1 bg-amber-400 text-stone-950 px-1.5 py-0.5 rounded font-extrabold shadow-xs text-[10px]">
               <Star className="w-3 h-3 fill-stone-950" />
               <span>{salon.rating}</span>
-              <span className="font-normal">({salon.reviewsCount})</span>
+              {salon.reviewsCount > 0 && <span className="font-normal">({salon.reviewsCount})</span>}
             </div>
             <span className="text-stone-300">{salon.distanceKm != null ? `${salon.distanceKm.toFixed(1)} km` : ''}</span>
             <span className="text-stone-300">•</span>
@@ -125,9 +133,12 @@ export const SalonProfilePage = () => {
         </div>
       </div>
 
+      <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:mt-6 lg:items-start">
+      {/* Desktop sidebar: booking status, info & gallery (stacked above the menu on mobile) */}
+      <aside className="lg:order-2 lg:col-span-1 lg:sticky lg:top-20 lg:space-y-4">
       {/* Instant Booking Banner — now reflects the partner's live toggle, wait time and open/closed state (Defect D8 fix) */}
       {salon.hasInstantBooking && (
-        <div className={`px-3.5 py-2 flex items-center justify-between border-b ${instantReady ? 'bg-amber-50/90 border-amber-200/80' : 'bg-stone-100 border-stone-200'}`}>
+        <div className={`px-3.5 py-2 lg:p-4 lg:rounded-2xl lg:border flex items-center justify-between border-b ${instantReady ? 'bg-amber-50/90 border-amber-200/80' : 'bg-stone-100 border-stone-200'}`}>
           <div className="flex items-center gap-2">
             <div className={`w-5 h-5 rounded-full flex items-center justify-center shadow-xs shrink-0 ${instantReady ? 'bg-amber-400 text-stone-900' : 'bg-stone-300 text-stone-600'}`}>
               <Zap className="w-3 h-3 fill-current" />
@@ -153,19 +164,25 @@ export const SalonProfilePage = () => {
       )}
 
       {/* Salon Info Card */}
-      <section className="p-3.5 bg-white border-b border-stone-200/70 space-y-2 text-xs">
-        <div className="flex items-start gap-2 text-stone-600 text-[11px]">
-          <MapPin className="w-3.5 h-3.5 text-brand-maroon shrink-0 mt-0.5" />
-          <span>{salon.address}</span>
-        </div>
-        <div className="flex items-center gap-2 text-stone-600 text-[11px]">
-          <Clock className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-          <span>{salon.openHoursLegacy}</span>
-        </div>
-        <div className="flex items-center gap-2 text-stone-600 text-[11px]">
-          <Phone className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-          <span>{salon.phone}</span>
-        </div>
+      <section className="p-3.5 lg:p-5 bg-white border-b lg:border lg:rounded-2xl border-stone-200/70 space-y-2 text-xs">
+        {salon.address && (
+          <div className="flex items-start gap-2 text-stone-600 text-xs">
+            <MapPin className="w-3.5 h-3.5 text-brand-maroon shrink-0 mt-0.5" />
+            <span>{salon.address}</span>
+          </div>
+        )}
+        {salonHoursLabel(salon) && (
+          <div className="flex items-center gap-2 text-stone-600 text-xs">
+            <Clock className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+            <span>{salonHoursLabel(salon)}</span>
+          </div>
+        )}
+        {salonPhone(salon) && (
+          <a href={`tel:${salonPhone(salon).replace(/\s/g, '')}`} className="flex items-center gap-2 text-stone-600 text-xs hover:text-brand-maroon">
+            <Phone className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+            <span>{salonPhone(salon)}</span>
+          </a>
+        )}
 
         {/* Amenities pills */}
         <div className="pt-2 border-t border-stone-100">
@@ -173,10 +190,10 @@ export const SalonProfilePage = () => {
             Amenities & Hygiene
           </span>
           <div className="flex flex-wrap gap-1">
-            {salon.amenities.map((am, i) => (
+            {(salon.amenities || []).map((am, i) => (
               <span
                 key={i}
-                className="text-[10px] bg-stone-100 text-stone-700 font-medium px-2 py-0.5 rounded-full border border-stone-200 flex items-center gap-1"
+                className="text-[11px] bg-stone-100 text-stone-700 font-medium px-2.5 py-1 rounded-full border border-stone-200 flex items-center gap-1"
               >
                 <Shield className="w-2.5 h-2.5 text-brand-maroon" />
                 {am}
@@ -188,17 +205,17 @@ export const SalonProfilePage = () => {
 
       {/* Photo gallery — previously the salon carried an images[] array that nothing ever rendered */}
       {salon.images?.length > 1 && (
-        <section className="bg-white pt-2.5 pb-3 border-b border-stone-200/70">
+        <section className="bg-white pt-2.5 pb-3 lg:pt-4 lg:pb-4 border-b lg:border lg:rounded-2xl border-stone-200/70">
           <div className="px-3.5 mb-2">
             <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Gallery</h2>
           </div>
-          <div className="flex gap-2 px-3.5 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 px-3.5 overflow-x-auto no-scrollbar lg:grid lg:grid-cols-3 lg:overflow-visible">
             {salon.images.map((img, i) => (
               <img
                 key={i}
                 src={img}
                 alt={`${salon.name} ${i + 1}`}
-                className="h-24 w-32 shrink-0 rounded-xl object-cover border border-stone-200"
+                className="h-24 w-32 lg:w-full lg:h-20 shrink-0 rounded-xl object-cover border border-stone-200"
                 loading="lazy"
               />
             ))}
@@ -206,20 +223,46 @@ export const SalonProfilePage = () => {
         </section>
       )}
 
+      {/* Desktop booking summary (mobile uses the floating cart bar below) */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-stone-200/70 p-5">
+        <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Your Booking</h2>
+        {cartItems.length > 0 ? (
+          <>
+            <p className="text-[12px] text-stone-500 mt-2">
+              {cartItems.length} {cartItems.length === 1 ? 'service' : 'services'} added
+            </p>
+            <p className="text-2xl font-black text-stone-900 leading-tight mt-0.5">₹{cartSummary.finalAmount}</p>
+            <button
+              onClick={() => setIsBookingFlowOpen(true)}
+              className="mt-4 w-full py-3 bg-brand-maroon hover:bg-brand-darkMaroon text-white font-bold text-[13px] rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>View Cart &amp; Book</span>
+            </button>
+          </>
+        ) : (
+          <p className="text-[12px] text-stone-500 mt-2 leading-relaxed">
+            Add services from the menu to pick a slot and book your visit.
+          </p>
+        )}
+      </div>
+      </aside>
+
+      <div className="lg:order-1 lg:col-span-2 lg:space-y-6 min-w-0">
       {/* Service Menu */}
-      <section className="mt-2 bg-white pt-2.5 border-b border-stone-200/70">
-        <div className="px-3.5 mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Services Catalog</h2>
+      <section className="mt-2 lg:mt-0 bg-white pt-2.5 lg:pt-5 border-b lg:border lg:rounded-2xl lg:overflow-hidden border-stone-200/70">
+        <div className="px-3.5 lg:px-5 mb-2 lg:mb-3 flex items-center justify-between">
+          <h2 className="text-[13px] lg:text-sm font-bold text-stone-900 uppercase tracking-wider">Services Catalog</h2>
           <span className="text-[10.5px] font-semibold text-brand-maroon">{filteredServices.length} items</span>
         </div>
 
         {/* Category Tabs */}
-        <div className="flex items-center gap-1.5 px-3.5 overflow-x-auto no-scrollbar pb-2.5 border-b border-stone-100">
+        <div className="flex items-center gap-1.5 lg:gap-2 px-3.5 lg:px-5 overflow-x-auto no-scrollbar pb-2.5 lg:pb-4 border-b border-stone-100">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1 rounded-full text-[10.5px] font-bold shrink-0 transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 lg:px-4 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer ${
                 activeCategory === cat
                   ? 'bg-brand-maroon text-white shadow-xs'
                   : 'bg-[#eaddf3] text-purple-950 hover:bg-[#e2d2ed]'
@@ -242,17 +285,17 @@ export const SalonProfilePage = () => {
               <article
                 key={service.id}
                 onClick={() => openServiceDetail && openServiceDetail({ ...service, salonId: salon.id, salonName: salon.name })}
-                className="p-3.5 flex items-start justify-between gap-3 cursor-pointer hover:bg-stone-50/80 transition-colors"
+                className="p-3.5 lg:px-5 lg:py-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-stone-50/80 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-xs font-bold text-stone-900 leading-snug">{service.name}</h3>
+                    <h3 className="text-[13.5px] lg:text-sm font-bold text-stone-900 leading-snug">{service.name}</h3>
                   </div>
-                  <p className="text-[10.5px] text-stone-500 mt-0.5 line-clamp-2 leading-tight">{service.description}</p>
+                  <p className="text-[11.5px] lg:text-xs text-stone-500 mt-0.5 line-clamp-2 leading-snug">{service.description}</p>
                   <div className="flex items-center gap-2 mt-1.5 text-xs">
-                    <span className="text-[10px] text-stone-500 flex items-center gap-1 font-medium">
+                    <span className="text-[11px] text-stone-500 flex items-center gap-1 font-medium">
                       <Clock className="w-3 h-3" />
-                      {service.duration}
+                      {formatDuration(service.duration)}
                     </span>
                     <span className="text-stone-300">•</span>
                     <div className="flex items-baseline gap-1">
@@ -272,7 +315,7 @@ export const SalonProfilePage = () => {
                         e.stopPropagation();
                         setIsCartOpen(true);
                       }}
-                      className="px-2.5 py-1 rounded-lg border border-emerald-600 bg-emerald-50 text-emerald-700 font-bold text-[10.5px] flex items-center gap-1 active:scale-95 shadow-xs cursor-pointer"
+                      className="h-8 px-3 rounded-lg border border-emerald-600 bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center gap-1 active:scale-95 shadow-xs cursor-pointer"
                     >
                       <Check className="w-3 h-3 stroke-[2.5]" />
                       <span>Added</span>
@@ -283,7 +326,7 @@ export const SalonProfilePage = () => {
                         e.stopPropagation();
                         addToCart(service, salon);
                       }}
-                      className="px-3 py-1 rounded-lg border border-brand-maroon bg-rose-50/60 text-brand-maroon hover:bg-rose-100 font-bold text-[10.5px] flex items-center gap-1 active:scale-95 shadow-xs transition-colors cursor-pointer"
+                      className="h-8 px-3.5 rounded-lg border border-brand-maroon bg-rose-50/60 text-brand-maroon hover:bg-rose-100 font-bold text-xs flex items-center gap-1 active:scale-95 shadow-xs transition-colors cursor-pointer"
                     >
                       <Plus className="w-3 h-3 stroke-[2.5]" />
                       <span>Add</span>
@@ -298,7 +341,7 @@ export const SalonProfilePage = () => {
 
       {/* Reviews — SRS §6.5 / §10.4 gap fix: customers could previously
           write a review but never read one for any salon. */}
-      <section className="mt-2 bg-white pt-3 pb-4 border-b border-stone-200/70 px-3.5">
+      <section className="mt-2 lg:mt-0 bg-white pt-3 pb-4 lg:p-5 border-b lg:border lg:rounded-2xl border-stone-200/70 px-3.5">
         <div className="flex items-center justify-between mb-2.5">
           <h2 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
             Reviews ({summary.total})
@@ -314,7 +357,7 @@ export const SalonProfilePage = () => {
         {reviews.length === 0 ? (
           <p className="text-[11px] text-stone-500">No reviews yet — be the first to book and rate this salon.</p>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
             {reviews.map((rev) => (
               <div key={rev.id} className="p-2.5 bg-stone-50/80 rounded-xl border border-stone-200/70 space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -348,9 +391,12 @@ export const SalonProfilePage = () => {
         )}
       </section>
 
-      {/* Floating Bottom Cart Bar */}
+      </div>
+      </div>
+
+      {/* Floating Bottom Cart Bar (mobile) */}
       {cartItems.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto p-2.5 bg-white/95 backdrop-blur-md border-t border-stone-200 z-40 shadow-soft-up box-border">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-stone-200 z-40 shadow-soft-up box-border">
           <div className="flex items-center justify-between gap-2.5">
             <div>
               <span className="text-[10px] text-stone-500 font-medium">
@@ -370,10 +416,8 @@ export const SalonProfilePage = () => {
       )}
 
       {/* Cart Drawer, Booking Flow & Slot Picker */}
-      <CartDrawer />
       <BookingFlowModal salonId={salon.id} />
       <SlotPickerModal salonId={salon.id} />
-      <ServiceDetailModal />
     </motion.div>
   );
 };

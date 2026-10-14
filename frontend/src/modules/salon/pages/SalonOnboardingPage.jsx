@@ -50,9 +50,9 @@ export const SalonOnboardingPage = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] font-sans text-stone-900 antialiased min-h-screen pb-12 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-3xl min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] font-sans text-stone-900 antialiased min-h-screen pb-12 mx-auto border-x lg:border-x-0 border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
     >
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-4 py-3 border-b border-purple-100 flex items-center justify-between">
+      <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-4 lg:px-8 py-3 lg:pt-8 lg:pb-0 border-b lg:border-0 border-purple-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/salon')}
@@ -87,7 +87,7 @@ export const SalonOnboardingPage = () => {
         )}
       </header>
 
-      <main className="p-4 space-y-3.5 flex-1 w-full min-w-0">
+      <main className="p-4 lg:p-8 space-y-3.5 flex-1 w-full min-w-0">
         {/* Verification Status Banner */}
         {isApproved ? (
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-3.5 flex items-start gap-3 shadow-2xs">

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { useNavigate } from 'react-router-dom';
 import { X, Trash2, Calendar, Zap, Tag, ChevronRight, ShieldCheck } from 'lucide-react';
+import { formatDuration } from '../../../shared/store/selectors';
 
 export const CartDrawer = () => {
   const {
@@ -36,7 +37,7 @@ export const CartDrawer = () => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center lg:p-6">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -52,7 +53,7 @@ export const CartDrawer = () => {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-          className="relative w-full max-w-[480px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl shadow-2xl max-h-[88vh] flex flex-col z-10 overflow-hidden border-t border-x border-purple-200/80"
+          className="relative w-full max-w-[480px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl lg:rounded-2xl shadow-2xl max-h-[88vh] flex flex-col z-10 overflow-hidden border-t border-x lg:border border-purple-200/80"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-purple-200/60 bg-white/90 backdrop-blur-xs">
@@ -131,7 +132,7 @@ export const CartDrawer = () => {
                         <div className="flex items-center gap-1.5">
                           <h5 className="text-xs font-bold text-stone-900 truncate leading-tight">{item.name || item.title}</h5>
                         </div>
-                        <p className="text-[10px] text-stone-500 mt-0.5">{item.duration} • {item.salonName || 'Salon Partner'}</p>
+                        <p className="text-[10px] text-stone-500 mt-0.5">{formatDuration(item.duration)} • {item.salonName || 'Salon Partner'}</p>
                         <div className="flex items-baseline gap-1.5 mt-1">
                           <span className="text-xs font-black text-stone-900">₹{item.price}</span>
                           {item.originalPrice && (
@@ -245,7 +246,7 @@ export const CartDrawer = () => {
 
           {/* Footer Checkout Button */}
           {cartItems.length > 0 && (
-            <div className="p-3 bg-white border-t border-stone-200 shadow-soft-up">
+            <div className="px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pb-3 bg-white border-t border-stone-200 shadow-soft-up">
               <div className="flex items-center justify-between mb-1.5 text-xs">
                 <span className="text-stone-500 font-medium">Total Payable</span>
                 <span className="text-sm font-black text-stone-900">₹{cartSummary.finalAmount}</span>

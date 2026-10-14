@@ -63,14 +63,14 @@ export const SalonBusinessProfilePage = () => {
   }
 
   return (
-    <div className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border">
-      <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
+    <div className="w-full max-w-[480px] lg:max-w-4xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border">
+      <main className="p-3.5 lg:p-8 space-y-3.5 flex-1 w-full min-w-0">
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/salon/profile')} className="p-1 -ml-1 text-stone-700 active:scale-95">
             <ArrowLeft className="w-4 h-4 stroke-[2]" />
           </button>
           <div>
-            <h1 className="text-[14px] font-bold text-stone-900 tracking-tight">Business Listing</h1>
+            <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight">Business Listing</h1>
             <p className="text-[10.5px] text-stone-400 font-normal">What customers see on DrimStyle</p>
           </div>
         </div>

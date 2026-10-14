@@ -175,10 +175,10 @@ export const SalonPrivacyPolicyPage = () => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-4xl min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-24 lg:pb-12 mx-auto border-x lg:border-x-0 border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-3.5 py-2.5 border-b border-purple-100 flex items-center justify-between">
+      <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-3.5 lg:px-8 py-2.5 lg:pt-8 lg:pb-0 border-b lg:border-0 border-purple-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate(-1)}
@@ -203,7 +203,7 @@ export const SalonPrivacyPolicyPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="p-3.5 space-y-3.5 flex-1">
+      <main className="p-3.5 lg:p-8 space-y-3.5 flex-1">
         {/* Partner Trust Banner */}
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-stone-900 via-[#261528] to-stone-900 text-white p-4 shadow-md">
           <div className="absolute top-0 right-0 w-36 h-36 bg-brand-maroon/30 rounded-full blur-2xl pointer-events-none" />

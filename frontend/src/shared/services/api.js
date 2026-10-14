@@ -2080,6 +2080,32 @@ const editorial = {
   }
 };
 
+// =============================================================================
+// Landing page content (public read, admin write)
+// =============================================================================
+const landing = {
+  get: async () => {
+    const res = await fetch(`${API_BASE}/landing`);
+    const json = await res.json();
+    if (!json.success) throw new ApiError(json.message || 'Failed to load landing content');
+    return { content: json.data, updatedAt: json.updatedAt };
+  },
+
+  update: async (content) => {
+    const res = await fetch(`${API_BASE}/landing`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ content }) });
+    const json = await res.json();
+    if (!json.success) throw new ApiError(json.message || 'Failed to save landing content');
+    return { content: json.data, updatedAt: json.updatedAt };
+  },
+
+  reset: async () => {
+    const res = await fetch(`${API_BASE}/landing`, { method: 'DELETE', headers: authHeaders() });
+    const json = await res.json();
+    if (!json.success) throw new ApiError(json.message || 'Failed to reset landing content');
+    return true;
+  }
+};
+
 export const api = {
   categories,
   promotions,
@@ -2101,7 +2127,8 @@ export const api = {
   payouts,
   platformSettings,
   elitePlan,
-  editorial
+  editorial,
+  landing
 };
 
 

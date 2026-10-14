@@ -54,10 +54,10 @@ export const SalonPayoutsPage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-[480px] min-w-0 bg-[#faf7fc] font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border shadow-md"
+      className="w-full max-w-[480px] lg:max-w-6xl min-w-0 bg-[#faf7fc] lg:bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border shadow-md lg:shadow-none"
     >
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#faf7fc]/95 backdrop-blur-md px-4 py-3 border-b border-purple-100 flex items-center justify-between">
+      <header className="sticky top-0 lg:static z-30 bg-[#faf7fc]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-4 lg:px-8 py-3 lg:pt-8 lg:pb-0 border-b lg:border-0 border-purple-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate('/salon/profile')}
@@ -66,7 +66,7 @@ export const SalonPayoutsPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-base font-bold text-stone-900 leading-tight">Earnings &amp; Payouts</h1>
+            <h1 className="text-base lg:text-2xl font-bold text-stone-900 leading-tight">Earnings &amp; Payouts</h1>
             <p className="text-[10px] text-stone-500">{salonProfile.name}</p>
           </div>
         </div>
@@ -75,7 +75,7 @@ export const SalonPayoutsPage = () => {
         </span>
       </header>
 
-      <main className="p-4 flex-1 space-y-4">
+      <main className="p-4 lg:p-8 flex-1 space-y-4">
         {/* Wallet Balance Hero Card */}
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-stone-900 via-stone-850 to-purple-950 p-5 text-white shadow-lg border border-purple-900/40">
           <div className="flex items-center justify-between text-xs text-stone-400 mb-1">
@@ -138,9 +138,9 @@ export const SalonPayoutsPage = () => {
             <span className="text-[11px] text-stone-400">{payouts.length} transfers</span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
             {payouts.length === 0 ? (
-              <div className="bg-white rounded-2xl p-6 text-center border border-stone-200/80 text-stone-400 text-xs">
+              <div className="bg-white rounded-2xl p-6 text-center border border-stone-200/80 text-stone-400 text-xs lg:col-span-full">
                 No payout transactions yet.
               </div>
             ) : (

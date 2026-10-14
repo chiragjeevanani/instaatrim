@@ -119,9 +119,9 @@ export const AddServicePage = () => {
 
   if (!isApproved) {
     return (
-      <div className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen flex flex-col justify-between mx-auto box-border">
+      <div className="w-full max-w-[480px] lg:max-w-3xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen flex flex-col justify-between mx-auto box-border">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-4 py-2.5 border-b border-purple-100 flex items-center justify-between">
+        <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-4 lg:px-8 py-2.5 lg:pt-8 lg:pb-0 border-b lg:border-0 border-purple-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -131,7 +131,7 @@ export const AddServicePage = () => {
               <ArrowLeft className="w-4 h-4 stroke-[2.2]" />
             </button>
             <div>
-              <h1 className="text-[14px] font-bold text-stone-900 tracking-tight leading-none">
+              <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight leading-none">
                 Add New Service
               </h1>
               <p className="text-[10px] text-stone-500 font-normal mt-0.5">
@@ -144,7 +144,7 @@ export const AddServicePage = () => {
           </div>
         </header>
 
-        <main className="p-4 flex-1 flex flex-col items-center justify-center text-center">
+        <main className="p-4 lg:p-8 flex-1 flex flex-col items-center justify-center text-center">
           <div className="bg-white rounded-3xl p-6 border border-purple-100 shadow-sm max-w-[360px] space-y-4">
             <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-2xs">
               <ShieldAlert className="w-7 h-7 stroke-[2]" />
@@ -200,9 +200,9 @@ export const AddServicePage = () => {
   }
 
   return (
-    <div className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen flex flex-col justify-between mx-auto box-border">
+    <div className="w-full max-w-[480px] lg:max-w-3xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen flex flex-col justify-between mx-auto box-border">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#f8f4fb]/95 backdrop-blur-md px-4 py-2.5 border-b border-purple-100 flex items-center justify-between">
+      <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-4 lg:px-8 py-2.5 lg:pt-8 lg:pb-0 border-b lg:border-0 border-purple-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -212,7 +212,7 @@ export const AddServicePage = () => {
             <ArrowLeft className="w-4 h-4 stroke-[2.2]" />
           </button>
           <div>
-            <h1 className="text-[14px] font-bold text-stone-900 tracking-tight leading-none">
+            <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight leading-none">
               {existingService ? 'Edit Treatment' : 'Add New Service'}
             </h1>
             <p className="text-[10px] text-stone-500 font-normal mt-0.5">
@@ -227,7 +227,7 @@ export const AddServicePage = () => {
       </header>
 
       {/* Main Form Body */}
-      <main className="p-3.5 pb-28 flex-1 space-y-3">
+      <main className="p-3.5 lg:p-8 pb-28 flex-1 space-y-3">
         <form id="service-form" onSubmit={handleSubmit} className="space-y-3">
           {/* Card 1: Image & Title & Category */}
           <div className="bg-white rounded-2xl p-3.5 border border-purple-100/80 shadow-xs space-y-3">
@@ -494,8 +494,8 @@ export const AddServicePage = () => {
       </main>
 
       {/* Floating Bottom Sticky Bar for Actions */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-white/95 backdrop-blur-md border-t border-purple-100/80 shadow-lg">
-        <div className="max-w-[480px] mx-auto flex items-center gap-2.5">
+      <footer className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 p-3 lg:py-4 bg-white/95 backdrop-blur-md border-t border-purple-100/80 shadow-lg">
+        <div className="max-w-[480px] lg:max-w-3xl lg:px-8 mx-auto flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => navigate('/salon/services')}

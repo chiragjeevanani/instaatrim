@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { Sparkles, Star, MapPin, Zap, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { SafeImage } from '../../../shared/components/SafeImage';
+import { salonStartingPrice } from '../../../shared/store/selectors';
 
 export const PromotedSalonsStrip = () => {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ export const PromotedSalonsStrip = () => {
     <section className="mt-5 px-4 w-full max-w-full min-w-0 box-border" data-purpose="promoted-salons-homepage-strip">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <h2 className="text-[12.5px] font-bold text-stone-900 tracking-tight">Promoted Salons</h2>
+          <h2 className="text-base lg:text-lg font-bold text-stone-900 tracking-tight">Promoted Salons</h2>
           <span className="text-[8.5px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300/80 px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
             <Sparkles className="w-2.5 h-2.5 fill-amber-600 text-amber-600" />
             Top Picks
@@ -33,14 +35,14 @@ export const PromotedSalonsStrip = () => {
         </div>
         <button
           onClick={() => navigate('/customer/salons')}
-          className="text-[9.5px] font-bold text-brand-maroon hover:underline flex items-center gap-0.5 cursor-pointer"
+          className="text-xs lg:text-[13px] font-bold text-brand-maroon hover:underline flex items-center gap-0.5 cursor-pointer"
         >
           <span>View All</span>
           <ChevronRight className="w-3 h-3 stroke-[2.5]" />
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-5">
         {promotedSalons.map((salon, index) => {
           return (
             <motion.article
@@ -50,8 +52,8 @@ export const PromotedSalonsStrip = () => {
               className="bg-white rounded-2xl overflow-hidden cursor-pointer transition-all border-2 border-amber-400/90 shadow-md ring-2 ring-amber-300/30"
             >
               {/* Cover Image & Badges */}
-              <div className="relative h-32 w-full overflow-hidden bg-stone-100">
-                <img
+              <div className="relative h-36 lg:h-48 w-full overflow-hidden bg-stone-100">
+                <SafeImage
                   src={salon.coverImage}
                   alt={salon.name}
                   className="w-full h-full object-cover"
@@ -79,29 +81,33 @@ export const PromotedSalonsStrip = () => {
               </div>
 
               {/* Details */}
-              <div className="p-3">
+              <div className="p-3 lg:p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-1">
-                      <h3 className="font-bold text-stone-900 text-xs">{salon.name}</h3>
+                      <h3 className="font-bold text-stone-900 text-sm lg:text-[15px]">{salon.name}</h3>
                       {salon.isVerified && (
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 fill-emerald-100 shrink-0" />
                       )}
                     </div>
-                    <p className="text-[10px] text-stone-500 mt-0.5 leading-snug">{salon.tagline}</p>
+                    <p className="text-[11px] lg:text-xs text-stone-500 mt-0.5 leading-snug">{salon.tagline}</p>
                   </div>
                   <span className="text-[9.5px] font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full shrink-0">
                     {salon.distanceKm ? `${salon.distanceKm.toFixed(1)} km` : '0.8 km'}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-2 text-[10.5px] text-stone-500 font-medium">
+                <div className="flex items-center gap-2 mt-2 text-[11.5px] lg:text-xs text-stone-500 font-medium">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-stone-500 shrink-0" />
                     {salon.area}
                   </span>
-                  <span>•</span>
-                  <span>Starts at <strong className="text-stone-900 font-bold">₹{salon.startingPrice}</strong></span>
+                  {salonStartingPrice(state, salon) && (
+                    <>
+                      <span>•</span>
+                      <span>Starts at <strong className="text-stone-900 font-bold">₹{salonStartingPrice(state, salon)}</strong></span>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.article>

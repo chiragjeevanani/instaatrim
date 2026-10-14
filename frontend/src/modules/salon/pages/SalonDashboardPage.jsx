@@ -73,15 +73,21 @@ export const SalonDashboardPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto box-border"
+      className="w-full max-w-[480px] lg:max-w-7xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto box-border"
     >
-      <main className="p-3.5 space-y-3.5 flex-1 w-full min-w-0">
+      <main className="p-3.5 lg:p-8 space-y-3.5 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 lg:grid-flow-row-dense lg:items-stretch flex-1 w-full min-w-0">
+        {/* Desktop page heading */}
+        <div className="hidden lg:block lg:col-span-3">
+          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Dashboard</h1>
+          <p className="text-[13px] text-stone-500 mt-0.5">Today's sales, booking mix and your live appointment queue.</p>
+        </div>
+
         {/* Verification Status Hero Alert when pending or rejected */}
         {!isApproved && (
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`rounded-2xl p-4 border shadow-sm ${
+            className={`rounded-2xl p-4 lg:p-5 border shadow-sm lg:col-span-3 ${
               isRejected
                 ? 'bg-red-50/90 border-red-200 text-red-950'
                 : 'bg-gradient-to-r from-amber-50 to-orange-50/70 border-amber-200 text-amber-950'
@@ -131,9 +137,9 @@ export const SalonDashboardPage = () => {
         )}
 
         {/* Metric Cards - Clean, Spacious, Ultra-Readable Hero Cards */}
-        <div className="grid grid-cols-2 gap-3" data-purpose="kpi-summary">
+        <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:col-span-2" data-purpose="kpi-summary">
           {/* Today's Sales */}
-          <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs">
+          <div className="bg-white rounded-2xl p-4 lg:p-6 border border-stone-200/80 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-stone-500">
                 Today's Sales
@@ -156,7 +162,7 @@ export const SalonDashboardPage = () => {
           {/* Active Appointments */}
           <div
             onClick={() => navigate('/salon/bookings')}
-            className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs cursor-pointer hover:border-stone-300 transition-all"
+            className="bg-white rounded-2xl p-4 lg:p-6 border border-stone-200/80 shadow-xs cursor-pointer hover:border-stone-300 transition-all"
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-stone-500">
@@ -180,7 +186,7 @@ export const SalonDashboardPage = () => {
           {/* Available Chairs / Stations */}
           <div
             onClick={() => setIsCapacityModalOpen(true)}
-            className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs cursor-pointer hover:border-amber-300 hover:shadow-sm transition-all group"
+            className="bg-white rounded-2xl p-4 lg:p-6 border border-stone-200/80 shadow-xs cursor-pointer hover:border-amber-300 hover:shadow-sm transition-all group"
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-stone-500 group-hover:text-amber-800 transition-colors">
@@ -205,7 +211,7 @@ export const SalonDashboardPage = () => {
           </div>
 
           {/* Instant Demand */}
-          <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs">
+          <div className="bg-white rounded-2xl p-4 lg:p-6 border border-stone-200/80 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-stone-500">
                 Booking Mode
@@ -228,7 +234,7 @@ export const SalonDashboardPage = () => {
 
         {/* Section 25 & 42.3.4: Executive Revenue Optimizer / Empty-Chair Banner */}
         {yieldAlert?.isActive && (
-          <div className="bg-stone-900 text-white rounded-2xl p-3.5 shadow-sm relative overflow-hidden border border-stone-800">
+          <div className="bg-stone-900 text-white rounded-2xl p-3.5 lg:p-5 shadow-sm relative overflow-hidden border border-stone-800 lg:col-span-3">
             <div className="flex items-start justify-between gap-3 relative z-10">
               <div className="flex items-start gap-2.5">
                 <div className="w-7 h-7 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center shrink-0 shadow-xs mt-0.5 font-bold">
@@ -268,11 +274,12 @@ export const SalonDashboardPage = () => {
           </div>
         )}
 
-        {/* Quick Action Navigation Bar */}
-        <div className="flex items-center gap-2">
+        {/* Quick Action Navigation Bar (vertical panel beside the KPIs on desktop) */}
+        <div className="flex items-center gap-2 lg:flex-col lg:items-stretch lg:justify-center lg:gap-3 lg:bg-white lg:rounded-2xl lg:border lg:border-stone-200/80 lg:p-5 lg:shadow-xs">
+          <span className="hidden lg:block text-[11px] font-bold uppercase tracking-wider text-stone-400">Quick Actions</span>
           <button
             onClick={() => setIsWalkInModalOpen(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-rose-900 hover:bg-rose-950 active:scale-95 text-white py-2 px-3 rounded-xl text-xs font-semibold shadow-xs transition-all"
+            className="flex-1 lg:flex-none flex items-center justify-center gap-1.5 bg-rose-900 hover:bg-rose-950 active:scale-95 text-white py-2 lg:py-2.5 px-3 rounded-xl text-xs lg:text-[13px] font-semibold cursor-pointer shadow-xs transition-all"
           >
             <Plus className="w-4 h-4 stroke-[2.2]" />
             <span>Walk-In Booking</span>
@@ -280,7 +287,7 @@ export const SalonDashboardPage = () => {
 
           <button
             onClick={() => navigate('/salon/services')}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-white hover:bg-stone-50 active:scale-95 text-stone-800 border border-stone-200/80 py-2 px-3 rounded-xl text-xs font-semibold shadow-2xs transition-all"
+            className="flex-1 lg:flex-none flex items-center justify-center gap-1.5 bg-white hover:bg-stone-50 active:scale-95 text-stone-800 border border-stone-200/80 py-2 lg:py-2.5 px-3 rounded-xl text-xs lg:text-[13px] font-semibold cursor-pointer shadow-2xs transition-all"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-600 stroke-[2]" />
             <span>Catalog</span>
@@ -288,7 +295,7 @@ export const SalonDashboardPage = () => {
 
           <button
             onClick={() => navigate('/salon/analytics')}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-white hover:bg-stone-50 active:scale-95 text-stone-800 border border-stone-200/80 py-2 px-3 rounded-xl text-xs font-semibold shadow-2xs transition-all"
+            className="flex-1 lg:flex-none flex items-center justify-center gap-1.5 bg-white hover:bg-stone-50 active:scale-95 text-stone-800 border border-stone-200/80 py-2 lg:py-2.5 px-3 rounded-xl text-xs lg:text-[13px] font-semibold cursor-pointer shadow-2xs transition-all"
           >
             <IndianRupee className="w-3.5 h-3.5 text-emerald-600 stroke-[2]" />
             <span>Payouts</span>
@@ -296,10 +303,10 @@ export const SalonDashboardPage = () => {
         </div>
 
         {/* Today's Live Queue (Section 24) */}
-        <div className="space-y-2.5 pt-1" data-purpose="live-queue">
-          <div className="flex items-center justify-between px-0.5">
+        <div className="space-y-2.5 pt-1 lg:pt-2 lg:space-y-0 lg:col-span-3 lg:grid lg:grid-cols-2 lg:gap-4" data-purpose="live-queue">
+          <div className="flex items-center justify-between px-0.5 lg:col-span-2">
             <div>
-              <h2 className="text-[13px] font-bold text-stone-900 tracking-tight">
+              <h2 className="text-[13px] lg:text-base font-bold text-stone-900 tracking-tight">
                 Live Appointment Queue
               </h2>
               <p className="text-[10.5px] text-stone-400 font-normal">Real-time check-in and station lifecycle</p>
@@ -314,7 +321,7 @@ export const SalonDashboardPage = () => {
           </div>
 
           {activeBookings.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 shadow-xs">
+            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200/80 shadow-xs lg:col-span-2">
               <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-400 mx-auto flex items-center justify-center mb-2">
                 <Check className="w-5 h-5 stroke-[2]" />
               </div>

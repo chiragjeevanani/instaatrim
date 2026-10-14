@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { useNavigate } from 'react-router-dom';
 
-export const HeroCarousel = () => {
+export const HeroCarousel = ({ initialIndex = 0 }) => {
   const { state } = useAppData();
   // Keep the lower carousel in sync with the same active database ads used above.
   const spotlightBanners = (state.advertisements || [])
@@ -14,12 +14,12 @@ export const HeroCarousel = () => {
     return spotlightBanners.filter((b) => b.isActive !== false);
   }, [spotlightBanners]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const navigate = useNavigate();
 
   // Reset index if out of bounds when active items change
   useEffect(() => {
-    if (currentIndex >= activeBanners.length) {
+    if (activeBanners.length > 0 && currentIndex >= activeBanners.length) {
       setCurrentIndex(0);
     }
   }, [activeBanners.length, currentIndex]);
@@ -49,7 +49,7 @@ export const HeroCarousel = () => {
 
   return (
     <section className="relative px-4 pt-2.5 pb-1 w-full max-w-full min-w-0 overflow-hidden box-border" data-purpose="hero-promotions">
-      <div className="relative overflow-hidden rounded-2xl bg-[#cb9b87] shadow-xs min-h-[178px] w-full">
+      <div className="relative overflow-hidden rounded-2xl bg-[#cb9b87] shadow-xs min-h-[178px] lg:min-h-[280px] w-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={banner.id}
@@ -57,7 +57,7 @@ export const HeroCarousel = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0.85 }}
             transition={{ duration: 0.25 }}
-            className="relative min-h-[178px] flex items-stretch cursor-pointer"
+            className="relative min-h-[178px] lg:min-h-[280px] flex items-stretch cursor-pointer"
             onClick={() => navigate(`/customer/salons/${banner.salonId}`)}
           >
             {/* Banner Background & Image Stack */}
@@ -71,7 +71,7 @@ export const HeroCarousel = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-[#d9b09a] via-[#e2bead]/92 to-transparent w-[72%]"></div>
 
             {/* Banner Content - Compact and elegant */}
-            <div className="relative z-10 p-3.5 max-w-[62%] flex flex-col justify-center text-left">
+            <div className="relative z-10 p-3.5 lg:p-6 max-w-[62%] lg:max-w-[70%] flex flex-col justify-center text-left">
               <span className="text-[9.5px] font-semibold text-stone-800 tracking-wide leading-none">
                 {banner.subtitle}
               </span>
@@ -83,11 +83,11 @@ export const HeroCarousel = () => {
                 <span className="w-4 h-[1px] bg-stone-500/60"></span>
               </div>
 
-              <h1 className="text-[20px] font-serif font-black text-stone-900 leading-tight tracking-tight mt-0.5 whitespace-pre-line">
+              <h1 className="text-[20px] lg:text-[28px] font-serif font-black text-stone-900 leading-tight tracking-tight mt-0.5 whitespace-pre-line">
                 {banner.title}
               </h1>
               
-              <p className="text-[9px] text-stone-700 italic mt-0.5 font-medium leading-snug">
+              <p className="text-[10.5px] lg:text-xs text-stone-700 italic mt-0.5 font-medium leading-snug">
                 {banner.desc}
               </p>
 
@@ -95,7 +95,7 @@ export const HeroCarousel = () => {
                 <motion.button
                   whileTap={{ scale: 0.94 }}
                   onClick={handleBookNow}
-                  className="bg-[#78233f] text-white text-[9.5px] font-bold tracking-wider px-3.5 py-1 rounded-full uppercase shadow-xs hover:bg-brand-maroon transition-all cursor-pointer"
+                  className="bg-[#78233f] text-white text-[10.5px] lg:text-[11px] font-bold tracking-wider px-4 py-1.5 lg:px-5 lg:py-2 rounded-full uppercase shadow-xs hover:bg-brand-maroon transition-all cursor-pointer"
                 >
                   {banner.ctaText}
                 </motion.button>

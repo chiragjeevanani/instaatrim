@@ -105,6 +105,15 @@ export function appReducer(state, action) {
       return { ...state, currentCustomerId: null };
     }
     case 'ADD_SALON': {
+      // Upsert: the salon list is fetched from several places (and twice under
+      // StrictMode), so adding a salon that already exists must not duplicate it.
+      const incomingId = action.payload.id || action.payload._id;
+      if (state.salons.some((s) => s.id === incomingId || s._id === incomingId)) {
+        return {
+          ...state,
+          salons: state.salons.map((s) => (s.id === incomingId || s._id === incomingId ? { ...s, ...action.payload } : s))
+        };
+      }
       return { ...state, salons: [action.payload, ...state.salons] };
     }
     case 'PATCH_SALON': {

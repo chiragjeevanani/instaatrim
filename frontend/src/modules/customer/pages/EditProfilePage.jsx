@@ -74,10 +74,10 @@ export const EditProfilePage = () => {
   };
 
   return (
-    <div className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-16 mx-auto border-x border-purple-200/50 flex flex-col justify-between overflow-x-hidden box-border">
+    <div className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-16 mx-auto border-x border-purple-200/50 lg:max-w-2xl lg:my-8 lg:min-h-0 lg:pb-8 lg:rounded-3xl lg:border lg:shadow-sm flex flex-col justify-between overflow-x-hidden box-border">
       {/* Top Header */}
       <div>
-        <header className="sticky top-0 z-30 bg-stone-900/95 backdrop-blur-md text-white px-4 py-3.5 flex items-center justify-between border-b border-white/10 shadow-sm">
+        <header className="sticky top-0 lg:static z-30 bg-stone-900/95 backdrop-blur-md text-white px-4 py-3.5 flex items-center justify-between border-b border-white/10 shadow-sm">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -99,7 +99,7 @@ export const EditProfilePage = () => {
         </header>
 
         {/* Content Body */}
-        <main className="p-4 space-y-4">
+        <main className="p-4 lg:p-8 space-y-4">
           {/* Avatar Hero Card */}
           <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs flex items-center gap-3.5">
             <div className="relative">

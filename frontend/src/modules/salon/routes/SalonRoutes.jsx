@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import { SalonTopBar } from '../components/SalonTopBar';
 import { SalonBottomNav } from '../components/SalonBottomNav';
+import { SalonSidebar } from '../components/SalonSidebar';
 import { SalonLoginPage } from '../pages/SalonLoginPage';
 import { SalonDashboardPage } from '../pages/SalonDashboardPage';
 import { SalonBookingsPage } from '../pages/SalonBookingsPage';
@@ -66,9 +67,16 @@ export const SalonRoutes = () => {
     location.pathname.includes('/salon/reviews') ||
     location.pathname.includes('/salon/privacy');
 
+  // Desktop (lg+) sidebar for the signed-in partner console; auth screens stay full-bleed.
+  const showSidebar =
+    isAuthenticated &&
+    !location.pathname.startsWith('/salon/login') &&
+    !location.pathname.startsWith('/salon/register');
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none">
-      <div className="w-full max-w-[480px] min-w-0 min-h-screen flex flex-col relative border-x border-purple-200/50 bg-transparent shadow-sm box-border">
+      {showSidebar && <SalonSidebar />}
+      <div className={`w-full max-w-[480px] min-w-0 min-h-screen flex flex-col relative border-x border-purple-200/50 bg-transparent shadow-sm box-border lg:max-w-none lg:border-x-0 lg:shadow-none ${showSidebar ? 'lg:pl-64' : ''}`}>
         {/* Top Operational Header */}
         {!isFullscreenSubpage && <SalonTopBar />}
 
@@ -106,7 +114,7 @@ export const SalonRoutes = () => {
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className={`fixed bottom-16 left-1/2 -translate-x-1/2 z-50 px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg max-w-[340px] text-center pointer-events-none ${
+              className={`fixed bottom-16 lg:bottom-8 left-1/2 ${showSidebar ? 'lg:left-[calc(50%+8rem)]' : ''} -translate-x-1/2 z-50 px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg max-w-[340px] text-center pointer-events-none ${
                 toast.type === 'error'
                   ? 'bg-red-900 text-white'
                   : 'bg-stone-900/95 text-white backdrop-blur-md border border-purple-300/30'

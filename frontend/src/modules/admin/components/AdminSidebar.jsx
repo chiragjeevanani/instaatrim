@@ -20,7 +20,8 @@ import {
   Moon,
   Wallet,
   Sliders,
-  Sparkles
+  Sparkles,
+  LayoutTemplate
 } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
   { to: '/admin/reviews', label: 'Reviews', icon: Star },
   { to: '/admin/tickets', label: 'Support Tickets', icon: LifeBuoy, badgeKey: 'openTickets' },
   { to: '/admin/notifications', label: 'Broadcasts', icon: Bell },
+  { to: '/admin/landing', label: 'Landing Page', icon: LayoutTemplate },
   { to: '/admin/settings', label: 'Platform Settings', icon: Sliders },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 }
 ];

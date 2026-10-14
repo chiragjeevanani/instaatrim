@@ -4,6 +4,7 @@ import { api } from '../../../shared/services/api';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { requestFirebaseToken } from '../../../shared/lib/firebase';
+import { AuthBrandPanel } from '../../../shared/components/AuthBrandPanel';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
@@ -65,7 +66,15 @@ export const SalonLoginPage = () => {
       transition={{ duration: 0.2 }}
       className="w-full min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] text-stone-900 flex justify-center antialiased select-none overflow-x-hidden"
     >
-      <main className="w-full max-w-[480px] min-w-0 min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col justify-between px-5 pt-3 pb-6 relative border-x border-purple-200/50 box-border">
+      <AuthBrandPanel
+        eyebrow="DrimStyle Partner Console"
+        title="Run your salon, fill every chair."
+        subtitle="Manage live queues, instant walk-ins, services and payouts from one place."
+        points={['Real-time appointment queue & station check-in','Instant walk-in bookings with live wait times','Transparent earnings, payouts & analytics']}
+        image="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80"
+      />
+      <div className="flex-1 min-w-0 flex justify-center lg:items-center lg:px-10 lg:py-10">
+      <main className="w-full max-w-[480px] lg:max-w-[460px] min-w-0 min-h-screen lg:min-h-[640px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] lg:bg-none lg:bg-white flex flex-col justify-between px-5 lg:px-9 pt-3 lg:pt-7 pb-6 lg:pb-7 relative border-x lg:border border-purple-200/50 lg:rounded-3xl lg:shadow-xl lg:shadow-purple-900/5 box-border">
         {/* Top Navigation */}
         <header className="w-full flex items-center justify-between min-h-[36px]">
           <button
@@ -227,6 +236,7 @@ export const SalonLoginPage = () => {
           </a>
         </footer>
       </main>
+      </div>
     </motion.div>
   );
 };

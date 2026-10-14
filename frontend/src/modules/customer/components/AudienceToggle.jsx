@@ -10,7 +10,7 @@ const OPTIONS = [
 
 export const AudienceToggle = ({ selected = 'all', onChange }) => {
   return (
-    <div className="px-4 pt-1.5 pb-1 w-full max-w-full box-border" data-purpose="audience-toggle">
+    <div className="px-4 lg:px-0 pt-3 pb-1 lg:pb-0 w-full max-w-full box-border" data-purpose="audience-toggle">
       <div className="bg-[#eaddf3] p-1 rounded-2xl border border-purple-200/60 flex items-center gap-1 shadow-2xs backdrop-blur-xs">
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.id;
@@ -21,7 +21,7 @@ export const AudienceToggle = ({ selected = 'all', onChange }) => {
               key={opt.id}
               type="button"
               onClick={() => onChange && onChange(opt.id)}
-              className={`relative flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 select-none cursor-pointer z-10 ${
+              className={`relative flex-1 py-1.5 px-2 rounded-xl text-[13px] py-2 font-bold transition-colors flex items-center justify-center gap-1.5 select-none cursor-pointer z-10 ${
                 isSelected ? 'text-white' : 'text-purple-950 hover:text-brand-darkMaroon'
               }`}
             >

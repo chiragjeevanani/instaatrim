@@ -87,11 +87,11 @@ export const AddressLocationPage = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="w-full flex justify-center items-start min-h-screen text-stone-900 antialiased select-none bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5]"
+      className="w-full flex justify-center items-start min-h-screen lg:min-h-0 text-stone-900 antialiased select-none bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] lg:bg-none"
     >
-      <div className="relative w-full max-w-[480px] min-w-0 min-h-screen bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col overflow-y-auto border-x border-purple-200/50 box-border pb-8">
+      <div className="relative w-full max-w-[480px] lg:max-w-2xl lg:my-8 min-w-0 min-h-screen lg:min-h-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col overflow-y-auto border-x lg:border border-purple-200/50 lg:rounded-3xl lg:shadow-sm box-border pb-8">
         {/* Top Header & Search Area */}
-        <div className="relative z-10 w-full flex flex-col pt-3 px-3.5">
+        <div className="relative z-10 w-full flex flex-col pt-3 px-3.5 lg:pt-6 lg:px-6">
           <nav className="flex items-center gap-2 mb-2.5">
             <button
               aria-label="Go back"
@@ -120,7 +120,7 @@ export const AddressLocationPage = () => {
         </div>
 
         {/* Use current location */}
-        <div className="px-3.5 mt-3">
+        <div className="px-3.5 lg:px-6 mt-3">
           <button
             onClick={handleUseCurrentLocation}
             disabled={locateState === 'locating'}
@@ -156,7 +156,7 @@ export const AddressLocationPage = () => {
         </div>
 
         {/* Saved addresses list */}
-        <div className="px-3.5 mt-4">
+        <div className="px-3.5 lg:px-6 mt-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
               {searchQuery ? 'Search Results' : 'Saved Addresses'}

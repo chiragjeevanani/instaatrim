@@ -126,7 +126,7 @@ export const AdTouchpointsDemoBar = () => {
       {/* Interactive Modal Drawer */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center lg:p-6">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -142,7 +142,7 @@ export const AdTouchpointsDemoBar = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="relative w-full max-w-[480px] bg-gradient-to-b from-[#fdfbfd] via-[#f7f0fa] to-[#f3eaf7] rounded-t-3xl shadow-2xl p-4 z-10 border-t border-purple-200 max-h-[85vh] flex flex-col overflow-hidden"
+              className="relative w-full max-w-[480px] bg-gradient-to-b from-[#fdfbfd] via-[#f7f0fa] to-[#f3eaf7] rounded-t-3xl lg:rounded-3xl shadow-2xl p-4 z-10 border-t lg:border border-purple-200 max-h-[85vh] flex flex-col overflow-hidden"
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-purple-200/70">

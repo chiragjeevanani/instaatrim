@@ -48,10 +48,10 @@ export const SalonProfilePage = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="w-full max-w-[480px] min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] lg:max-w-4xl min-w-0 bg-transparent font-sans text-stone-900 antialiased min-h-screen pb-24 lg:pb-12 mx-auto flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Owner Identity Header */}
-      <header className="bg-stone-900 text-white px-4 pt-4 pb-3.5 rounded-b-2xl shadow-sm relative overflow-hidden">
+      <header className="bg-stone-900 text-white px-4 pt-4 pb-3.5 lg:p-6 lg:mx-8 lg:mt-8 rounded-b-2xl lg:rounded-2xl shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-28 h-28 bg-rose-900/25 rounded-full blur-xl pointer-events-none" />
 
         <div className="relative z-10 flex items-center justify-between">
@@ -108,7 +108,7 @@ export const SalonProfilePage = () => {
         </div>
       </header>
 
-      <main className="p-3.5 flex-1 space-y-3">
+      <main className="p-3.5 lg:p-8 flex-1 space-y-3">
         {/* Quick Shortcut Tiles */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <div

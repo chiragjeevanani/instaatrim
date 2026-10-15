@@ -234,9 +234,9 @@ export const EliteModal = () => {
           {/* CTA Buttons */}
           <div className="flex gap-2 mt-2">
             <button
-              disabled={isProcessing}
-              onClick={handleJoinCOD}
-              className="flex-1 bg-stone-800 text-amber-400 font-bold text-xs py-2.5 rounded-xl shadow border border-amber-400/30 transition-all active:scale-[0.985] flex items-center justify-center gap-1 disabled:opacity-50"
+              disabled={true}
+              type="button"
+              className="flex-1 bg-stone-900 text-stone-500 font-bold text-xs py-2.5 rounded-xl border border-stone-800 flex items-center justify-center gap-1 cursor-not-allowed opacity-50 select-none"
             >
               <Check className="w-4 h-4" />
               Pay via COD

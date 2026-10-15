@@ -63,9 +63,13 @@ exports.getSalonAnalytics = async (req, res) => {
         // Available Payout for Salon is based on actual Salon Revenue, not GMV
         const availablePayout = Math.max(0, totalSalonRevenue - totalPayouts);
 
-        // MTD Revenue
+        // MTD Revenue (Salon's Revenue = Bill Value - 50% Promo Budget as per Excel)
         const mtdBookings = completedBookings.filter(b => new Date(b.createdAt) >= startOfMonth);
-        const mtdRevenue = mtdBookings.reduce((sum, b) => sum + (b.finalPaid || b.totalAmount || 0), 0);
+        const mtdRevenue = mtdBookings.reduce((sum, b) => {
+            const billValue = b.totalAmount || 0;
+            const salonPromoBudget = billValue * 0.50;
+            return sum + (billValue - salonPromoBudget);
+        }, 0);
 
         const timeOfDayBookings = { morning: 0, afternoon: 0, evening: 0 };
         bookings.forEach((booking) => {

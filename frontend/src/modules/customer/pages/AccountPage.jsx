@@ -186,7 +186,7 @@ export const AccountPage = () => {
               </div>
               <div>
                 <p className="font-bold text-stone-900 text-xs">DrimStyle Wallet</p>
-                <p className="text-[10px] text-amber-700 font-medium">50% cashback auto-applied on checkout</p>
+                <p className="text-[10px] text-amber-700 font-medium">Promotional credits • Max 50% redemption per transaction</p>
               </div>
             </div>
             <span className="text-xs font-black text-amber-700 bg-amber-100/80 px-2.5 py-1 rounded-lg">

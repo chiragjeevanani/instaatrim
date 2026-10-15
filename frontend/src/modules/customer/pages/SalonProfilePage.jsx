@@ -43,14 +43,24 @@ export const SalonProfilePage = () => {
 
   const salon = state.salons.find((s) => s.id === salonId) || state.salons[0];
   const services = useMemo(
-    () => state.services.filter((s) => s.salonId === salon?.id && s.isActive),
-    [state.services, salon?.id]
+    () =>
+      state.services.filter((s) => {
+        const matchesSalon =
+          String(s.salonId) === String(salon?.id) ||
+          (salon?._id && String(s.salonId) === String(salon._id));
+        const active = s.isActive !== false;
+        return matchesSalon && active;
+      }),
+    [state.services, salon?.id, salon?._id]
   );
   const reviews = useMemo(() => state.reviews.filter((r) => r.salonId === salon?.id), [state.reviews, salon?.id]);
   const summary = useMemo(() => reviewSummary(reviews), [reviews]);
 
   React.useEffect(() => {
-    if (salon?.id) api.reviews.listBySalon(salon.id).catch(console.error);
+    if (salon?.id) {
+      api.services.listBySalon(salon.id).catch(console.error);
+      api.reviews.listBySalon(salon.id).catch(console.error);
+    }
   }, [salon?.id]);
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -233,7 +243,7 @@ export const SalonProfilePage = () => {
             </p>
             <p className="text-2xl font-black text-stone-900 leading-tight mt-0.5">₹{cartSummary.finalAmount}</p>
             <button
-              onClick={() => setIsBookingFlowOpen(true)}
+              onClick={() => setIsCartOpen(true)}
               className="mt-4 w-full py-3 bg-brand-maroon hover:bg-brand-darkMaroon text-white font-bold text-[13px] rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <ShoppingBag className="w-4 h-4" />
@@ -405,7 +415,7 @@ export const SalonProfilePage = () => {
               <p className="text-sm font-black text-stone-900 leading-tight">₹{cartSummary.finalAmount}</p>
             </div>
             <button
-              onClick={() => setIsBookingFlowOpen(true)}
+              onClick={() => setIsCartOpen(true)}
               className="py-2.5 px-5 bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
             >
               <ShoppingBag className="w-3.5 h-3.5" />

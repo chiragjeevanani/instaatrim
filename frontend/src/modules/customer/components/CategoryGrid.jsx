@@ -83,9 +83,22 @@ export const CategoryGrid = ({ genderFilter = 'all' }) => {
                 {cat.shortName || cat.name}
               </span>
               {cat.price > 0 && (
-                <span className="text-[10px] lg:text-[11px] font-medium text-stone-500 mt-0.5 block leading-tight">
-                  Starts ₹{cat.price}
-                </span>
+                <div className="flex items-center justify-center gap-1 mt-0.5 leading-tight flex-wrap">
+                  {cat.discount > 0 && cat.originalPrice ? (
+                    <>
+                      <span className="text-[10px] lg:text-[11px] font-bold text-stone-900">
+                        ₹{cat.originalPrice}
+                      </span>
+                      <span className="text-[9px] lg:text-[10px] text-stone-400 line-through">
+                        ₹{cat.price}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[10px] lg:text-[11px] font-medium text-stone-500">
+                      Starts ₹{cat.price}
+                    </span>
+                  )}
+                </div>
               )}
             </motion.div>
           ))}

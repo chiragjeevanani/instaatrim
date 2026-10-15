@@ -57,10 +57,12 @@ export const CheckoutPage = () => {
 
   // Wallet Redeemed: 50% of available wallet balance can be redeemed
   const walletBalance = Number(user?.wallet_balance) || 0;
-  const walletRedeemed = Math.min(Math.round(walletBalance * 0.50), Math.max(0, billValue - instantDiscount));
+  const couponDiscount = cartSummary.discount || 0;
+  const convenienceFee = cartSummary.convenienceFee || 0;
+  const walletRedeemed = Math.min(Math.round(walletBalance * 0.50), Math.max(0, billValue - instantDiscount - couponDiscount));
   const walletCashbackLeft = Math.max(0, walletBalance - walletRedeemed);
-  const totalDirectDiscount = instantDiscount + walletRedeemed + (cartSummary.discount || 0);
-  const calculatedPayable = Math.max(0, billValue - instantDiscount - walletRedeemed);
+  const totalDirectDiscount = instantDiscount + walletRedeemed + couponDiscount;
+  const calculatedPayable = Math.max(0, billValue - instantDiscount - couponDiscount - walletRedeemed + convenienceFee);
   const newEndingWalletBalance = walletCashbackLeft + walletCashbackIssued;
 
   if (showSuccessTick) {
@@ -421,6 +423,13 @@ export const CheckoutPage = () => {
             <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
               <span>Coupon Savings ({appliedCoupon?.code})</span>
               <span>-₹{cartSummary.discount}</span>
+            </div>
+          )}
+
+          {cartSummary.convenienceFee > 0 && (
+            <div className="flex justify-between text-stone-600 text-[11px]">
+              <span>Platform Convenience Fee</span>
+              <span>₹{cartSummary.convenienceFee}</span>
             </div>
           )}
 

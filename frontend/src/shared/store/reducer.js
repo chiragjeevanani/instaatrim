@@ -126,7 +126,20 @@ export function appReducer(state, action) {
 
     // ---------------- Bookings ----------------
     case 'SET_BOOKINGS': {
-      return { ...state, bookings: action.payload };
+      const incoming = Array.isArray(action.payload) ? action.payload : [];
+      if (incoming.length === 0) return state;
+
+      const existing = [...(state.bookings || [])];
+      for (const item of incoming) {
+        const id = item.id || item._id;
+        const idx = existing.findIndex((b) => (b.id && b.id === id) || (b._id && b._id === id));
+        if (idx >= 0) {
+          existing[idx] = { ...existing[idx], ...item };
+        } else {
+          existing.push(item);
+        }
+      }
+      return { ...state, bookings: existing };
     }
     case 'ADD_BOOKING': {
       return { ...state, bookings: [action.payload, ...state.bookings] };

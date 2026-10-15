@@ -79,6 +79,8 @@ export const AdminCategoriesPage = () => {
       image: '',
       description: '',
       price: 0,
+      discount: 0,
+      originalPrice: 0,
       isActive: true
     };
   });
@@ -163,11 +165,138 @@ export const AdminCategoriesPage = () => {
       image: '',
       description: '',
       price: 0,
+      discount: 0,
+      originalPrice: 0,
       isActive: true
     });
     setFormError('');
     setModalOpen(true);
   };
+
+  // Standard catalog dictionary for smart autocomplete recommendations
+  const CATALOG_SUGGESTIONS = useMemo(() => [
+    {
+      name: 'Hair Styling',
+      shortName: 'Hair Style',
+      slug: 'hair-styling',
+      gender: 'unisex',
+      tags: ['Haircut', 'Blow Dry', 'Ironing', 'Hair Setting', 'Beard Trim'],
+      description: 'Professional haircuts, blow dries, and styling treatments.'
+    },
+    {
+      name: 'Hair Coloring',
+      shortName: 'Hair Color',
+      slug: 'hair-coloring',
+      gender: 'unisex',
+      tags: ['Global Color', 'Root Touchup', 'Balayage', 'Highlights', 'Streaks'],
+      description: 'Rich vibrant hair coloring, highlights, and grey coverage.'
+    },
+    {
+      name: 'Hair Spa & Care',
+      shortName: 'Hair Spa',
+      slug: 'hair-spa',
+      gender: 'unisex',
+      tags: ['Deep Conditioning', 'Anti-Dandruff Spa', 'Keratin Spa', 'Scalp Detox'],
+      description: 'Nourishing botanical hair spa and intensive scalp therapy.'
+    },
+    {
+      name: 'Hair Studio',
+      shortName: 'Hair Studio',
+      slug: 'hair-studio',
+      gender: 'unisex',
+      tags: ['Haircut', 'Hair Wash', 'Blowdry', 'Beard Grooming'],
+      description: 'Complete studio grooming and styling for modern looks.'
+    },
+    {
+      name: 'Hair Treatments',
+      shortName: 'Hair Treatment',
+      slug: 'hair-treatments',
+      gender: 'unisex',
+      tags: ['Keratin Treatment', 'Botox', 'Smoothening', 'Rebonding'],
+      description: 'Advanced hair smoothing, keratin, and texture management.'
+    },
+    {
+      name: 'Facials & Skin Care',
+      shortName: 'Facials',
+      slug: 'facials-skincare',
+      gender: 'unisex',
+      tags: ['Gold Facial', 'Hydra Facial', 'O3+ Clean Up', 'Anti-Tan Facial'],
+      description: 'Deep cleansing facials, peels, and glow treatments.'
+    },
+    {
+      name: 'Nails, Art & Extensions',
+      shortName: 'Nail Studio',
+      slug: 'nails-extensions',
+      gender: 'women',
+      tags: ['Acrylic Nails', 'Gel Polish', 'Nail Art', 'French Tips', 'Refills'],
+      description: 'Full set acrylic nail extensions and long-lasting gel art.'
+    },
+    {
+      name: 'Waxing & RICA',
+      shortName: 'Waxing',
+      slug: 'waxing-rica',
+      gender: 'women',
+      tags: ['RICA Wax', 'Full Arms', 'Full Legs', 'Bikini Wax', 'Underarms'],
+      description: 'Gentle colophony-free Italian waxing and skin smoothing.'
+    },
+    {
+      name: 'Spa & Body Massage',
+      shortName: 'Spa',
+      slug: 'spa-body-massage',
+      gender: 'unisex',
+      tags: ['Swedish Massage', 'Deep Tissue', 'Aromatherapy', 'Foot Reflexology'],
+      description: 'Rejuvenating body massages and wellness therapies.'
+    },
+    {
+      name: 'Bridal & Groom Makeup',
+      shortName: 'Bridal & Makeup',
+      slug: 'bridal-makeup',
+      gender: 'unisex',
+      tags: ['HD Bridal Makeup', 'Airbrush', 'Engagement Look', 'Pre-Bridal Package'],
+      description: 'Exquisite bridal makeovers and pre-wedding beauty rituals.'
+    },
+    {
+      name: 'Pedicure & Manicure',
+      shortName: 'Mani-Pedi',
+      slug: 'pedicure-manicure',
+      gender: 'unisex',
+      tags: ['Classic Mani', 'Paraffin Pedi', 'Crystal Spa Pedi', 'Cuticle Care'],
+      description: 'Hand and foot spa grooming for clean and soft skin.'
+    },
+    {
+      name: 'Beard & Shave Lounge',
+      shortName: 'Beard Care',
+      slug: 'beard-shave',
+      gender: 'men',
+      tags: ['Beard Shape & Trim', 'Royal Shave', 'Beard Spa', 'Mustache Styling'],
+      description: 'Precision beard shaping, hot towel shaves, and grooming.'
+    }
+  ], []);
+
+  // Compute active autocomplete suggestions matching typed input
+  const autocompleteSuggestions = useMemo(() => {
+    const query = (formData.name || '').trim().toLowerCase();
+    if (!query || query.length < 1) return [];
+
+    // Collect from standard dictionary + existing database categories
+    const combined = [...CATALOG_SUGGESTIONS];
+    categories.forEach((cat) => {
+      if (cat.name && !combined.some((c) => c.name.toLowerCase() === cat.name.toLowerCase())) {
+        combined.push({
+          name: cat.name,
+          shortName: cat.shortName || cat.name,
+          slug: cat.slug,
+          gender: cat.gender || 'unisex',
+          tags: Array.isArray(cat.serviceCategories) ? cat.serviceCategories : [],
+          description: cat.description || ''
+        });
+      }
+    });
+
+    return combined
+      .filter((item) => item.name.toLowerCase().includes(query))
+      .slice(0, 5);
+  }, [formData.name, CATALOG_SUGGESTIONS, categories]);
 
   // Open Edit Modal
   const handleOpenEdit = (category) => {
@@ -183,6 +312,8 @@ export const AdminCategoriesPage = () => {
       image: category.image || '',
       description: category.description || '',
       price: category.price || 0,
+      discount: category.discount || 0,
+      originalPrice: category.originalPrice || category.price || 0,
       isActive: category.isActive !== false
     });
     setFormError('');
@@ -191,9 +322,52 @@ export const AdminCategoriesPage = () => {
 
   // Name change handler
   const handleNameChange = (val) => {
+    setFormData((prev) => {
+      // Auto-generate slug if not editing or user hasn't explicitly customized slug
+      const generatedSlug = val.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      return {
+        ...prev,
+        name: val,
+        ...((!editingCategory && (!prev.slug || prev.slug === prev.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')))
+          ? { slug: generatedSlug, shortName: prev.shortName || val }
+          : {})
+      };
+    });
+  };
+
+  // Helper to ensure unique slug across categories
+  const getUniqueSlug = (baseSlug, currentId) => {
+    let clean = baseSlug.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+    if (!clean) clean = 'category';
+    let candidate = clean;
+    let counter = 1;
+
+    const existingSlugs = new Set(
+      categories
+        .filter((c) => (c.id || c._id) !== currentId)
+        .map((c) => (c.slug || '').toLowerCase())
+    );
+
+    while (existingSlugs.has(candidate)) {
+      counter += 1;
+      candidate = `${clean}-${counter}`;
+    }
+    return candidate;
+  };
+
+  // Select Autocomplete Suggestion
+  const handleSelectSuggestion = (suggestion) => {
+    const uniqueSlug = getUniqueSlug(suggestion.slug, editingCategory?.id);
     setFormData((prev) => ({
       ...prev,
-      name: val
+      name: suggestion.name,
+      shortName: suggestion.shortName || suggestion.name,
+      slug: uniqueSlug,
+      gender: suggestion.gender || prev.gender,
+      serviceCategoriesText: suggestion.tags?.length
+        ? suggestion.tags.join(', ')
+        : prev.serviceCategoriesText,
+      description: suggestion.description || prev.description
     }));
   };
 
@@ -216,6 +390,19 @@ export const AdminCategoriesPage = () => {
     
     const slug = formData.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') ||
         formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    // Prevent duplicate slugs
+    const isDuplicateSlug = categories.some((c) => {
+      const otherId = c.id || c._id;
+      const currentId = editingCategory?.id || editingCategory?._id;
+      return otherId !== currentId && (c.slug || '').toLowerCase() === slug.toLowerCase();
+    });
+
+    if (isDuplicateSlug) {
+      setFormError(`Slug "${slug}" already exists. Please choose a unique slug or use a suggested variation.`);
+      return;
+    }
+
     payload.append('slug', slug);
     payload.append('gender', formData.gender);
     
@@ -223,7 +410,9 @@ export const AdminCategoriesPage = () => {
     payload.append('serviceCategories', JSON.stringify(serviceCategories));
     
     payload.append('description', formData.description.trim());
-    payload.append('price', formData.price);
+    payload.append('price', formData.price || 0);
+    payload.append('discount', formData.discount || 0);
+    payload.append('originalPrice', formData.originalPrice || formData.price || 0);
     payload.append('isActive', formData.isActive);
 
     if (formData.imageFile) {
@@ -453,9 +642,23 @@ export const AdminCategoriesPage = () => {
                           </span>
                         </td>
 
-                        {/* Base Price */}
+                        {/* Base Price & Discount */}
                         <td className="py-3.5 px-4 font-semibold text-emerald-400">
-                          ₹{cat.price || 0}
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                              <span>₹{cat.discount > 0 && cat.originalPrice ? cat.originalPrice : (cat.price || 0)}</span>
+                              {cat.discount > 0 && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                                  {cat.discount}% OFF
+                                </span>
+                              )}
+                            </div>
+                            {cat.discount > 0 && (
+                              <span className="text-[10px] text-stone-500 line-through">
+                                ₹{cat.price}
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Service Category Taxonomies */}
@@ -576,18 +779,61 @@ export const AdminCategoriesPage = () => {
 
               {/* Category Name & Short Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
-                    Category Name <span className="text-red-400">*</span>
-                  </label>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider">
+                      Category Name <span className="text-red-400">*</span>
+                    </label>
+                    <span className="text-[10px] text-purple-400 font-medium flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Smart Autocomplete
+                    </span>
+                  </div>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Nails &amp; Extensions"
+                    placeholder="e.g. Hair, Nails, Facial, Spa..."
                     value={formData.name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
                   />
+
+                  {/* Autocomplete Suggestions Dropdown Menu */}
+                  {autocompleteSuggestions.length > 0 && formData.name.trim().length >= 1 && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-[#161622] border border-[#2f2f45] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#232336] max-h-56 overflow-y-auto">
+                      <div className="px-3 py-1.5 bg-[#12121b] text-[10px] uppercase tracking-wider font-bold text-purple-400 flex items-center justify-between">
+                        <span>Related Suggestions</span>
+                        <span className="text-stone-500 font-normal">Click to auto-fill</span>
+                      </div>
+                      {autocompleteSuggestions.map((sug, i) => (
+                        <div
+                          key={i}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectSuggestion(sug);
+                          }}
+                          className="w-full text-left p-2.5 hover:bg-purple-900/30 transition-colors flex items-center justify-between group cursor-pointer"
+                        >
+                          <div>
+                            <div className="font-bold text-white group-hover:text-purple-300 text-[12px] flex items-center gap-1.5">
+                              <span>{sug.name}</span>
+                              <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#252538] text-stone-400 font-mono">
+                                /{sug.slug}
+                              </span>
+                            </div>
+                            {sug.tags?.length > 0 && (
+                              <p className="text-[10.5px] text-stone-400 mt-0.5 line-clamp-1">
+                                {sug.tags.slice(0, 4).join(', ')}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-purple-400 opacity-0 group-hover:opacity-100 font-medium px-2 py-0.5 rounded bg-purple-500/20 transition-all shrink-0 ml-2">
+                            Apply
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
@@ -685,19 +931,86 @@ export const AdminCategoriesPage = () => {
 
               </div>
 
-              {/* Price */}
-              <div>
-                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
-                  Base Price (₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="e.g. 499"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
-                />
+              {/* Price, Discount & Calculated Original Price */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-3.5 rounded-xl bg-[#12121c] border border-[#232336]">
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
+                    Base Price / MRP (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 1000"
+                    value={formData.price}
+                    onChange={(e) => {
+                      const base = parseFloat(e.target.value) || 0;
+                      const disc = parseFloat(formData.discount) || 0;
+                      const calculatedSelling = disc > 0 ? Math.round(base - (base * disc / 100)) : base;
+                      setFormData({ 
+                        ...formData, 
+                        price: e.target.value,
+                        originalPrice: calculatedSelling
+                      });
+                    }}
+                    className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500 text-sm font-semibold"
+                  />
+                  <p className="text-[10px] text-stone-500 mt-1">Starting catalog / MRP rate</p>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Discount (%)</span>
+                    {Number(formData.discount) > 0 && (
+                      <span className="text-[10px] text-emerald-400 font-semibold">{formData.discount}% OFF</span>
+                    )}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 20"
+                    value={formData.discount}
+                    onChange={(e) => {
+                      const disc = parseFloat(e.target.value) || 0;
+                      const base = parseFloat(formData.price) || 0;
+                      const calculatedSelling = disc > 0 ? Math.round(base - (base * disc / 100)) : base;
+                      setFormData({ 
+                        ...formData, 
+                        discount: e.target.value,
+                        originalPrice: calculatedSelling
+                      });
+                    }}
+                    className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500 text-sm font-semibold"
+                  />
+                  <p className="text-[10px] text-stone-500 mt-1">Platform discount offer</p>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1 text-emerald-400">
+                    <span>Original Price (₹)</span>
+                  </label>
+                  <div className="w-full bg-[#0d0d14] border border-emerald-500/30 rounded-xl px-3.5 py-2.5 text-emerald-400 flex items-center justify-between">
+                    <span className="text-base font-bold font-mono">
+                      ₹{(() => {
+                        const base = parseFloat(formData.price) || 0;
+                        const disc = parseFloat(formData.discount) || 0;
+                        return disc > 0 ? Math.round(base - (base * disc / 100)) : base;
+                      })()}
+                    </span>
+                    <span className="text-[9.5px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                      Auto-Calc
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    {Number(formData.discount) > 0 ? (
+                      <span className="text-stone-400">
+                        ₹{formData.price || 0} − {formData.discount}% = <strong className="text-emerald-400">₹{Math.round((parseFloat(formData.price) || 0) * (1 - (parseFloat(formData.discount) || 0) / 100))}</strong>
+                      </span>
+                    ) : (
+                      'No discount applied'
+                    )}
+                  </p>
+                </div>
               </div>
 
               {/* Description */}

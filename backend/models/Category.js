@@ -8,6 +8,8 @@ const categorySchema = new mongoose.Schema({
     serviceCategories: [{ type: String }],
     image: { type: String },
     price: { type: Number, default: 0 },
+    discount: { type: Number, default: 0 },
+    originalPrice: { type: Number, default: 0 },
     description: { type: String },
     isActive: { type: Boolean, default: true },
     colSpan: { type: Number, default: 1 }

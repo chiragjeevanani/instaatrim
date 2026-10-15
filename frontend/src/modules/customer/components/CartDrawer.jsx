@@ -18,7 +18,8 @@ export const CartDrawer = () => {
     appliedCoupon,
     applyCoupon,
     removeCoupon,
-    availableCoupons
+    availableCoupons,
+    user
   } = useCustomer();
 
   const [couponInput, setCouponInput] = useState('');
@@ -34,6 +35,17 @@ export const CartDrawer = () => {
       setIsBookingFlowOpen(true);
     }
   };
+
+  const billValue = cartSummary.subtotal || 0;
+  const visibleDiscount = Math.round(billValue * 0.40);
+  const instantDiscount = Math.round(visibleDiscount * 0.50);
+  const walletCashbackIssued = Math.round(visibleDiscount * 0.50);
+  const walletBalance = Number(user?.wallet_balance) || 0;
+  const couponDiscount = cartSummary.discount || 0;
+  const convenienceFee = cartSummary.convenienceFee || 0;
+  const walletRedeemed = Math.min(Math.round(walletBalance * 0.50), Math.max(0, billValue - instantDiscount - couponDiscount));
+  const calculatedPayable = Math.max(0, billValue - instantDiscount - couponDiscount - walletRedeemed + convenienceFee);
+  const finalPayableTotal = Math.max(0, calculatedPayable + (cartSummary.taxAmount || 0));
 
   return (
     <AnimatePresence>
@@ -219,12 +231,22 @@ export const CartDrawer = () => {
                   <h5 className="text-xs font-bold text-stone-800">Bill Breakdown</h5>
                   <div className="flex justify-between text-[11px] text-stone-600">
                     <span>Item Total</span>
-                    <span>₹{cartSummary.subtotal}</span>
+                    <span>₹{billValue}</span>
                   </div>
-                  {cartSummary.discount > 0 && (
+                  <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
+                    <span>Instant Discount (50% of Promo)</span>
+                    <span>-₹{instantDiscount}</span>
+                  </div>
+                  {walletRedeemed > 0 && (
                     <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
-                      <span>Promo Discount ({appliedCoupon?.code})</span>
-                      <span>-₹{cartSummary.discount}</span>
+                      <span>Wallet Redeemed (50% of balance)</span>
+                      <span>-₹{walletRedeemed}</span>
+                    </div>
+                  )}
+                  {couponDiscount > 0 && appliedCoupon && (
+                    <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
+                      <span>Coupon Savings ({appliedCoupon?.code})</span>
+                      <span>-₹{couponDiscount}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-[11px] text-stone-600">
@@ -235,9 +257,27 @@ export const CartDrawer = () => {
                     <span className="text-stone-400 line-through">₹49</span>
                     <span className="text-emerald-600 font-bold">FREE</span>
                   </div>
+                  {convenienceFee > 0 && (
+                    <div className="flex justify-between text-[11px] text-stone-600">
+                      <span>Platform Convenience Fee</span>
+                      <span>₹{convenienceFee}</span>
+                    </div>
+                  )}
+                  {cartSummary.taxAmount > 0 && (
+                    <div className="flex justify-between text-[11px] text-stone-600">
+                      <span>Taxes & GST ({cartSummary.taxRatePercent || 10}%)</span>
+                      <span>₹{cartSummary.taxAmount}</span>
+                    </div>
+                  )}
                   <div className="border-t border-stone-200 pt-1.5 flex justify-between font-black text-xs text-stone-900">
                     <span>To Pay</span>
-                    <span>₹{cartSummary.finalAmount}</span>
+                    <span>₹{finalPayableTotal}</span>
+                  </div>
+
+                  {/* Excel Cashback Notification */}
+                  <div className="bg-amber-50/80 border border-amber-200/80 rounded-lg p-2 mt-1 text-[10px] text-amber-900 font-bold flex items-center justify-between">
+                    <span>✨ Wallet Cashback Earned:</span>
+                    <span className="font-black text-amber-800">+₹{walletCashbackIssued}</span>
                   </div>
                 </div>
               </>
@@ -249,7 +289,7 @@ export const CartDrawer = () => {
             <div className="px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pb-3 bg-white border-t border-stone-200 shadow-soft-up">
               <div className="flex items-center justify-between mb-1.5 text-xs">
                 <span className="text-stone-500 font-medium">Total Payable</span>
-                <span className="text-sm font-black text-stone-900">₹{cartSummary.finalAmount}</span>
+                <span className="text-sm font-black text-stone-900">₹{finalPayableTotal}</span>
               </div>
               <button
                 onClick={handleCheckout}

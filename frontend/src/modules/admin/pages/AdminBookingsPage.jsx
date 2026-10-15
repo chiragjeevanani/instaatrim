@@ -1,21 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, CalendarCheck2, Clock, CheckCircle2, AlertCircle, Filter } from 'lucide-react';
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
+import { useAppData } from '../../../shared/store/AppDataProvider';
 
 export const AdminBookingsPage = () => {
   const { bookings, salons } = useAdmin();
+  const { dispatch } = useAppData();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [modeFilter, setModeFilter] = useState('All');
 
-  const filteredBookings = bookings.filter((b) => {
+  // Always refresh bookings on page mount from DB
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+    fetch(`${apiBase}/bookings/all`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          const bks = json.data.map((b) => ({ ...b, id: b._id || b.id }));
+          dispatch({ type: 'SET_BOOKINGS', payload: bks });
+        }
+      })
+      .catch(console.error);
+  }, [dispatch]);
+
+  // Helper to extract customer identifier key
+  const getCustomerKey = (b) => {
+    const phone = b.customerPhone ? String(b.customerPhone).replace(/\D/g, '').slice(-10) : '';
+    if (phone) return `phone_${phone}`;
+    if (b.customerId) return `id_${String(b.customerId)}`;
+    return `name_${String(b.customerName || '').trim().toLowerCase()}`;
+  };
+
+  // Compute booking frequency per customer across all bookings
+  const customerBookingCounts = React.useMemo(() => {
+    const counts = {};
+    (bookings || []).forEach((b) => {
+      const key = getCustomerKey(b);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [bookings]);
+
+  const filteredBookings = (bookings || []).filter((b) => {
+    const bookingId = String(b.id || b._id || '');
+    const custName = String(b.customerName || '');
+    const salName = String(b.salonName || '');
+    const custPhone = String(b.customerPhone || '');
+    const q = search.toLowerCase();
+
     const matchesSearch =
-      b.id.toLowerCase().includes(search.toLowerCase()) ||
-      b.customerName?.toLowerCase().includes(search.toLowerCase()) ||
-      b.salonName?.toLowerCase().includes(search.toLowerCase()) ||
-      b.customerPhone?.includes(search);
+      !search ||
+      bookingId.toLowerCase().includes(q) ||
+      custName.toLowerCase().includes(q) ||
+      salName.toLowerCase().includes(q) ||
+      custPhone.includes(search);
 
     if (!matchesSearch) return false;
     if (statusFilter !== 'All' && b.status !== statusFilter) return false;
@@ -88,11 +129,35 @@ export const AdminBookingsPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e1e2c]">
-                {filteredBookings.map((b) => (
-                  <tr key={b.id} className="admin-table-row hover:bg-[#191924] transition-colors">
-                    <td className="py-4 px-5 font-mono font-bold text-purple-300">{b.id}</td>
+                {filteredBookings.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="py-8 text-center text-stone-500 text-xs">
+                      No bookings found.
+                    </td>
+                  </tr>
+                )}
+                {filteredBookings.map((b, idx) => (
+                  <tr key={b.id || b._id || idx} className="admin-table-row hover:bg-[#191924] transition-colors">
+                    <td className="py-4 px-5 font-mono font-bold text-purple-300">{b.id || b._id}</td>
                     <td className="py-4 px-4">
-                      <div className="font-semibold text-white">{b.customerName || 'Ananya Sharma'}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white">{b.customerName || 'Ananya Sharma'}</span>
+                        {(() => {
+                          const count = customerBookingCounts[getCustomerKey(b)] || 1;
+                          return (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight inline-flex items-center gap-1 ${count > 1
+                                  ? 'bg-purple-500/25 text-purple-300 border border-purple-500/50 shadow-xs'
+                                  : 'bg-stone-800 text-stone-300 border border-stone-700'
+                                }`}
+                              title={`Total bookings by this customer: ${count}`}
+                            >
+                              <span>{count}</span>
+                              <span className="text-[9px] opacity-80">{count === 1 ? 'booking' : 'bookings'}</span>
+                            </span>
+                          );
+                        })()}
+                      </div>
                       <div className="text-[11px] text-stone-500">{b.customerPhone || '7000792773'}</div>
                     </td>
                     <td className="py-4 px-4">
@@ -111,24 +176,22 @@ export const AdminBookingsPage = () => {
                     <td className="py-4 px-4">
                       <div className="text-stone-200">{b.paymentMethod || 'Online UPI'}</div>
                       <div
-                        className={`text-[10px] font-semibold ${
-                          b.paymentStatus === 'Successful' ? 'text-emerald-400' : 'text-amber-400'
-                        }`}
+                        className={`text-[10px] font-semibold ${b.paymentStatus === 'Successful' ? 'text-emerald-400' : 'text-amber-400'
+                          }`}
                       >
                         {b.paymentStatus || 'Pending'}
                       </div>
                     </td>
                     <td className="py-4 px-4">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                          b.status === 'Completed'
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${b.status === 'Completed'
                             ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                             : b.status === 'In-Service'
-                            ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
-                            : b.status === 'Cancelled'
-                            ? 'bg-red-500/15 text-red-300 border border-red-500/30'
-                            : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                        }`}
+                              ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                              : b.status === 'Cancelled'
+                                ? 'bg-red-500/15 text-red-300 border border-red-500/30'
+                                : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                          }`}
                       >
                         {b.status}
                       </span>

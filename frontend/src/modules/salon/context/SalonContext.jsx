@@ -600,7 +600,11 @@ export const SalonProvider = ({ children }) => {
       .filter((p) => p.status === 'Transferred' || p.status === 'Pending' || p.status === 'Approved')
       .reduce((sum, p) => sum + p.grossAmount, 0);
 
-    const availablePayout = Math.max(0, totalGmv - totalPayoutsSettledOrPending);
+    const totalSalonRevenue = allTimeCompleted.reduce((sum, b) => {
+      const billValue = b.totalAmount || b.finalPaid || 0;
+      return sum + (billValue - billValue * 0.50);
+    }, 0);
+    const availablePayout = Math.max(0, totalSalonRevenue - totalPayoutsSettledOrPending);
 
     const customerCounts = {};
     bookings.forEach((b) => {

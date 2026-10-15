@@ -330,8 +330,15 @@ const services = {
       const res = await fetch(`${API_BASE}/services?salonId=${salonId}`);
       if (res.ok) {
         const json = await res.json();
-        const mapped = json.data.map(s => ({ ...s, id: s._id }));
-        // Option: merge into store if needed, but returning is enough for the component
+        const mapped = (json.data || []).map(s => ({
+          ...s,
+          id: s._id || s.id,
+          name: s.name || s.title || 'Service',
+          salonId: s.salonId ? (s.salonId._id || s.salonId.id || s.salonId.toString()) : salonId
+        }));
+        if (mapped.length > 0) {
+          dispatch({ type: 'SET_SERVICES', payload: mapped });
+        }
         return clone(mapped);
       }
     } catch (e) {

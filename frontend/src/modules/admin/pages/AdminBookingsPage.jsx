@@ -147,8 +147,8 @@ export const AdminBookingsPage = () => {
                           return (
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight inline-flex items-center gap-1 ${count > 1
-                                  ? 'bg-purple-500/25 text-purple-300 border border-purple-500/50 shadow-xs'
-                                  : 'bg-stone-800 text-stone-300 border border-stone-700'
+                                ? 'bg-purple-500/25 text-purple-300 border border-purple-500/50 shadow-xs'
+                                : 'bg-stone-800 text-stone-300 border border-stone-700'
                                 }`}
                               title={`Total bookings by this customer: ${count}`}
                             >
@@ -185,12 +185,12 @@ export const AdminBookingsPage = () => {
                     <td className="py-4 px-4">
                       <span
                         className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${b.status === 'Completed'
-                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                            : b.status === 'In-Service'
-                              ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
-                              : b.status === 'Cancelled'
-                                ? 'bg-red-500/15 text-red-300 border border-red-500/30'
-                                : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                          : b.status === 'In-Service'
+                            ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                            : b.status === 'Cancelled'
+                              ? 'bg-red-500/15 text-red-300 border border-red-500/30'
+                              : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                           }`}
                       >
                         {b.status}

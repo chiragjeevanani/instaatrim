@@ -25,7 +25,7 @@ export const ReferEarnModal = () => {
 
   if (!isReferModalOpen) return null;
 
-  const referralCode = user?.referralCode || campaign?.defaultCode || 'INSTATRIM50';
+  const referralCode = user?.referralCode || campaign?.defaultCode || 'DRIMSTYLE50';
   const title = campaign?.title || 'Refer & Earn ₹150';
 
   const handleCopy = () => {

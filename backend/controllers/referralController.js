@@ -11,7 +11,7 @@ exports.getActiveCampaign = async (req, res) => {
                 description: "Share your link with friends. They get ₹100 OFF, and you get ₹150 credits!",
                 referrerBonus: 150,
                 refereeDiscount: 100,
-                defaultCode: "INSTATRIM50",
+                defaultCode: "DRIMSTYLE50",
                 isActive: true
             });
         }

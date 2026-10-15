@@ -81,7 +81,7 @@ export const AccountPage = () => {
                 )}
               </div>
               <p className="text-[11px] text-stone-400 leading-tight mt-0.5">{user?.phone ? `+91 ${user.phone}` : 'Sign in to access perks'}</p>
-              <p className="text-[10px] text-stone-400 truncate leading-tight">{user?.email || 'guest@instatrim.com'}</p>
+              <p className="text-[10px] text-stone-400 truncate leading-tight">{user?.email || 'guest@drimstyle.com'}</p>
             </div>
           </div>
 
@@ -325,7 +325,7 @@ export const AccountPage = () => {
         </div>
         <div className="flex items-center gap-2.5 bg-white/70 rounded-xl p-2.5 border border-purple-100">
           <Mail className="w-3.5 h-3.5 text-brand-maroon shrink-0" />
-          <span>support@instaatrim.com</span>
+          <span>support@drimstyle.com</span>
         </div>
         <div className="flex items-center gap-2.5 bg-white/70 rounded-xl p-2.5 border border-purple-100">
           <MessageCircle className="w-3.5 h-3.5 text-brand-maroon shrink-0" />

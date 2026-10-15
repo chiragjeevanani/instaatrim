@@ -306,7 +306,7 @@ export const SalonProfilePage = () => {
         </div>
         <div className="flex items-center gap-2.5 bg-white/70 rounded-xl p-2.5 border border-purple-100">
           <Mail className="w-3.5 h-3.5 text-brand-maroon shrink-0" />
-          <span>partners@instaatrim.com</span>
+          <span>partners@drimstyle.com</span>
         </div>
       </InfoSheet>
     </motion.div>

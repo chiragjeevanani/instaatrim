@@ -424,7 +424,7 @@ export const SalonRegistrationPage = () => {
                     </label>
                     <input
                       type="email"
-                      placeholder="yoursalon@instaatrim.com"
+                      placeholder="yoursalon@drimstyle.com"
                       value={formData.email}
                       onChange={(e) => updateField('email', e.target.value)}
                       className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"

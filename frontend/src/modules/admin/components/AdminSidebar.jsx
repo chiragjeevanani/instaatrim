@@ -173,7 +173,7 @@ export const AdminSidebar = () => {
               <div className="text-xs font-medium text-stone-200 truncate">
                 {adminSession?.name || 'Administrator'}
               </div>
-              <div className="text-[10px] text-stone-500 truncate">{adminSession?.email || 'admin@instaatrim.com'}</div>
+              <div className="text-[10px] text-stone-500 truncate">{adminSession?.email || 'admin@drimstyle.com'}</div>
             </div>
           </div>
           <button

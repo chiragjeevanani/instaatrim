@@ -39,7 +39,7 @@ export const AdminPlatformSettingsPage = () => {
     minPayoutThreshold: 1000,
     cancellationFreeHours: 1,
     supportPhone: '1800-200-8811',
-    supportEmail: 'support@instaatrim.com',
+    supportEmail: 'support@drimstyle.com',
     supportTopics: [],
     partnerSupportTopics: []
   });

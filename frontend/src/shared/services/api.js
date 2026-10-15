@@ -182,8 +182,8 @@ const salons = {
         name: data.name || 'My Salon & Spa',
         ownerName: data.ownerName || 'Partner Owner',
         mobile: data.mobile?.startsWith('+91') ? data.mobile : `+91 ${data.mobile || '98765 43210'}`,
-        email: (data.email || `partner_${Date.now()}@instaatrim.com`).toLowerCase(),
-        partnerLoginId: (data.email || `partner_${Date.now()}@instaatrim.com`).toLowerCase(),
+        email: (data.email || `partner_${Date.now()}@drimstyle.com`).toLowerCase(),
+        partnerLoginId: (data.email || `partner_${Date.now()}@drimstyle.com`).toLowerCase(),
         partnerPassword: data.password || 'demo1234',
         tagline: data.tagline || 'Premier Beauty & Wellness Destination',
         category: data.category || 'Unisex',
@@ -1200,7 +1200,7 @@ const customers = {
         if (res.ok) {
           const data = await res.json();
           const dbCustomer = data.customer;
-          const record = mapCustomerFromApi(dbCustomer, { name, phone, email: `${phone}@instaatrim.com` });
+          const record = mapCustomerFromApi(dbCustomer, { name, phone, email: `${phone}@drimstyle.com` });
           const locations = record.savedLocations;
           dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId: record.id, locations } });
           dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
@@ -1217,7 +1217,7 @@ const customers = {
       isLoggedIn: true,
       name: name || 'Customer',
       phone,
-      email: `${phone}@instaatrim.com`,
+      email: `${phone}@drimstyle.com`,
       is_elite: false,
       authProvider: 'otp',
       notificationPrefs: { push: true, sms: true, email: true, whatsapp: false, marketing: false },

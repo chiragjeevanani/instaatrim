@@ -101,6 +101,7 @@ export const AdminCategoriesPage = () => {
 
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Delete Confirm Modal
   const [deleteConfirm, setDeleteConfirm] = useState(null); // category object
@@ -170,6 +171,7 @@ export const AdminCategoriesPage = () => {
       isActive: true
     });
     setFormError('');
+    setShowSuggestions(false);
     setModalOpen(true);
   };
 
@@ -317,11 +319,13 @@ export const AdminCategoriesPage = () => {
       isActive: category.isActive !== false
     });
     setFormError('');
+    setShowSuggestions(false);
     setModalOpen(true);
   };
 
   // Name change handler
   const handleNameChange = (val) => {
+    setShowSuggestions(true);
     setFormData((prev) => {
       // Auto-generate slug if not editing or user hasn't explicitly customized slug
       const generatedSlug = val.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -358,6 +362,7 @@ export const AdminCategoriesPage = () => {
   // Select Autocomplete Suggestion
   const handleSelectSuggestion = (suggestion) => {
     const uniqueSlug = getUniqueSlug(suggestion.slug, editingCategory?.id);
+    setShowSuggestions(false);
     setFormData((prev) => ({
       ...prev,
       name: suggestion.name,
@@ -793,12 +798,19 @@ export const AdminCategoriesPage = () => {
                     required
                     placeholder="e.g. Hair, Nails, Facial, Spa..."
                     value={formData.name}
+                    onFocus={() => {
+                      if (formData.name.trim().length >= 1) setShowSuggestions(true);
+                    }}
+                    onBlur={() => {
+                      // Slight delay so onMouseDown on suggestion can register before blur hides it
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
                     onChange={(e) => handleNameChange(e.target.value)}
                     className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
                   />
 
                   {/* Autocomplete Suggestions Dropdown Menu */}
-                  {autocompleteSuggestions.length > 0 && formData.name.trim().length >= 1 && (
+                  {showSuggestions && autocompleteSuggestions.length > 0 && formData.name.trim().length >= 1 && (
                     <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-[#161622] border border-[#2f2f45] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#232336] max-h-56 overflow-y-auto">
                       <div className="px-3 py-1.5 bg-[#12121b] text-[10px] uppercase tracking-wider font-bold text-purple-400 flex items-center justify-between">
                         <span>Related Suggestions</span>
@@ -931,7 +943,7 @@ export const AdminCategoriesPage = () => {
 
               </div>
 
-              {/* Price, Discount & Calculated Original Price */}
+              {/* Price, Discount & Calculated Original Price (2-way dynamic calculation) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-3.5 rounded-xl bg-[#12121c] border border-[#232336]">
                 <div>
                   <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
@@ -945,11 +957,11 @@ export const AdminCategoriesPage = () => {
                     onChange={(e) => {
                       const base = parseFloat(e.target.value) || 0;
                       const disc = parseFloat(formData.discount) || 0;
-                      const calculatedSelling = disc > 0 ? Math.round(base - (base * disc / 100)) : base;
+                      const calculatedOriginal = disc > 0 ? Math.round(base - (base * disc / 100)) : base;
                       setFormData({ 
                         ...formData, 
                         price: e.target.value,
-                        originalPrice: calculatedSelling
+                        originalPrice: calculatedOriginal
                       });
                     }}
                     className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500 text-sm font-semibold"
@@ -967,18 +979,34 @@ export const AdminCategoriesPage = () => {
                   <input
                     type="number"
                     min="0"
-                    max="100"
+                    max="99"
                     placeholder="e.g. 20"
                     value={formData.discount}
                     onChange={(e) => {
                       const disc = parseFloat(e.target.value) || 0;
                       const base = parseFloat(formData.price) || 0;
-                      const calculatedSelling = disc > 0 ? Math.round(base - (base * disc / 100)) : base;
-                      setFormData({ 
-                        ...formData, 
-                        discount: e.target.value,
-                        originalPrice: calculatedSelling
-                      });
+                      const orig = parseFloat(formData.originalPrice) || 0;
+
+                      if (base > 0) {
+                        const calculatedOriginal = disc > 0 ? Math.round(base - (base * disc / 100)) : base;
+                        setFormData({ 
+                          ...formData, 
+                          discount: e.target.value,
+                          originalPrice: calculatedOriginal
+                        });
+                      } else if (orig > 0 && disc < 100) {
+                        const calculatedBase = disc > 0 ? Math.round(orig / (1 - disc / 100)) : orig;
+                        setFormData({
+                          ...formData,
+                          discount: e.target.value,
+                          price: calculatedBase
+                        });
+                      } else {
+                        setFormData({ 
+                          ...formData, 
+                          discount: e.target.value 
+                        });
+                      }
                     }}
                     className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500 text-sm font-semibold"
                   />
@@ -986,28 +1014,39 @@ export const AdminCategoriesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5 flex items-center gap-1 text-emerald-400">
+                  <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5 flex items-center justify-between text-emerald-400">
                     <span>Original Price (₹)</span>
+                    <span className="text-[9.5px] uppercase font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                      2-Way Auto
+                    </span>
                   </label>
-                  <div className="w-full bg-[#0d0d14] border border-emerald-500/30 rounded-xl px-3.5 py-2.5 text-emerald-400 flex items-center justify-between">
-                    <span className="text-base font-bold font-mono">
-                      ₹{(() => {
-                        const base = parseFloat(formData.price) || 0;
-                        const disc = parseFloat(formData.discount) || 0;
-                        return disc > 0 ? Math.round(base - (base * disc / 100)) : base;
-                      })()}
-                    </span>
-                    <span className="text-[9.5px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                      Auto-Calc
-                    </span>
-                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 500"
+                    value={formData.originalPrice}
+                    onChange={(e) => {
+                      const orig = parseFloat(e.target.value) || 0;
+                      const disc = parseFloat(formData.discount) || 0;
+                      // Reverse calculate Base Price: Base = Original / (1 - disc/100)
+                      const calculatedBase = (disc > 0 && disc < 100)
+                        ? Math.round(orig / (1 - disc / 100))
+                        : orig;
+                      setFormData({
+                        ...formData,
+                        originalPrice: e.target.value,
+                        price: calculatedBase
+                      });
+                    }}
+                    className="w-full bg-[#101018] border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-emerald-400 placeholder-stone-600 focus:outline-none focus:border-emerald-400 text-sm font-semibold font-mono"
+                  />
                   <p className="text-[10px] text-stone-400 mt-1">
                     {Number(formData.discount) > 0 ? (
-                      <span className="text-stone-400">
-                        ₹{formData.price || 0} − {formData.discount}% = <strong className="text-emerald-400">₹{Math.round((parseFloat(formData.price) || 0) * (1 - (parseFloat(formData.discount) || 0) / 100))}</strong>
+                      <span>
+                        Effective selling rate ({formData.discount}% off ₹{formData.price || 0})
                       </span>
                     ) : (
-                      'No discount applied'
+                      'Type here or in Base Price'
                     )}
                   </p>
                 </div>

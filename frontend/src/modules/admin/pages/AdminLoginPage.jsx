@@ -65,7 +65,7 @@ export const AdminLoginPage = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="admin@instaatrim.com"
+                  placeholder="admin@drimstyle.com"
                   className="w-full bg-[#1b1b28] border border-[#2d2d42] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-stone-500 focus:outline-none focus:border-purple-500 transition-colors"
                 />
               </div>
@@ -115,7 +115,7 @@ export const AdminLoginPage = () => {
               <span>Fill Seed Admin Credentials</span>
             </button>
             <div className="mt-2 text-[11px] text-stone-500 font-mono">
-              admin@instaatrim.com / admin2025
+              admin@drimstyle.com / admin2025
             </div>
           </div>
         </div>

@@ -792,7 +792,7 @@ export const DEFAULT_CUSTOMER = {
 
 // Super-admin credentials for the admin dashboard panel
 export const ADMIN_CREDENTIALS = {
-  email: 'admin@instaatrim.com',
+  email: 'admin@drimstyle.com',
   password: 'admin2025',
   name: 'DrimStyle Super Admin',
   role: 'super_admin'

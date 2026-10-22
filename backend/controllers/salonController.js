@@ -65,7 +65,8 @@ exports.registerSalon = async (req, res) => {
         }
 
         // Hash password
-        const salt = await bcrypt.genSalt(10);
+        // Cost 12 as per enterprise password policy
+        const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         let finalCoverImage = coverImage;
@@ -138,30 +139,71 @@ exports.loginSalon = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
+        // Enterprise Account Lockout Protection Check
+        if (salon.lockoutUntil && salon.lockoutUntil > new Date()) {
+            const minutesLeft = Math.ceil((salon.lockoutUntil - new Date()) / (60 * 1000));
+            return res.status(423).json({
+                success: false,
+                message: `Account is temporarily locked due to consecutive failed login attempts. Please try again in ${minutesLeft} minutes.`
+            });
+        }
+
         const isMatch = await bcrypt.compare(password, salon.password);
         if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            salon.failedLoginAttempts = (salon.failedLoginAttempts || 0) + 1;
+            // Lock out after 5 consecutive failed attempts for 15 minutes
+            if (salon.failedLoginAttempts >= 5) {
+                salon.lockoutUntil = new Date(Date.now() + 15 * 60 * 1000);
+            }
+            await salon.save();
+
+            return res.status(401).json({
+                success: false,
+                message: salon.failedLoginAttempts >= 5
+                    ? 'Account locked for 15 minutes due to too many failed attempts.'
+                    : `Invalid credentials. Attempts left: ${5 - salon.failedLoginAttempts}`
+            });
         }
+
+        // Reset failed login attempts on successful login
+        salon.failedLoginAttempts = 0;
+        salon.lockoutUntil = null;
+
+        // Generate Access Token (15m/short-lived) & Rotating Refresh Token (7d)
+        const jwt = require('jsonwebtoken');
+        const crypto = require('crypto');
+        const token = jwt.sign({ id: salon._id, role: 'salon' }, process.env.JWT_SECRET || 'secret123', {
+            expiresIn: '1h'
+        });
+        const refreshToken = `rft_${crypto.randomBytes(32).toString('hex')}`;
+        salon.refreshToken = refreshToken;
 
         // Update FCM tokens if provided
         if (fcmtoken || fcmtokenweb) {
             if (fcmtoken) salon.fcmtoken = fcmtoken;
             if (fcmtokenweb) salon.fcmtokenweb = fcmtokenweb;
-            await salon.save();
         }
+        await salon.save();
 
-        // Generate token
-        const jwt = require('jsonwebtoken');
-        const token = jwt.sign({ id: salon._id, role: 'salon' }, process.env.JWT_SECRET || 'secret123', {
-            expiresIn: '7d'
+        // Audit Trail
+        const { logAuditEvent } = require('../middlewares/enterpriseMiddleware');
+        await logAuditEvent({
+            action: 'SALON_LOGIN_SUCCESS',
+            performedBy: salon._id.toString(),
+            role: 'SALON',
+            req,
+            details: { email: salon.email }
         });
 
         const salonData = salon.toObject();
         salonData.id = salon._id.toString();
+        delete salonData.password;
+        delete salonData.refreshToken;
 
         res.status(200).json({
             success: true,
             token,
+            refreshToken,
             data: salonData
         });
     } catch (error) {

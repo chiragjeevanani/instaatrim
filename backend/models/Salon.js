@@ -34,7 +34,16 @@ const salonSchema = new mongoose.Schema({
     boostReason: { type: String },
     fcmtoken: { type: String },
     fcmtokenweb: { type: String },
-    offers: [{ type: mongoose.Schema.Types.Mixed }]
+    offers: [{ type: mongoose.Schema.Types.Mixed }],
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockoutUntil: { type: Date, default: null },
+    refreshToken: { type: String, default: null },
+    location: {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number], default: [72.8777, 19.0760] } // [longitude, latitude]
+    }
 }, { timestamps: true });
+
+salonSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Salon', salonSchema);

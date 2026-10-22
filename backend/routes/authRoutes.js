@@ -2,11 +2,14 @@ const express = require('express');
 const router = express.Router();
 const { sendOTP, verifyOTP, logout, saveFcmToken } = require('../controllers/authController');
 
-// POST /api/auth/send-otp   → send OTP to phone
-router.post('/send-otp', sendOTP);
+const { authRateLimiter } = require('../middlewares/enterpriseMiddleware');
+const { validateAndSanitize, schemas } = require('../middlewares/validationMiddleware');
 
-// POST /api/auth/verify-otp → verify OTP and login/signup
-router.post('/verify-otp', verifyOTP);
+// POST /api/auth/send-otp   → send OTP to phone (with rate limiting & Zod input validation)
+router.post('/send-otp', authRateLimiter, validateAndSanitize(schemas.phoneOtpSchema), sendOTP);
+
+// POST /api/auth/verify-otp → verify OTP and login/signup (with rate limiting & Zod input validation)
+router.post('/verify-otp', authRateLimiter, validateAndSanitize(schemas.verifyOtpSchema), verifyOTP);
 
 // POST /api/auth/logout → logout user
 router.post('/logout', logout);

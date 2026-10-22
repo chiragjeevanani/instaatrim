@@ -70,6 +70,22 @@ const customerSchema = new mongoose.Schema({
     },
     otpExpiry: {
         type: Date,
+    },
+    failedLoginAttempts: {
+        type: Number,
+        default: 0
+    },
+    lockoutUntil: {
+        type: Date,
+        default: null
+    },
+    consentMarketing: {
+        type: Boolean,
+        default: false
+    },
+    consentDataProcessing: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true 

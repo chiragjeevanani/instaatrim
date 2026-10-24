@@ -47,14 +47,559 @@ export const AddServicePage = () => {
         'Bleach & D-Tan'
       ];
 
+  // Preset standard services catalog covering ~95% of all salon services for instant onboarding
+  const STANDARD_TEMPLATES = [
+    // --- 1. Hair: Haircut & Styling ---
+    {
+      name: "Men's Haircut",
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '30 mins',
+      suggestedPrice: 300,
+      description: 'Precision scissor and clipper cut tailored to facial structure with wash and style.',
+      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: "Women's Haircut",
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '45 mins',
+      suggestedPrice: 600,
+      description: 'Customized haircut, layers or bob cut with hair wash, conditioning, and blow-dry finish.',
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: "Kids' Haircut",
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '30 mins',
+      suggestedPrice: 250,
+      description: 'Gentle, patient haircut for boys and girls with gentle grooming.',
+      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Fringe / Trim',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '15 mins',
+      suggestedPrice: 150,
+      description: 'Quick bang / fringe trim and split ends touchup.',
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
+    },
+    // --- Hair Color ---
+    {
+      name: 'Root Touch-up',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '1 hr',
+      suggestedPrice: 1200,
+      description: 'Seamless grey coverage root application with ammonia-free permanent color.',
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Global Color',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '2 hrs',
+      suggestedPrice: 3000,
+      description: 'All-over rich uniform hair coloring from root to tip with gloss finish.',
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Highlights (per streak/section)',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '1 hr 30 mins',
+      suggestedPrice: 2500,
+      description: 'Foil highlights or babylights to add multidimensional contrast and movement.',
+      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Balayage / Ombre',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '3 hrs',
+      suggestedPrice: 6000,
+      description: 'Freehand painted seamless gradient color transition for a sun-kissed, natural look.',
+      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
+    },
+    // --- Hair Treatments ---
+    {
+      name: 'Hair Spa',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '1 hr',
+      suggestedPrice: 1200,
+      description: 'Nourishing botanical hair spa, scalp detox massage, and ozone steam conditioning.',
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Keratin Treatment',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '3 hrs',
+      suggestedPrice: 6000,
+      description: 'Professional protein infusion smoothing treatment for frizz-free, shiny hair up to 4 months.',
+      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Smoothening / Rebonding',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '4 hrs',
+      suggestedPrice: 7000,
+      description: 'Permanent straight and sleek hair rebonding / smoothening with intense gloss seal.',
+      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Scalp Treatment',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '45 mins',
+      suggestedPrice: 1000,
+      description: 'Anti-dandruff and follicle purifying scalp treatment with therapeutic essential oils.',
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
+    },
+    // --- Styling ---
+    {
+      name: 'Blow-dry',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '30 mins',
+      suggestedPrice: 400,
+      description: 'Straight, outward, or inward professional volume blow-dry styling.',
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Hair Wash + Blow-dry',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '40 mins',
+      suggestedPrice: 500,
+      description: 'Deep cleansing shampoo, scalp massage, hydrating conditioner, and signature blow-dry.',
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Curls / Straightening',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '45 mins',
+      suggestedPrice: 700,
+      description: 'Ceramic tong curling or flat iron pin-straight heat styling with heat protectant.',
+      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Party Hairstyle',
+      category: 'Hair Styling',
+      fallbackCategory: 'Hair Studio',
+      duration: '1 hr',
+      suggestedPrice: 1500,
+      description: 'Intricate braids, messy buns, or red-carpet updo hairstyles for special occasions.',
+      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
+    },
+
+    // --- 2. Men\'s Grooming ---
+    {
+      name: 'Beard Trim',
+      category: 'Beard',
+      fallbackCategory: 'Men\'s Hair & Grooming',
+      duration: '20 mins',
+      suggestedPrice: 200,
+      description: 'Clipper beard trimming, length balancing, and cheek line definition.',
+      image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Beard Styling / Shaping',
+      category: 'Beard',
+      fallbackCategory: 'Men\'s Hair & Grooming',
+      duration: '30 mins',
+      suggestedPrice: 300,
+      description: 'Hot towel steam, razor boundary shaping, fade blend, and beard butter massage.',
+      image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Clean Shave',
+      category: 'Beard',
+      fallbackCategory: 'Men\'s Hair & Grooming',
+      duration: '20 mins',
+      suggestedPrice: 200,
+      description: 'Traditional close straight-razor shave with warm shaving foam and cooling aftershave balm.',
+      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Haircut + Beard Combo',
+      category: 'Men\'s Hair & Grooming',
+      fallbackCategory: 'Grooming',
+      duration: '50 mins',
+      suggestedPrice: 450,
+      description: 'Complete men haircut, wash, razor beard styling and refreshing face mist.',
+      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Haircut + Head Massage',
+      category: 'Men\'s Hair & Grooming',
+      fallbackCategory: 'Grooming',
+      duration: '45 mins',
+      suggestedPrice: 450,
+      description: 'Styling haircut paired with a relaxing 15-minute Ayurvedic cooling oil head massage.',
+      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: "Men's Cleanup",
+      category: 'Facial',
+      fallbackCategory: 'Men\'s Hair & Grooming',
+      duration: '30 mins',
+      suggestedPrice: 600,
+      description: 'Deep pore scrub, blackhead unclogging, and oil-control hydration mask for men.',
+      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: "Men's Facial",
+      category: 'Facial',
+      fallbackCategory: 'Men\'s Hair & Grooming',
+      duration: '45 mins',
+      suggestedPrice: 1000,
+      description: 'Brightening antioxidant facial formulated for rugged skin exposure and pollution defense.',
+      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'De-tan (Men)',
+      category: 'Facial',
+      fallbackCategory: 'Men\'s Hair & Grooming',
+      duration: '30 mins',
+      suggestedPrice: 700,
+      description: 'Kojic and milk protein de-tan pack to remove active sun tan and restore even tone.',
+      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
+    },
+
+    // --- 3. Skin & Facial ---
+    {
+      name: 'Basic Cleanup',
+      category: 'Facial',
+      fallbackCategory: 'Facials & Skin Care',
+      duration: '30 mins',
+      suggestedPrice: 600,
+      description: 'Gentle facial cleanse, scrub exfoliation, blackhead extraction and soothing pack.',
+      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Fruit / Hydrating Facial',
+      category: 'Facial',
+      fallbackCategory: 'Facials & Skin Care',
+      duration: '1 hr',
+      suggestedPrice: 1200,
+      description: 'Natural fruit enzyme peel, active vitamin hydration, and lymphatic face massage.',
+      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Anti-Acne Facial',
+      category: 'Facial',
+      fallbackCategory: 'Facials & Skin Care',
+      duration: '1 hr',
+      suggestedPrice: 1800,
+      description: 'Salicylic acid and tea tree clarifying treatment to purify breakouts and regulate sebum.',
+      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Anti-Ageing / Gold Facial',
+      category: 'Facial',
+      fallbackCategory: 'Facials & Skin Care',
+      duration: '1 hr 15 mins',
+      suggestedPrice: 2500,
+      description: '24K gold dust radiance, collagen tightening booster, and youthful glow therapy.',
+      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'De-tan (face/body)',
+      category: 'Facial',
+      fallbackCategory: 'Facials & Skin Care',
+      duration: '30 mins',
+      suggestedPrice: 800,
+      description: 'Intense tan removal treatment with brightening fruit acids and licorice extract.',
+      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Bleach',
+      category: 'Facial',
+      fallbackCategory: 'Facials & Skin Care',
+      duration: '30 mins',
+      suggestedPrice: 500,
+      description: 'Oxy-glow facial bleach to camouflage facial hair and illuminate complexion.',
+      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
+    },
+
+    // --- 4. Waxing & Threading ---
+    {
+      name: 'Full Arms Waxing',
+      category: 'Waxing',
+      fallbackCategory: 'Waxing & RICA',
+      duration: '30 mins',
+      suggestedPrice: 400,
+      description: 'Hygienic warm liposoluble waxing for silky smooth arms with soothing post-wax oil.',
+      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Full Legs Waxing',
+      category: 'Waxing',
+      fallbackCategory: 'Waxing & RICA',
+      duration: '40 mins',
+      suggestedPrice: 600,
+      description: 'Thorough hair removal from thigh to toes leaving skin flawlessly touchable.',
+      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Underarms Waxing',
+      category: 'Waxing',
+      fallbackCategory: 'Waxing & RICA',
+      duration: '15 mins',
+      suggestedPrice: 150,
+      description: 'Gentle, pain-minimized strip or peel-off wax for sensitive underarm skin.',
+      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Full Body Waxing',
+      category: 'Waxing',
+      fallbackCategory: 'Waxing & RICA',
+      duration: '1 hr 30 mins',
+      suggestedPrice: 2000,
+      description: 'Complete full body hair removal (arms, legs, back, front, and underarms) with RICA/Honey wax.',
+      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Eyebrows Threading',
+      category: 'Waxing',
+      fallbackCategory: 'Waxing & RICA',
+      duration: '10 mins',
+      suggestedPrice: 60,
+      description: 'Precision cotton thread shaping and arch definition with aloe gel cooling.',
+      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
+    },
+
+    // --- 5. Nails ---
+    {
+      name: 'Classic Manicure',
+      category: 'Nails, Art & Extensions',
+      fallbackCategory: 'Mani-Pedi',
+      duration: '40 mins',
+      suggestedPrice: 600,
+      description: 'Nail shaping, cuticle soak & care, exfoliating hand scrub, relaxing hand massage and high-gloss polish.',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Classic Pedicure',
+      category: 'Nails, Art & Extensions',
+      fallbackCategory: 'Mani-Pedi',
+      duration: '50 mins',
+      suggestedPrice: 800,
+      description: 'Aromatherapy foot soak, heel callus buffing, dead skin scrub, invigorating foot massage and salon polish.',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Spa Manicure + Pedicure',
+      category: 'Nails, Art & Extensions',
+      fallbackCategory: 'Mani-Pedi',
+      duration: '1 hr 30 mins',
+      suggestedPrice: 1800,
+      description: 'Deluxe dual hands and feet spa treatment with crystal scrub, paraffin hydration pack and deep acupressure massage.',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Gel Polish',
+      category: 'Nails, Art & Extensions',
+      fallbackCategory: 'Mani-Pedi',
+      duration: '45 mins',
+      suggestedPrice: 900,
+      description: 'Chip-resistant UV/LED cured high-shine gel nail polish lasting up to 3 weeks.',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Nail Extensions',
+      category: 'Nails, Art & Extensions',
+      fallbackCategory: 'Mani-Pedi',
+      duration: '1 hr 30 mins',
+      suggestedPrice: 2500,
+      description: 'Full set acrylic or hard gel extensions with length extension, shape sculpting and base color.',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Nail Art (per nail / full set)',
+      category: 'Nails, Art & Extensions',
+      fallbackCategory: 'Mani-Pedi',
+      duration: '30 mins',
+      suggestedPrice: 500,
+      description: 'Creative custom nail art, chrome mirror finish, ombré glitter or 3D embellishments.',
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
+    },
+
+    // --- 6. Makeup ---
+    {
+      name: 'Party Makeup',
+      category: 'Makeup',
+      fallbackCategory: 'Hair Studio',
+      duration: '1 hr',
+      suggestedPrice: 3000,
+      description: 'Glamorous event makeup with HD foundation, contouring, dramatic eye makeup and false eyelashes.',
+      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Saree Draping',
+      category: 'Makeup',
+      fallbackCategory: 'Hair Studio',
+      duration: '30 mins',
+      suggestedPrice: 800,
+      description: 'Professional precision saree draping in traditional, modern, or can-can mermaid styles.',
+      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Bridal Makeup',
+      category: 'Makeup',
+      fallbackCategory: 'Hair Studio',
+      duration: '2 hrs 30 mins',
+      suggestedPrice: 15000,
+      description: 'Luxury airbrush / HD bridal makeup, jewellery setting, dupatta styling, lash extension and premium touchup kit.',
+      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Engagement / Reception Makeup',
+      category: 'Makeup',
+      fallbackCategory: 'Hair Studio',
+      duration: '2 hrs',
+      suggestedPrice: 8000,
+      description: 'Radiant celebration makeup tailored to ring ceremony, sangeet or evening wedding reception.',
+      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Pre-bridal Package',
+      category: 'Makeup',
+      fallbackCategory: 'Spa',
+      duration: '2 hrs',
+      suggestedPrice: 12000,
+      description: 'Multi-session head-to-toe beauty ritual: gold facial, full body polish, Rica wax, spa mani-pedi & hair spa.',
+      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
+    },
+
+    // --- 7. Spa & Massage ---
+    {
+      name: 'Head Massage',
+      category: 'Spa',
+      fallbackCategory: 'Spa & Body Massage',
+      duration: '20 mins',
+      suggestedPrice: 300,
+      description: 'Traditional warm Ayurvedic oil champi, pressure point neck and shoulder stress relief.',
+      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Foot Reflexology',
+      category: 'Spa',
+      fallbackCategory: 'Spa & Body Massage',
+      duration: '30 mins',
+      suggestedPrice: 600,
+      description: 'Targeted pressure point sole and calf massage to boost circulation and relieve fatigue.',
+      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Full Body Massage (Swedish / Deep Tissue)',
+      category: 'Spa',
+      fallbackCategory: 'Spa & Body Massage',
+      duration: '1 hr',
+      suggestedPrice: 2000,
+      description: 'Full body tension dissolving massage with warm organic aromatherapy oils and steam shower.',
+      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Body Polishing',
+      category: 'Spa',
+      fallbackCategory: 'Body Polishing',
+      duration: '1 hr',
+      suggestedPrice: 2500,
+      description: 'Full body botanical scrub exfoliation, dead cell removal, hydrating butter wrap and luminous glow finish.',
+      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
+    },
+
+    // --- 8. Packages (DrimStyle-curated combos) ---
+    {
+      name: 'Groom Package',
+      category: 'Men\'s Hair & Grooming',
+      fallbackCategory: 'Grooming',
+      duration: '1 hr 30 mins',
+      suggestedPrice: 1999,
+      description: 'Complete groom prep: Styling haircut, luxury beard craft, anti-pollution cleanup and relaxing head massage.',
+      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Bridal Glow Package',
+      category: 'Makeup',
+      fallbackCategory: 'Facial',
+      duration: '2 hrs',
+      suggestedPrice: 4999,
+      description: '24K gold facial, full arms & legs waxing, spa mani-pedi and hair spa with keratin gloss.',
+      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Monthly Grooming Pass',
+      category: 'Men\'s Hair & Grooming',
+      fallbackCategory: 'Grooming',
+      duration: '1 hr',
+      suggestedPrice: 999,
+      description: 'Essential monthly hygiene pack: Haircut, beard shape, D-tan cleanup and quick scalp massage.',
+      image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80'
+    },
+    {
+      name: 'Pamper Day Combo',
+      category: 'Spa',
+      fallbackCategory: 'Facial',
+      duration: '2 hrs',
+      suggestedPrice: 2799,
+      description: 'Full body restorative massage, hydrating organic facial and deluxe foot reflexology.',
+      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
+    }
+  ];
+
+  // Merge Admin Database Categories + Sub-services with Standard Templates dynamically
+  const DYNAMIC_TEMPLATES = React.useMemo(() => {
+    const list = [...STANDARD_TEMPLATES];
+
+    // If Admin added categories in DB with sub-service tags, dynamically turn them into autofill templates
+    if (dynamicCategories && dynamicCategories.length > 0) {
+      dynamicCategories.forEach((cat) => {
+        const catName = cat.name || cat.shortName;
+        const subList = Array.isArray(cat.serviceCategories) ? cat.serviceCategories : [];
+        subList.forEach((subName) => {
+          if (!list.some((item) => item.name.toLowerCase() === subName.toLowerCase())) {
+            list.push({
+              name: subName,
+              category: catName,
+              fallbackCategory: catName,
+              duration: '45 mins',
+              suggestedPrice: cat.price || 499,
+              description: cat.description || `Professional ${subName} treatment tailored to perfection.`,
+              image: cat.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
+            });
+          }
+        });
+      });
+    }
+
+    return list;
+  }, [dynamicCategories]);
+
   const [name, setName] = useState('');
   const [category, setCategory] = useState(availableCategories[0] || 'Waxing');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('45 mins');
   const [price, setPrice] = useState('');
-  const [originalPrice, setOriginalPrice] = useState('');
   const [isInstantEligible, setIsInstantEligible] = useState(true);
   const [image, setImage] = useState(null);
+  const [showAutofillSuggestions, setShowAutofillSuggestions] = useState(false);
+
+  // Platform controlled discount markup (e.g. 30% display discount on customer end)
+  const PLATFORM_DISCOUNT_PERCENT = 30;
+  
+  // Salon enters ONE price (their payout/selling rate).
+  // Platform automatically computes and locks the Original Price (MSRP)
+  const computedOriginalPrice = price && Number(price) > 0
+    ? Math.round(Number(price) / (1 - PLATFORM_DISCOUNT_PERCENT / 100))
+    : 0;
 
   useEffect(() => {
     if (existingService) {
@@ -63,7 +608,6 @@ export const AddServicePage = () => {
       setDescription(existingService.description || '');
       setDuration(existingService.duration || '45 mins');
       setPrice(existingService.price || '');
-      setOriginalPrice(existingService.originalPrice || '');
       setIsInstantEligible(existingService.isInstantEligible ?? true);
       setImage(existingService.image || null);
     } else if (availableCategories.length > 0 && !category) {
@@ -82,10 +626,51 @@ export const AddServicePage = () => {
     '2 hrs'
   ];
 
-  const calculatedDiscount =
-    price && originalPrice && Number(originalPrice) > Number(price)
-      ? Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)
-      : null;
+  // Track currently applied template if any
+  const [appliedTemplateName, setAppliedTemplateName] = useState('');
+
+  // Auto-fill selected template handler
+  const handleApplyTemplate = (tmpl) => {
+    setName(tmpl.name);
+    setAppliedTemplateName(tmpl.name);
+    // Find matching category from availableCategories
+    const matchedCategory = availableCategories.find(
+      (c) => c.toLowerCase() === tmpl.category.toLowerCase() || c.toLowerCase() === tmpl.fallbackCategory?.toLowerCase()
+    );
+    if (matchedCategory) {
+      setCategory(matchedCategory);
+    }
+    setDuration(tmpl.duration || '45 mins');
+    setDescription(tmpl.description || '');
+    if (!price || price === '') {
+      setPrice(tmpl.suggestedPrice || '');
+    }
+    if (tmpl.image) {
+      setImage(tmpl.image);
+    }
+    setShowAutofillSuggestions(false);
+    showToast(`Autofilled details for "${tmpl.name}"`);
+  };
+
+  // Clear / remove applied template details
+  const handleClearTemplate = () => {
+    setName('');
+    setAppliedTemplateName('');
+    setCategory(availableCategories[0] || 'Waxing');
+    setDuration('45 mins');
+    setDescription('');
+    setPrice('');
+    setImage(null);
+    setShowAutofillSuggestions(false);
+    showToast('Template cleared. Form reset.');
+  };
+
+  // Filter templates matching current input query
+  const matchingTemplates = DYNAMIC_TEMPLATES.filter((t) => {
+    const q = name.trim().toLowerCase();
+    if (!q) return false;
+    return t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -95,13 +680,16 @@ export const AddServicePage = () => {
     }
     if (!name.trim() || !price) return;
 
+    const basePrice = Number(price);
+    const finalOriginalPrice = computedOriginalPrice || Math.round(basePrice * 1.3);
+
     const servicePayload = {
       name: name.trim(),
       category,
       description: description.trim(),
       duration,
-      price: Number(price),
-      originalPrice: originalPrice ? Number(originalPrice) : Math.round(Number(price) * 1.3),
+      price: basePrice,
+      originalPrice: finalOriginalPrice,
       isInstantEligible,
       image:
         image ||
@@ -227,7 +815,7 @@ export const AddServicePage = () => {
       </header>
 
       {/* Main Form Body */}
-      <main className="p-3.5 lg:p-8 pb-28 flex-1 space-y-3">
+      <main className="p-3.5 lg:p-8 pb-44 lg:pb-48 flex-1 space-y-3 overflow-y-visible">
         <form id="service-form" onSubmit={handleSubmit} className="space-y-3">
           {/* Card 1: Image & Title & Category */}
           <div className="bg-white rounded-2xl p-3.5 border border-purple-100/80 shadow-xs space-y-3">
@@ -317,18 +905,109 @@ export const AddServicePage = () => {
               </div>
             </div>
 
-            <div>
-              <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block mb-1">
-                Service Title <span className="text-rose-600">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Lotus Crystal Radiance Facial"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#faf7fc] text-xs text-stone-900 placeholder:text-stone-400 rounded-xl border border-purple-100 px-3 py-2.5 outline-none focus:bg-white focus:border-rose-900 focus:ring-1 focus:ring-rose-900/30 transition-all font-medium"
-              />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block">
+                  Service Title <span className="text-rose-600">*</span>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  {(name || appliedTemplateName) && (
+                    <button
+                      type="button"
+                      onClick={handleClearTemplate}
+                      className="text-[10px] font-bold text-stone-500 hover:text-red-700 bg-stone-100 hover:bg-red-50 border border-stone-200 hover:border-red-200 px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Clear applied template & reset form"
+                    >
+                      <AlertCircle className="w-2.5 h-2.5 text-stone-400 hover:text-red-600" />
+                      <span>Clear / Reset</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowAutofillSuggestions((v) => !v)}
+                    className="text-[10px] font-semibold text-rose-900 hover:text-rose-950 flex items-center gap-1 cursor-pointer bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-full transition-colors"
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-rose-900" />
+                    <span>{showAutofillSuggestions ? 'Hide Templates' : '⚡ Auto-fill Templates'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Lotus Crystal Radiance Facial or start typing..."
+                  value={name}
+                  onFocus={() => setShowAutofillSuggestions(true)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setShowAutofillSuggestions(true);
+                  }}
+                  className="w-full bg-[#faf7fc] text-xs text-stone-900 placeholder:text-stone-400 rounded-xl border border-purple-100 pl-3 pr-8 py-2.5 outline-none focus:bg-white focus:border-rose-900 focus:ring-1 focus:ring-rose-900/30 transition-all font-medium"
+                />
+                {name && (
+                  <button
+                    type="button"
+                    onClick={handleClearTemplate}
+                    className="absolute right-2.5 text-stone-400 hover:text-stone-700 p-0.5 rounded-full hover:bg-stone-200/60 transition-colors cursor-pointer"
+                    title="Clear title"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 rotate-45" />
+                  </button>
+                )}
+              </div>
+
+              {/* Auto-fill Dropdown / Recommendation Chips */}
+              {showAutofillSuggestions && (
+                <div className="mt-2 bg-gradient-to-b from-purple-50/60 to-white border border-purple-200/80 rounded-2xl p-2.5 shadow-sm space-y-1.5 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-bold text-rose-950 uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-rose-900" /> Auto-fill from Catalog Template
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAutofillSuggestions(false)}
+                      className="text-[10px] text-stone-400 hover:text-stone-700"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1 divide-y divide-purple-100/50">
+                    {(matchingTemplates.length > 0 ? matchingTemplates : DYNAMIC_TEMPLATES).map((tmpl, idx) => (
+                      <button
+                        type="button"
+                        key={idx}
+                        onClick={() => handleApplyTemplate(tmpl)}
+                        className="w-full text-left p-2 rounded-xl hover:bg-purple-100/60 active:scale-[0.99] transition-all flex items-center justify-between group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {tmpl.image && (
+                            <img
+                              src={tmpl.image}
+                              alt=""
+                              className="w-8 h-8 rounded-lg object-cover shrink-0 border border-purple-100"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-stone-900 group-hover:text-rose-950 truncate">
+                              {tmpl.name}
+                            </p>
+                            <p className="text-[9.5px] text-stone-500 truncate">
+                              {tmpl.category} • {tmpl.duration}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 pl-2">
+                          <span className="text-[10px] font-bold text-rose-900 bg-white border border-rose-200 px-2 py-0.5 rounded-md shadow-2xs group-hover:bg-rose-900 group-hover:text-white transition-colors">
+                            Apply
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Category Pills Selector */}
@@ -387,24 +1066,22 @@ export const AddServicePage = () => {
             </div>
           </div>
 
-          {/* Card 2: Pricing & Yield */}
+          {/* Card 2: Pricing & Platform Controlled Yield */}
           <div className="bg-white rounded-2xl p-3.5 border border-purple-100/80 shadow-xs space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block">
-                Pricing &amp; Margins
+                Salon Pricing
               </span>
-              {calculatedDiscount !== null && calculatedDiscount > 0 && (
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                  <Sparkles className="w-2.5 h-2.5 stroke-[2]" />
-                  <span>{calculatedDiscount}% client discount</span>
-                </div>
-              )}
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-900 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/60">
+                <Lock className="w-2.5 h-2.5 stroke-[2]" />
+                <span>Discounts &amp; Offers controlled by Platform</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
               <div>
-                <label className="text-[10px] font-semibold text-stone-500 block mb-1">
-                  Selling Price (₹) <span className="text-rose-600">*</span>
+                <label className="text-[10px] font-semibold text-stone-700 block mb-1">
+                  Your Service Price (₹) <span className="text-rose-600">*</span>
                 </label>
                 <div className="flex items-center bg-[#faf7fc] rounded-xl border border-purple-100 px-2.5 py-2 focus-within:bg-white focus-within:border-rose-900 focus-within:ring-1 focus-within:ring-rose-900/30 transition-all">
                   <IndianRupee className="w-3.5 h-3.5 text-stone-400 mr-1 shrink-0" />
@@ -418,22 +1095,33 @@ export const AddServicePage = () => {
                     className="w-full bg-transparent text-xs text-stone-900 outline-none font-bold"
                   />
                 </div>
+                <p className="text-[9.5px] text-stone-500 mt-1 leading-tight">
+                  This is the base price your salon receives for this service.
+                </p>
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold text-stone-500 block mb-1">
-                  Original Price (₹)
+                <label className="text-[10px] font-semibold text-stone-500 block mb-1 flex items-center justify-between">
+                  <span>Customer Display MSRP (₹)</span>
+                  <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded">
+                    {PLATFORM_DISCOUNT_PERCENT}% Platform Deal
+                  </span>
                 </label>
-                <div className="flex items-center bg-[#faf7fc] rounded-xl border border-purple-100 px-2.5 py-2 focus-within:bg-white focus-within:border-rose-900 focus-within:ring-1 focus-within:ring-rose-900/30 transition-all">
+                <div className="flex items-center bg-stone-100/80 rounded-xl border border-stone-200/70 px-2.5 py-2 cursor-not-allowed">
                   <IndianRupee className="w-3.5 h-3.5 text-stone-400 mr-1 shrink-0" />
                   <input
                     type="number"
-                    placeholder="1299"
-                    value={originalPrice}
-                    onChange={(e) => setOriginalPrice(e.target.value)}
-                    className="w-full bg-transparent text-xs text-stone-600 outline-none font-semibold"
+                    readOnly
+                    disabled
+                    value={computedOriginalPrice || (price ? Math.round(Number(price) * 1.3) : '')}
+                    className="w-full bg-transparent text-xs text-stone-500 outline-none font-semibold cursor-not-allowed"
+                    placeholder="Auto-calculated"
                   />
+                  <Lock className="w-3 h-3 text-stone-400 shrink-0 ml-1" />
                 </div>
+                <p className="text-[9.5px] text-stone-400 mt-1 leading-tight">
+                  Auto-formatted with standard consumer discount for maximum conversions.
+                </p>
               </div>
             </div>
           </div>

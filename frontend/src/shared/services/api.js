@@ -472,11 +472,12 @@ const staff = {
   },
 
   remove: async (staffId) => {
-    const res = await fetch(`${API_BASE}/staff/${staffId}`, {
+    const cleanId = typeof staffId === 'object' ? (staffId?.id || staffId?._id) : staffId;
+    const res = await fetch(`${API_BASE}/staff/${cleanId}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete staff');
-    dispatch({ type: 'DELETE_STAFF', payload: { staffId } });
+    dispatch({ type: 'DELETE_STAFF', payload: { staffId: cleanId } });
     return true;
   }
 };

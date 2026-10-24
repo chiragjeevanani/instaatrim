@@ -182,88 +182,72 @@ export const AdminCategoriesPage = () => {
       shortName: 'Hair Style',
       slug: 'hair-styling',
       gender: 'unisex',
-      tags: ['Haircut', 'Blow Dry', 'Ironing', 'Hair Setting', 'Beard Trim'],
+      tags: ['Men\'s Haircut', 'Women\'s Haircut', 'Kids\' Haircut', 'Fringe / Trim', 'Blow-dry', 'Hair Wash + Blow-dry', 'Curls / Straightening', 'Party Hairstyle'],
       description: 'Professional haircuts, blow dries, and styling treatments.'
     },
     {
-      name: 'Hair Coloring',
+      name: 'Hair Coloring & Treatments',
       shortName: 'Hair Color',
-      slug: 'hair-coloring',
+      slug: 'hair-color-treatments',
       gender: 'unisex',
-      tags: ['Global Color', 'Root Touchup', 'Balayage', 'Highlights', 'Streaks'],
-      description: 'Rich vibrant hair coloring, highlights, and grey coverage.'
+      tags: ['Root Touch-up', 'Global Color', 'Highlights', 'Balayage / Ombre', 'Hair Spa', 'Keratin Treatment', 'Smoothening / Rebonding', 'Scalp Treatment'],
+      description: 'Rich vibrant hair coloring, highlights, and specialized keratin treatments.'
     },
     {
-      name: 'Hair Spa & Care',
-      shortName: 'Hair Spa',
-      slug: 'hair-spa',
-      gender: 'unisex',
-      tags: ['Deep Conditioning', 'Anti-Dandruff Spa', 'Keratin Spa', 'Scalp Detox'],
-      description: 'Nourishing botanical hair spa and intensive scalp therapy.'
+      name: 'Men\'s Grooming',
+      shortName: 'Men\'s Grooming',
+      slug: 'mens-grooming',
+      gender: 'men',
+      tags: ['Beard Trim', 'Beard Styling / Shaping', 'Clean Shave', 'Haircut + Beard Combo', 'Haircut + Head Massage', 'Men\'s Cleanup', 'Men\'s Facial', 'De-tan (Men)'],
+      description: 'Precision beard sculpting, grooming combos, and men\'s revitalizing cleanups.'
     },
     {
-      name: 'Hair Studio',
-      shortName: 'Hair Studio',
-      slug: 'hair-studio',
-      gender: 'unisex',
-      tags: ['Haircut', 'Hair Wash', 'Blowdry', 'Beard Grooming'],
-      description: 'Complete studio grooming and styling for modern looks.'
-    },
-    {
-      name: 'Hair Treatments',
-      shortName: 'Hair Treatment',
-      slug: 'hair-treatments',
-      gender: 'unisex',
-      tags: ['Keratin Treatment', 'Botox', 'Smoothening', 'Rebonding'],
-      description: 'Advanced hair smoothing, keratin, and texture management.'
-    },
-    {
-      name: 'Facials & Skin Care',
+      name: 'Skin & Facial',
       shortName: 'Facials',
-      slug: 'facials-skincare',
+      slug: 'skin-facial',
       gender: 'unisex',
-      tags: ['Gold Facial', 'Hydra Facial', 'O3+ Clean Up', 'Anti-Tan Facial'],
-      description: 'Deep cleansing facials, peels, and glow treatments.'
+      tags: ['Basic Cleanup', 'Fruit / Hydrating Facial', 'Anti-Acne Facial', 'Anti-Ageing / Gold Facial', 'De-tan (face/body)', 'Bleach'],
+      description: 'Deep cleansing facials, peels, and brightening skin treatments.'
+    },
+    {
+      name: 'Waxing & Threading',
+      shortName: 'Waxing',
+      slug: 'waxing-threading',
+      gender: 'women',
+      tags: ['Full Arms Waxing', 'Full Legs Waxing', 'Underarms Waxing', 'Full Body Waxing', 'Eyebrows Threading'],
+      description: 'Gentle waxing, hair removal, and precision threading.'
     },
     {
       name: 'Nails, Art & Extensions',
       shortName: 'Nail Studio',
       slug: 'nails-extensions',
       gender: 'women',
-      tags: ['Acrylic Nails', 'Gel Polish', 'Nail Art', 'French Tips', 'Refills'],
-      description: 'Full set acrylic nail extensions and long-lasting gel art.'
+      tags: ['Acrylic Nails', 'Gel Polish', 'Nail Art', 'French Tips', 'Refills', 'Classic Manicure', 'Pedicure'],
+      description: 'Full set acrylic nail extensions, long-lasting gel art and pedi-care.'
     },
     {
-      name: 'Waxing & RICA',
-      shortName: 'Waxing',
-      slug: 'waxing-rica',
-      gender: 'women',
-      tags: ['RICA Wax', 'Full Arms', 'Full Legs', 'Bikini Wax', 'Underarms'],
-      description: 'Gentle colophony-free Italian waxing and skin smoothing.'
-    },
-    {
-      name: 'Spa & Body Massage',
+      name: 'Spa & Massage',
       shortName: 'Spa',
-      slug: 'spa-body-massage',
+      slug: 'spa-massage',
       gender: 'unisex',
-      tags: ['Swedish Massage', 'Deep Tissue', 'Aromatherapy', 'Foot Reflexology'],
-      description: 'Rejuvenating body massages and wellness therapies.'
+      tags: ['Head Massage', 'Foot Reflexology', 'Full Body Massage (Swedish / Deep Tissue)', 'Swedish Massage', 'Deep Tissue Massage', 'Body Polishing', 'Aromatherapy Massage', 'Body Spa'],
+      description: 'Rejuvenating body massages, head champi, and wellness therapies.'
     },
     {
-      name: 'Bridal & Groom Makeup',
-      shortName: 'Bridal & Makeup',
+      name: 'Bridal & Party Makeup',
+      shortName: 'Makeup',
       slug: 'bridal-makeup',
-      gender: 'unisex',
-      tags: ['HD Bridal Makeup', 'Airbrush', 'Engagement Look', 'Pre-Bridal Package'],
-      description: 'Exquisite bridal makeovers and pre-wedding beauty rituals.'
+      gender: 'women',
+      tags: ['Party Makeup', 'Saree Draping', 'Bridal Makeup', 'Engagement / Reception Makeup', 'Pre-bridal Package', 'Eye Makeup', 'HD Makeup'],
+      description: 'Exquisite bridal makeovers, saree draping, party glam, and pre-wedding beauty rituals.'
     },
     {
-      name: 'Pedicure & Manicure',
-      shortName: 'Mani-Pedi',
-      slug: 'pedicure-manicure',
+      name: 'Packages & Combos',
+      shortName: 'Packages',
+      slug: 'curated-packages',
       gender: 'unisex',
-      tags: ['Classic Mani', 'Paraffin Pedi', 'Crystal Spa Pedi', 'Cuticle Care'],
-      description: 'Hand and foot spa grooming for clean and soft skin.'
+      tags: ['Groom Package', 'Bridal Glow Package', 'Monthly Grooming Pass', 'Pamper Day Combo', 'Bridal Package', 'Pre-bridal Package', 'Full Body Polishing Combo'],
+      description: 'DrimStyle-curated value packages and full-body combo rituals.'
     },
     {
       name: 'Beard & Shave Lounge',
@@ -275,10 +259,13 @@ export const AdminCategoriesPage = () => {
     }
   ], []);
 
-  // Compute active autocomplete suggestions matching typed input
+  // Compute active autocomplete suggestions matching typed input (searches category name, tags, description, and keywords)
   const autocompleteSuggestions = useMemo(() => {
-    const query = (formData.name || '').trim().toLowerCase();
-    if (!query || query.length < 1) return [];
+    const rawQuery = (formData.name || '').trim().toLowerCase();
+    if (!rawQuery || rawQuery.length < 1) return [];
+
+    // Clean tokens to match even typos or individual words like 'head', 'massage'
+    const queryTokens = rawQuery.split(/[\s-]+/).filter(Boolean);
 
     // Collect from standard dictionary + existing database categories
     const combined = [...CATALOG_SUGGESTIONS];
@@ -296,8 +283,22 @@ export const AdminCategoriesPage = () => {
     });
 
     return combined
-      .filter((item) => item.name.toLowerCase().includes(query))
-      .slice(0, 5);
+      .filter((item) => {
+        const catName = (item.name || '').toLowerCase();
+        const short = (item.shortName || '').toLowerCase();
+        const tags = (item.tags || []).map((t) => t.toLowerCase());
+        const desc = (item.description || '').toLowerCase();
+
+        // 1. Direct includes
+        if (catName.includes(rawQuery) || short.includes(rawQuery)) return true;
+        if (tags.some((t) => t.includes(rawQuery) || rawQuery.includes(t))) return true;
+
+        // 2. Token match (e.g. typing 'head' or 'massage' matches 'Head Massage' in tags or 'Spa & Massage')
+        return queryTokens.some((tok) => 
+          catName.includes(tok) || tags.some((t) => t.includes(tok)) || desc.includes(tok)
+        );
+      })
+      .slice(0, 6);
   }, [formData.name, CATALOG_SUGGESTIONS, categories]);
 
   // Open Edit Modal

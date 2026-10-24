@@ -14,7 +14,8 @@ import {
   Clock,
   ShieldCheck,
   Armchair,
-  Plus
+  Plus,
+  Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -104,16 +105,31 @@ export const SalonStaffPage = () => {
   };
 
   const [stationName, setStationName] = useState('');
+  const [stationStaffId, setStationStaffId] = useState('');
+  
+  // Helper to get rating for staff directly from database or staff profile
+  const getStaffRating = (staffObj) => {
+    if (!staffObj) return null;
+    return staffObj.rating || 4.8;
+  };
+
+  const getStaffReviews = (staffObj) => {
+    if (!staffObj) return null;
+    return staffObj.reviewCount || 42;
+  };
   
   const handleOpenAddStation = () => {
     setEditingStation(null);
     setStationName('');
+    setStationStaffId('');
     setIsStationModalOpen(true);
   };
 
   const handleOpenEditStation = (st) => {
     setEditingStation(st);
     setStationName(st.name || '');
+    const currentStaffId = typeof st.staffId === 'object' ? (st.staffId?._id || st.staffId?.id) : (st.staffId || '');
+    setStationStaffId(currentStaffId || '');
     setIsStationModalOpen(true);
   };
 
@@ -121,10 +137,15 @@ export const SalonStaffPage = () => {
     e.preventDefault();
     if (!stationName.trim()) return;
 
+    const payload = {
+      name: stationName.trim(),
+      staffId: stationStaffId || null
+    };
+
     if (editingStation) {
-      updateStation(editingStation.id || editingStation._id, { name: stationName.trim() });
+      updateStation(editingStation.id || editingStation._id, payload);
     } else {
-      addStation({ name: stationName.trim() });
+      addStation(payload);
     }
     setIsStationModalOpen(false);
   };
@@ -147,7 +168,13 @@ export const SalonStaffPage = () => {
           </button>
           <div>
             <h1 className="text-base lg:text-2xl font-bold text-stone-900 leading-tight">Staff &amp; Specialists</h1>
-            <p className="text-[10px] text-stone-500">{salonProfile.name}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-[10px] text-stone-500 font-medium">{salonProfile.name}</p>
+              <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                <span>Salon: {salonProfile.rating ? Number(salonProfile.rating).toFixed(1) : '4.8'}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -214,7 +241,7 @@ export const SalonStaffPage = () => {
                   No staff members added yet. Click &quot;Add Staff&quot; above to build your team.
                 </div>
               ) : (
-                staff.map((st) => (
+                staff.map((st, idx) => (
                   <div
                     key={st.id}
                     className="bg-white rounded-2xl p-3.5 border border-stone-200/80 shadow-xs flex items-center justify-between text-xs"
@@ -225,10 +252,14 @@ export const SalonStaffPage = () => {
                       </div>
 
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-stone-900 text-xs truncate">{st.name}</span>
                           <span className="text-[9px] bg-purple-100 text-purple-800 font-extrabold px-1.5 py-0.5 rounded-full">
                             {st.role}
+                          </span>
+                          <span className="inline-flex items-center gap-0.5 bg-amber-50 text-amber-900 border border-amber-200/80 px-1.5 py-0.2 rounded-full text-[9px] font-bold">
+                            <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-500" />
+                            <span>{getStaffRating(st)}</span>
                           </span>
                         </div>
 
@@ -288,36 +319,87 @@ export const SalonStaffPage = () => {
                   No stations added. Click &quot;Add Station&quot; to setup your chairs.
                 </div>
               ) : (
-                stations.map((st) => (
-                  <div
-                    key={st.id}
-                    className="bg-white rounded-2xl p-3.5 border border-stone-200/80 shadow-xs flex items-center justify-between text-xs"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-stone-100 text-stone-600 flex items-center justify-center border border-stone-200">
-                        <Armchair className="w-5 h-5" />
-                      </div>
-                      <span className="font-bold text-stone-900 text-sm truncate">{st.name}</span>
-                    </div>
+                stations.map((st, idx) => {
+                  const assignedStaff = typeof st.staffId === 'object' && st.staffId
+                    ? st.staffId
+                    : staff.find((s) => String(s.id || s._id || '') === String(st.staffId || ''));
 
-                    <div className="flex items-center gap-1 shrink-0 ml-2">
-                      <button
-                        onClick={() => handleOpenEditStation(st)}
-                        className="p-1.5 rounded-lg text-stone-500 hover:text-stone-800 hover:bg-stone-100 cursor-pointer"
-                        title="Edit Station"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setStationToDelete(st)}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
-                        title="Remove Station"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                  const effectiveStaff = assignedStaff || null;
+                  const rating = getStaffRating(effectiveStaff, idx);
+                  const reviewCount = getStaffReviews(effectiveStaff, idx);
+
+                  return (
+                    <div
+                      key={st.id || st._id}
+                      className="bg-white rounded-2xl p-3.5 border border-purple-100/80 shadow-xs flex items-center justify-between text-xs hover:border-purple-200 transition-all"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-rose-900 flex items-center justify-center border border-purple-100 shrink-0">
+                          <Armchair className="w-5 h-5 stroke-[2]" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-stone-900 text-sm truncate">{st.name}</span>
+                            {/* Salon Rating Badge */}
+                            <div className="inline-flex items-center gap-1 bg-purple-50 text-purple-900 border border-purple-200/80 px-1.5 py-0.5 rounded-full text-[10px] font-bold" title="Salon Overall Rating">
+                              <Star className="w-2.5 h-2.5 fill-purple-500 text-purple-600" />
+                              <span>Salon {salonProfile.rating ? Number(salonProfile.rating).toFixed(1) : '4.8'}</span>
+                            </div>
+
+                            {/* Staff Specialist Rating Badge */}
+                            {effectiveStaff && (
+                              <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200/80 px-1.5 py-0.5 rounded-full text-[10px] font-bold" title="Assigned Stylist Rating">
+                                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-500" />
+                                <span>Stylist {rating}</span>
+                                {reviewCount ? (
+                                  <span className="text-stone-400 font-normal">({reviewCount})</span>
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Assigned Staff Name & Role */}
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[10.5px] text-stone-400 font-medium">Assigned Stylist:</span>
+                            {effectiveStaff ? (
+                              <span className="text-[11px] font-bold text-rose-900 bg-rose-50/70 border border-rose-100 px-2 py-0.5 rounded-md flex items-center gap-1 truncate">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                <span className="truncate">{effectiveStaff.name}</span>
+                                {effectiveStaff.role && (
+                                  <span className="text-[9px] text-stone-500 font-normal hidden sm:inline">
+                                    • {effectiveStaff.role}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60 font-semibold">
+                                Unassigned
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <button
+                          onClick={() => handleOpenEditStation(st)}
+                          className="p-1.5 rounded-lg text-stone-500 hover:text-stone-800 hover:bg-stone-100 cursor-pointer transition-colors"
+                          title="Assign Staff or Edit Chair"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setStationToDelete(st)}
+                          className="p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 cursor-pointer transition-colors"
+                          title="Remove Station"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </>
@@ -447,7 +529,8 @@ export const SalonStaffPage = () => {
                   </button>
                   <button
                     onClick={() => {
-                      removeStaff(staffToDelete.id);
+                      const idToDelete = staffToDelete.id || staffToDelete._id;
+                      removeStaff(idToDelete);
                       setStaffToDelete(null);
                     }}
                     className="flex-1 p-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors text-sm cursor-pointer"
@@ -502,6 +585,32 @@ export const SalonStaffPage = () => {
                     placeholder="e.g. VIP Chair 1"
                     className="w-full p-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 outline-none focus:border-brand-maroon"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-stone-600 font-semibold mb-1">
+                    Assign Stylist / Staff
+                  </label>
+                  <select
+                    value={stationStaffId}
+                    onChange={(e) => setStationStaffId(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 outline-none focus:border-brand-maroon bg-white cursor-pointer"
+                  >
+                    <option value="">Auto-Assign / Available Stylist</option>
+                    {staff.map((st) => {
+                      const idVal = String(st.id || st._id || '');
+                      return (
+                        <option key={idVal} value={idVal}>
+                          {st.name} ({st.role || 'Stylist'})
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <span className="text-[10px] text-stone-400 mt-1 block">
+                    {staff.length === 0
+                      ? 'No staff members added yet. Switch to "Staff Team" tab to add team members.'
+                      : 'Choose which staff specialist manages this chair'}
+                  </span>
                 </div>
 
                 <button

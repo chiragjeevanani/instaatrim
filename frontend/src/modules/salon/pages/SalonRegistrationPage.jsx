@@ -206,7 +206,10 @@ export const SalonRegistrationPage = () => {
         bankName: formData.bankName,
         accountNumber: formData.accountNumber,
         ifscCode: formData.ifscCode.toUpperCase(),
-        payoutCycle: formData.payoutCycle
+        payoutCycle: formData.payoutCycle,
+        organizationType: formData.organizationType || 'Independent Salon',
+        parentBrandName: formData.parentBrandName || '',
+        branchName: formData.branchName || ''
       });
 
       confetti({
@@ -350,11 +353,63 @@ export const SalonRegistrationPage = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Aura Beauty Lounge & Spa"
+                      placeholder="e.g. Looks Salon / Apple Hair Studio / Aura Lounge"
                       value={formData.name}
                       onChange={(e) => updateField('name', e.target.value)}
                       className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
                     />
+                  </div>
+
+                  {/* Franchise / Multi-Branch Chain Option (Looks, Apple, Enrich, etc.) */}
+                  <div className="bg-stone-50/80 p-3 rounded-2xl border border-stone-200/80 space-y-2">
+                    <label className="text-[11px] font-bold text-stone-700 block">
+                      Salon Business Model
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { label: 'Independent', val: 'Independent Salon' },
+                        { label: 'Franchise', val: 'Franchise Branch' },
+                        { label: 'Brand Chain', val: 'Chain Outlet' }
+                      ].map((item) => (
+                        <button
+                          key={item.val}
+                          type="button"
+                          onClick={() => updateField('organizationType', item.val)}
+                          className={`py-1.5 px-2 rounded-xl text-[10.5px] font-bold border transition-all text-center cursor-pointer ${
+                            (formData.organizationType || 'Independent Salon') === item.val
+                              ? 'bg-brand-maroon text-white border-brand-maroon shadow-xs'
+                              : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {(formData.organizationType === 'Franchise Branch' || formData.organizationType === 'Chain Outlet') && (
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                          <label className="text-[10px] font-bold text-stone-600 block mb-0.5">Parent Brand / Chain</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Looks, Apple, Enrich"
+                            value={formData.parentBrandName || ''}
+                            onChange={(e) => updateField('parentBrandName', e.target.value)}
+                            className="w-full border border-stone-300 bg-white rounded-xl px-2.5 py-1.5 text-stone-900 text-[11px] outline-none focus:border-brand-maroon"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-stone-600 block mb-0.5">Branch / Outlet Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. MG Road Branch, Sector 18"
+                            value={formData.branchName || ''}
+                            onChange={(e) => updateField('branchName', e.target.value)}
+                            className="w-full border border-stone-300 bg-white rounded-xl px-2.5 py-1.5 text-stone-900 text-[11px] outline-none focus:border-brand-maroon"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>

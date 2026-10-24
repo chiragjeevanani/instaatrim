@@ -124,6 +124,43 @@ export const SalonReviewsPage = () => {
 
                   <p className="text-stone-700 leading-relaxed text-[11px]">{r.comment}</p>
 
+                  {/* Customer Feedback Highlights */}
+                  {(r.serviceQuality || r.waitingTime || r.valueForMoney || r.bookingExperience || r.wouldRecommend) && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {r.serviceQuality && (
+                        <span className="text-[9.5px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium border border-stone-200">
+                          Quality: <span className="font-bold text-stone-900">{r.serviceQuality}</span>
+                        </span>
+                      )}
+                      {r.waitingTime && (
+                        <span className="text-[9.5px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium border border-stone-200">
+                          Wait: <span className="font-bold text-stone-900">{r.waitingTime}</span>
+                        </span>
+                      )}
+                      {r.valueForMoney && (
+                        <span className="text-[9.5px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium border border-stone-200">
+                          Value: <span className="font-bold text-stone-900">{r.valueForMoney}</span>
+                        </span>
+                      )}
+                      {r.bookingExperience && (
+                        <span className="text-[9.5px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium border border-stone-200">
+                          Booking: <span className="font-bold text-stone-900">{r.bookingExperience}</span>
+                        </span>
+                      )}
+                      {r.wouldRecommend && (
+                        <span className={`text-[9.5px] px-2 py-0.5 rounded-full font-bold border ${
+                          r.wouldRecommend === 'Yes'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : r.wouldRecommend === 'No'
+                            ? 'bg-rose-50 text-rose-800 border-rose-200'
+                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                        }`}>
+                          Recommend: {r.wouldRecommend}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Existing Owner Reply */}
                   {r.reply && !isReplying && (
                     <div className="bg-purple-50/70 rounded-xl p-2.5 border border-purple-100/80 space-y-1">

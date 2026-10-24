@@ -4,10 +4,10 @@ exports.createStaff = async (req, res) => {
     try {
         const staff = new Staff({ ...req.body, salonId: req.params.salonId });
         await staff.save();
-        
+
         const staffData = staff.toObject();
         staffData.id = staff._id.toString();
-        
+
         res.status(201).json({ success: true, data: staffData });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -16,7 +16,8 @@ exports.createStaff = async (req, res) => {
 
 exports.getStaffBySalon = async (req, res) => {
     try {
-        const staffList = await Staff.find({ salonId: req.params.salonId });
+        const salonId = req.params.salonId;
+        const staffList = await Staff.find({ salonId });
         const mappedList = staffList.map(st => {
             const data = st.toObject();
             data.id = st._id.toString();
@@ -56,14 +57,19 @@ exports.updateStaff = async (req, res) => {
     }
 };
 
+const Station = require('../models/Station');
+
 exports.deleteStaff = async (req, res) => {
     try {
-        const staff = await Staff.findByIdAndDelete(req.params.id);
-        if (!staff) {
-            return res.status(404).json({ success: false, message: 'Staff not found' });
-        }
+        const staffId = req.params.id;
+        const staff = await Staff.findByIdAndDelete(staffId);
+
+        // Also unassign any station chair referencing this deleted staff
+        await Station.updateMany({ staffId }, { $set: { staffId: null } });
+
         res.status(200).json({ success: true, data: {} });
     } catch (error) {
+        console.error('deleteStaff error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };

@@ -388,13 +388,23 @@ export function appReducer(state, action) {
     }
     case 'UPDATE_STAFF': {
       const { staffId, patch } = action.payload;
-      return { ...state, staff: state.staff.map((s) => (s.id === staffId ? { ...s, ...patch } : s)) };
-    }
-    case 'DELETE_STAFF': {
+      const targetId = String(staffId || '');
       return {
         ...state,
-        staff: state.staff.filter((s) => s.id !== action.payload.staffId),
-        stations: state.stations.map((st) => (st.staffId === action.payload.staffId ? { ...st, staffId: null } : st))
+        staff: state.staff.map((s) =>
+          String(s.id || s._id || '') === targetId ? { ...s, ...patch } : s
+        )
+      };
+    }
+    case 'DELETE_STAFF': {
+      const targetId = String(action.payload.staffId || '');
+      return {
+        ...state,
+        staff: state.staff.filter((s) => String(s.id || s._id || '') !== targetId),
+        stations: state.stations.map((st) => {
+          const currentStaffId = typeof st.staffId === 'object' ? (st.staffId?._id || st.staffId?.id) : st.staffId;
+          return String(currentStaffId || '') === targetId ? { ...st, staffId: null } : st;
+        })
       };
     }
     case 'ADD_STATION': {
@@ -402,10 +412,20 @@ export function appReducer(state, action) {
     }
     case 'UPDATE_STATION': {
       const { stationId, patch } = action.payload;
-      return { ...state, stations: state.stations.map((st) => (st.id === stationId ? { ...st, ...patch } : st)) };
+      const targetId = String(stationId || '');
+      return {
+        ...state,
+        stations: state.stations.map((st) =>
+          String(st.id || st._id || '') === targetId ? { ...st, ...patch } : st
+        )
+      };
     }
     case 'DELETE_STATION': {
-      return { ...state, stations: state.stations.filter((st) => st.id !== action.payload.stationId) };
+      const targetId = String(action.payload.stationId || '');
+      return {
+        ...state,
+        stations: state.stations.filter((st) => String(st.id || st._id || '') !== targetId)
+      };
     }
 
     // ---------------- Reviews ----------------

@@ -15,8 +15,13 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('45 mins');
   const [price, setPrice] = useState('');
-  const [originalPrice, setOriginalPrice] = useState('');
   const [isInstantEligible, setIsInstantEligible] = useState(true);
+
+  // Platform controlled discount markup (30% discount display for customers)
+  const PLATFORM_DISCOUNT_PERCENT = 30;
+  const computedOriginalPrice = price && Number(price) > 0
+    ? Math.round(Number(price) / (1 - PLATFORM_DISCOUNT_PERCENT / 100))
+    : 0;
 
   useEffect(() => {
     if (editingService) {
@@ -25,7 +30,6 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
       setDescription(editingService.description || '');
       setDuration(editingService.duration || '45 mins');
       setPrice(editingService.price || '');
-      setOriginalPrice(editingService.originalPrice || '');
       setIsInstantEligible(editingService.isInstantEligible ?? true);
     } else {
       setName('');
@@ -33,7 +37,6 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
       setDescription('');
       setDuration('45 mins');
       setPrice('');
-      setOriginalPrice('');
       setIsInstantEligible(true);
     }
   }, [editingService, isOpen, availableCategories]);
@@ -42,13 +45,16 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const basePrice = Number(price);
+    const finalOriginalPrice = computedOriginalPrice || Math.round(basePrice * 1.3);
+
     const servicePayload = {
       name,
       category,
       description,
       duration,
-      price: Number(price),
-      originalPrice: originalPrice ? Number(originalPrice) : Math.round(Number(price) * 1.4),
+      price: basePrice,
+      originalPrice: finalOriginalPrice,
       isInstantEligible
     };
 
@@ -148,7 +154,9 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
             {/* Pricing */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] font-medium text-stone-600 block mb-1">Selling Price (₹)</label>
+                <label className="text-[10px] font-medium text-stone-600 block mb-1">
+                  Selling Price (₹) <span className="text-rose-600">*</span>
+                </label>
                 <input
                   type="number"
                   required
@@ -156,18 +164,24 @@ export const ServiceModal = ({ isOpen, onClose, editingService }) => {
                   placeholder="e.g. 799"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="w-full bg-white text-xs text-stone-800 rounded-xl border border-stone-300 p-2 outline-none focus:border-brand-maroon font-normal"
+                  className="w-full bg-white text-xs text-stone-800 rounded-xl border border-stone-300 p-2 outline-none focus:border-brand-maroon font-bold"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-medium text-stone-600 block mb-1">Original Price (₹)</label>
+                <label className="text-[10px] font-medium text-stone-600 block mb-1 flex items-center justify-between">
+                  <span>Display MSRP (₹)</span>
+                  <span className="text-[8.5px] text-emerald-700 font-semibold bg-emerald-50 px-1 rounded">
+                    {PLATFORM_DISCOUNT_PERCENT}% Off
+                  </span>
+                </label>
                 <input
                   type="number"
-                  placeholder="e.g. 1299"
-                  value={originalPrice}
-                  onChange={(e) => setOriginalPrice(e.target.value)}
-                  className="w-full bg-white text-xs text-stone-800 rounded-xl border border-stone-300 p-2 outline-none font-normal"
+                  readOnly
+                  disabled
+                  placeholder="Auto-calculated"
+                  value={computedOriginalPrice || (price ? Math.round(Number(price) * 1.3) : '')}
+                  className="w-full bg-stone-100 text-xs text-stone-500 rounded-xl border border-stone-200 p-2 outline-none font-semibold cursor-not-allowed"
                 />
               </div>
             </div>

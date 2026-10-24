@@ -536,16 +536,17 @@ export const CustomerProvider = ({ children }) => {
   );
 
   const rateBooking = useCallback(
-    async (bookingId, rating, reviewText, salonId, serviceName = '') => {
+    async (bookingId, rating, reviewText, salonId, serviceName = '', extraFeedback = {}) => {
       try {
         await api.bookings.addRating(bookingId, { rating, review: reviewText });
         if (salonId) {
           await api.reviews.add(salonId, {
-            customerName: user.name || 'Verified Customer',
+            customerName: user?.name || 'Verified Customer',
             rating: Number(rating),
             comment: reviewText,
             service: serviceName || 'Salon Service',
-            bookingId
+            bookingId,
+            ...extraFeedback
           });
         }
         showToast('Thank you for your rating & review!');

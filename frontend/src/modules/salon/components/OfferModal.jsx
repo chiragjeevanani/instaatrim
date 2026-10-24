@@ -78,8 +78,8 @@ export const OfferModal = ({ isOpen, onClose }) => {
                 <Tag className="w-3.5 h-3.5 text-amber-600 stroke-[2]" />
               </div>
               <div>
-                <h3 className="font-bold text-stone-900 text-xs sm:text-sm">Create Flash Offer</h3>
-                <p className="text-[10px] text-stone-400 font-normal">Target empty chairs during low-demand hours</p>
+                <h3 className="font-bold text-stone-900 text-xs sm:text-sm">Propose Flash Offer</h3>
+                <p className="text-[10px] text-stone-400 font-normal">Submitted for Platform Admin approval before publishing</p>
               </div>
             </div>
             <button onClick={onClose} className="p-1 rounded-full text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors">

@@ -37,11 +37,16 @@ export const SalonOffersPage = () => {
           </button>
           <div className="flex-1 flex items-center justify-between">
             <div>
-              <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight">
-                Dynamic Pricing &amp; Flash Deals
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[14px] lg:text-2xl font-bold text-stone-900 tracking-tight">
+                  Dynamic Pricing &amp; Flash Deals
+                </h1>
+                <span className="text-[9px] font-bold bg-purple-100 text-rose-900 border border-purple-200 px-2 py-0.5 rounded-full">
+                  Admin Controlled
+                </span>
+              </div>
               <p className="text-[10.5px] text-stone-400 font-normal">
-                Automated yield management for slow periods
+                Promotional discounts &amp; yield campaigns managed by Instaatrim Platform
               </p>
             </div>
             <button
@@ -49,7 +54,7 @@ export const SalonOffersPage = () => {
               className="flex items-center gap-1.5 bg-rose-900 hover:bg-rose-950 active:scale-95 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-all"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
-              <span>Create Offer</span>
+              <span>Propose Deal</span>
             </button>
           </div>
         </div>

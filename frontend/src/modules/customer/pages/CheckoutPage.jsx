@@ -426,19 +426,23 @@ export const CheckoutPage = () => {
             </div>
           )}
 
-          {cartSummary.convenienceFee > 0 && (
-            <div className="flex justify-between text-stone-600 text-[11px]">
-              <span>Platform Convenience Fee</span>
+          <div className="flex justify-between text-stone-600 text-[11px]">
+            <span>Platform Convenience Fee</span>
+            {cartSummary.convenienceFee > 0 ? (
               <span>₹{cartSummary.convenienceFee}</span>
-            </div>
-          )}
+            ) : (
+              <span className="text-emerald-600 font-bold">FREE</span>
+            )}
+          </div>
 
-          {cartSummary.taxAmount > 0 && (
-            <div className="flex justify-between text-stone-600 text-[11px]">
-              <span>Taxes & GST ({cartSummary.taxRatePercent}%)</span>
+          <div className="flex justify-between text-stone-600 text-[11px]">
+            <span>Taxes &amp; GST ({cartSummary.taxRatePercent ?? 0}%)</span>
+            {cartSummary.taxAmount > 0 ? (
               <span>₹{cartSummary.taxAmount}</span>
-            </div>
-          )}
+            ) : (
+              <span className="text-emerald-600 font-bold">₹0</span>
+            )}
+          </div>
 
           <div className="border-t border-stone-200 pt-1.5 lg:pt-3 flex justify-between text-xs lg:text-base font-black text-stone-900">
             <span>Customer Pays</span>

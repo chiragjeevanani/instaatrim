@@ -182,13 +182,14 @@ export const AdminPlatformSettingsPage = () => {
                   <input
                     type="number"
                     min="0"
+                    placeholder="0"
                     value={settingsForm.convenienceFee}
                     onChange={(e) => setSettingsForm({ ...settingsForm, convenienceFee: e.target.value })}
                     className={`w-full p-2.5 rounded-xl border outline-none font-bold ${
                       isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
                     }`}
                   />
-                  <span className="text-[10px] text-stone-500 mt-0.5 block">Applied per completed booking</span>
+                  <span className="text-[10px] text-stone-500 mt-0.5 block">Applied per booking (Set 0 for Free)</span>
                 </div>
 
                 <div>
@@ -199,13 +200,14 @@ export const AdminPlatformSettingsPage = () => {
                     type="number"
                     min="0"
                     max="28"
+                    placeholder="0"
                     value={settingsForm.taxRatePercent}
                     onChange={(e) => setSettingsForm({ ...settingsForm, taxRatePercent: e.target.value })}
                     className={`w-full p-2.5 rounded-xl border outline-none font-bold ${
                       isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
                     }`}
                   />
-                  <span className="text-[10px] text-stone-500 mt-0.5 block">Statutory tax charged to client</span>
+                  <span className="text-[10px] text-stone-500 mt-0.5 block">Statutory tax charged to client (Set 0 for Zero Tax)</span>
                 </div>
               </div>
 

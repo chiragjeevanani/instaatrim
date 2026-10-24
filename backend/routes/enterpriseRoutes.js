@@ -40,7 +40,7 @@ router.get('/readyz', (req, res) => {
 router.get('/status', async (req, res) => {
     const mongoState = mongoose.connection.readyState;
     const latency = getLatencyMetrics();
-    
+
     res.status(200).json({
         service: 'Instaatrim Full-Stack API',
         slaTarget: '99.95%',

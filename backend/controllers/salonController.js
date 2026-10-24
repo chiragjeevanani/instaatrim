@@ -55,7 +55,8 @@ exports.registerSalon = async (req, res) => {
             name, ownerName, mobile, email, password, category,
             city, area, address, openTime, closeTime, totalChairs,
             amenities, coverImage, gstin, shopActLicense, bankName,
-            accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb
+            accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb,
+            organizationType, parentBrandName, branchName
         } = req.body;
 
         // Check if salon already exists
@@ -101,7 +102,10 @@ exports.registerSalon = async (req, res) => {
             name, ownerName, mobile, email, password: hashedPassword, category,
             city, area, address, openTime, closeTime, totalChairs,
             amenities, coverImage: finalCoverImage, gstin, shopActLicense, bankName,
-            accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb
+            accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb,
+            organizationType: organizationType || 'Independent Salon',
+            parentBrandName: parentBrandName || '',
+            branchName: branchName || ''
         });
 
         await salon.save();

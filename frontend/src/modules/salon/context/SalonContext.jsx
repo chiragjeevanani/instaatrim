@@ -392,7 +392,11 @@ export const SalonProvider = ({ children }) => {
 
   // ---------------- Staff & Stations ----------------
   const staff = useMemo(() => {
-    const salonStaff = state.staff.filter((s) => s.salonId === salonId);
+    const currentIdStr = String(salonId || '');
+    const salonStaff = state.staff.filter((s) => {
+      const sSalonId = s.salonId?._id || s.salonId?.id || s.salonId;
+      return String(sSalonId || '') === currentIdStr;
+    });
     const unique = [];
     const seen = new Set();
     for (const s of salonStaff) {
@@ -405,7 +409,11 @@ export const SalonProvider = ({ children }) => {
     return unique;
   }, [state.staff, salonId]);
   const stations = useMemo(() => {
-    const existing = state.stations.filter((s) => s.salonId === salonId);
+    const currentIdStr = String(salonId || '');
+    const existing = state.stations.filter((s) => {
+      const sSalonId = s.salonId?._id || s.salonId?.id || s.salonId;
+      return String(sSalonId || '') === currentIdStr;
+    });
     if (existing.length > 0) return existing;
     const count = salonProfile?.totalChairs || 4;
     return Array.from({ length: count }, (_, i) => ({

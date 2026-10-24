@@ -4,7 +4,7 @@ const Salon = require('../models/Salon');
 exports.getStationsBySalon = async (req, res) => {
     try {
         const salonId = req.params.salonId;
-        let stations = await Station.find({ salonId }).sort({ createdAt: 1 });
+        let stations = await Station.find({ salonId }).populate('staffId', 'name role rating reviewCount serviceCategories').sort({ createdAt: 1 });
 
         // Older salons only have totalChairs on their salon record. Create
         // real Station documents on first load so their chairs can be edited
@@ -39,21 +39,30 @@ exports.createStation = async (req, res) => {
         if (!salonId || !name) {
             return res.status(400).json({ success: false, message: 'SalonId and Name are required' });
         }
-        const newStation = new Station({ salonId, name, staffId });
+        const cleanStaffId = staffId && staffId !== '' && staffId !== 'null' && staffId !== 'undefined' ? staffId : null;
+        const newStation = new Station({ salonId, name, staffId: cleanStaffId });
         await newStation.save();
+        if (cleanStaffId) {
+            await newStation.populate('staffId', 'name role rating reviewCount serviceCategories');
+        }
         res.status(201).json({ success: true, data: newStation });
     } catch (error) {
         console.error('createStation error:', error);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ success: false, message: error.message || 'Server Error' });
     }
 };
 
 exports.updateStation = async (req, res) => {
     try {
-        const updated = await Station.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updateData = { ...req.body };
+        if (updateData.staffId === '' || updateData.staffId === 'null' || updateData.staffId === 'undefined') {
+            updateData.staffId = null;
+        }
+        const updated = await Station.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('staffId', 'name role rating reviewCount serviceCategories');
         res.status(200).json({ success: true, data: updated });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server Error' });
+        console.error('updateStation error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Server Error' });
     }
 };
 

@@ -257,18 +257,23 @@ export const CartDrawer = () => {
                     <span className="text-stone-400 line-through">₹49</span>
                     <span className="text-emerald-600 font-bold">FREE</span>
                   </div>
-                  {convenienceFee > 0 && (
-                    <div className="flex justify-between text-[11px] text-stone-600">
-                      <span>Platform Convenience Fee</span>
+                  <div className="flex justify-between text-[11px] text-stone-600">
+                    <span>Platform Convenience Fee</span>
+                    {convenienceFee > 0 ? (
                       <span>₹{convenienceFee}</span>
-                    </div>
-                  )}
-                  {cartSummary.taxAmount > 0 && (
-                    <div className="flex justify-between text-[11px] text-stone-600">
-                      <span>Taxes & GST ({cartSummary.taxRatePercent || 10}%)</span>
+                    ) : (
+                      <span className="text-emerald-600 font-bold">FREE</span>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between text-[11px] text-stone-600">
+                    <span>Taxes &amp; GST ({cartSummary.taxRatePercent ?? 0}%)</span>
+                    {cartSummary.taxAmount > 0 ? (
                       <span>₹{cartSummary.taxAmount}</span>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="text-emerald-600 font-bold">₹0</span>
+                    )}
+                  </div>
                   <div className="border-t border-stone-200 pt-1.5 flex justify-between font-black text-xs text-stone-900">
                     <span>To Pay</span>
                     <span>₹{finalPayableTotal}</span>

@@ -20,6 +20,9 @@ const app = express();
 const PORT = process.env.PORT || 6200;
 const path = require('path');
 
+// Trust reverse proxy (Nginx, PM2, Cloudflare) for accurate client IP identification in rate-limiter
+app.set('trust proxy', 1);
+
 // 1. Helmet for CSP, HSTS, X-Frame-Options (Clickjacking protection)
 app.use(helmet({
     contentSecurityPolicy: false, // Allows cross-origin assets for custom frontend/CDN

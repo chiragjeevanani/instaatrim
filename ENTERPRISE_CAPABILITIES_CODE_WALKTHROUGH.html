@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DrimStyle Enterprise Capabilities & Code Review Guide</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1a1a24;
+      line-height: 1.45;
+      margin: 0;
+      padding: 0;
+      font-size: 11pt;
+    }
+    .header {
+      border-bottom: 2px solid #5b21b6;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .brand-title {
+      font-size: 20pt;
+      font-weight: 800;
+      color: #2e1065;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .brand-sub {
+      font-size: 10.5pt;
+      color: #6b21a8;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .doc-meta {
+      text-align: right;
+      font-size: 9pt;
+      color: #64748b;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background: #f3e8ff;
+      color: #6b21a8;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    h2 {
+      font-size: 13pt;
+      color: #1e1b4b;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .step-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #7c3aed;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .step-title {
+      font-weight: 700;
+      color: #4c1d95;
+      font-size: 10.5pt;
+      margin-bottom: 4px;
+    }
+    .step-desc {
+      font-size: 9.5pt;
+      color: #334155;
+      margin: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      margin-bottom: 14px;
+      font-size: 9.5pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f1f5f9;
+      color: #1e293b;
+      font-weight: 700;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .file-tag {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 8.5pt;
+      background: #ede9fe;
+      color: #5b21b6;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .status-ok {
+      color: #15803d;
+      font-weight: 700;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    .footer {
+      margin-top: 25px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      text-align: center;
+      font-size: 8.5pt;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1 -->
+  <div class="header">
+    <div>
+      <div class="brand-title">DrimStyle (InstaaTrim)</div>
+      <div class="brand-sub">Enterprise Capabilities & Code Verification Walkthrough Guide</div>
+    </div>
+    <div class="doc-meta">
+      <span class="badge">Audit Verified</span><br>
+      Date: October 2026<br>
+      Target: Full-Stack Codebase Review
+    </div>
+  </div>
+
+  <div class="step-box">
+    <div class="step-title">How to Use this Document with your Client</div>
+    <p class="step-desc">
+      This guide provides a structured, step-by-step walkthrough to review all 24 enterprise capabilities from the Technical Audit Report. It correlates live browser endpoints and UI workflows with exact code files and lines in the codebase.
+    </p>
+  </div>
+
+  <h2>Step 1: Live Browser Verification (Demonstrate in 3 Minutes)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 28%;">Test URL / Endpoint</th>
+        <th style="width: 32%;">What the Client Sees</th>
+        <th style="width: 40%;">What to Explain to Client</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>http://localhost:6200/api/enterprise/status</code></td>
+        <td>Live JSON with <strong>OPERATIONAL</strong> health, 99.95% SLA status, active components & rolling p50/p95/p99 latencies.</td>
+        <td>Demonstrates real-time enterprise observability and SLA compliance tracking.</td>
+      </tr>
+      <tr>
+        <td><code>http://localhost:6200/api/enterprise/healthz</code></td>
+        <td>Process uptime in seconds and memory usage (RSS, heapTotal, heapUsed).</td>
+        <td>Demonstrates container and server health liveness probe for zero downtime deployments.</td>
+      </tr>
+      <tr>
+        <td><code>http://localhost:6200/api/enterprise/readyz</code></td>
+        <td>MongoDB connection state probe returning <code>"status": "ready"</code>.</td>
+        <td>Demonstrates readiness probe ensuring requests are only routed when the database is connected.</td>
+      </tr>
+      <tr>
+        <td><code>http://localhost:5173/salon/register</code></td>
+        <td>Interactive 3-way toggle: <strong>Independent Salon</strong>, <strong>Franchise Branch</strong>, or <strong>Chain Outlet</strong>.</td>
+        <td>Shows franchise and multi-branch onboarding for brands like Looks, Apple, and Enrich.</td>
+      </tr>
+      <tr>
+        <td><code>http://localhost:5173/salon/services/add</code></td>
+        <td>95% industry catalog (Hair, Makeup, Spa, Packages) with 100% dynamic price overrides.</td>
+        <td>Shows fast onboarding where services auto-fill but prices are custom and stored in MongoDB.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Step 2: Security & Authentication Capabilities in Code</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 38%;">Audit Point in PDF</th>
+        <th style="width: 30%;">File Location</th>
+        <th style="width: 32%;">Code Implementation Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>JWT access tokens with rotating refresh tokens</td>
+        <td><span class="file-tag">backend/controllers/authController.js</span></td>
+        <td>Issues short-lived access token + rotating refresh token stored securely.</td>
+      </tr>
+      <tr>
+        <td>OAuth 2.0 / Google authentication</td>
+        <td><span class="file-tag">backend/routes/authRoutes.js</span></td>
+        <td>Google OAuth sign-in routes with enterprise password policy.</td>
+      </tr>
+      <tr>
+        <td>Account lockout after failed attempts (HTTP 423)</td>
+        <td><span class="file-tag">backend/middlewares/enterpriseMiddleware.js</span></td>
+        <td>Locks account for 15 minutes after consecutive failed attempts returning HTTP 423.</td>
+      </tr>
+      <tr>
+        <td>Helmet security headers (CSP, HSTS, Clickjacking)</td>
+        <td><span class="file-tag">backend/server.js</span> (L23-32)</td>
+        <td>Enforces HSTS preloading, CSP configurations, and frame protection.</td>
+      </tr>
+      <tr>
+        <td>Tiered rate limiting across endpoints</td>
+        <td><span class="file-tag">backend/server.js</span> (L44)<br><span class="file-tag">backend/routes/authRoutes.js</span></td>
+        <td>Strict rate limiter on auth routes + global API rate limiter.</td>
+      </tr>
+      <tr>
+        <td>Unique X-Request-Id distributed tracing</td>
+        <td><span class="file-tag">backend/server.js</span> (L37-39)</td>
+        <td>Assigns UUID X-Request-Id header to every request and response.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGE 2 -->
+  <div class="page-break"></div>
+
+  <div class="header">
+    <div>
+      <div class="brand-title">DrimStyle (InstaaTrim)</div>
+      <div class="brand-sub">Enterprise Capabilities & Code Review Guide (Page 2)</div>
+    </div>
+    <div class="doc-meta">
+      Compliance & Resilience Audit
+    </div>
+  </div>
+
+  <h2>Step 3: Data Protection & GDPR Compliance in Code</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 38%;">Audit Point in PDF</th>
+        <th style="width: 30%;">File Location</th>
+        <th style="width: 32%;">Code Implementation Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>AES-256-GCM encryption for PII at rest</td>
+        <td><span class="file-tag">backend/utils/encryption.js</span></td>
+        <td>Uses authenticated cipher AES-256-GCM with secure auth tags.</td>
+      </tr>
+      <tr>
+        <td>Password hashing with bcrypt cost factor 12</td>
+        <td><span class="file-tag">backend/models/Customer.js</span><br><span class="file-tag">backend/models/Salon.js</span></td>
+        <td>Pre-save hook enforcing bcrypt hash with cost factor 12.</td>
+      </tr>
+      <tr>
+        <td>Immutable append-only audit logging</td>
+        <td><span class="file-tag">backend/models/AuditLog.js</span></td>
+        <td>Logs all sensitive actions (logins, GDPR requests, profile changes).</td>
+      </tr>
+      <tr>
+        <td>GDPR Art. 20 Data Portability Export</td>
+        <td><span class="file-tag">backend/routes/enterpriseRoutes.js</span> (L65-92)</td>
+        <td><code>GET /api/enterprise/gdpr/export</code> provides JSON export of user profile.</td>
+      </tr>
+      <tr>
+        <td>GDPR Right-to-Erasure & PII Anonymization</td>
+        <td><span class="file-tag">backend/routes/enterpriseRoutes.js</span> (L94-132)</td>
+        <td><code>POST /api/enterprise/gdpr/erase</code> anonymizes PII preserving analytics.</td>
+      </tr>
+      <tr>
+        <td>Marketing & Processing Consent Tracking</td>
+        <td><span class="file-tag">backend/routes/enterpriseRoutes.js</span> (L134-171)</td>
+        <td>Tracks explicit consent flags (consentMarketing, consentDataProcessing).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Step 4: Quality, Resilience & High Performance in Code</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 38%;">Audit Point in PDF</th>
+        <th style="width: 30%;">File Location</th>
+        <th style="width: 32%;">Code Implementation Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Structured JSON logging (Pino)</td>
+        <td><span class="file-tag">backend/utils/logger.js</span></td>
+        <td>Production-grade structured JSON logging with request tracing.</td>
+      </tr>
+      <tr>
+        <td>Real-time p50, p95, p99 latency tracking</td>
+        <td><span class="file-tag">backend/middlewares/enterpriseMiddleware.js</span></td>
+        <td>Tracks rolling HTTP request latencies and percentile percentiles.</td>
+      </tr>
+      <tr>
+        <td>Global Gzip/Deflate compression</td>
+        <td><span class="file-tag">backend/server.js</span> (L34-35)</td>
+        <td><code>app.use(compression())</code> minimizes payload sizes over the wire.</td>
+      </tr>
+      <tr>
+        <td>Strict schema validation (Zod)</td>
+        <td><span class="file-tag">backend/validators/enterpriseSchemas.js</span></td>
+        <td>Validates incoming JSON payloads to prevent injection & bad formats.</td>
+      </tr>
+      <tr>
+        <td>Lean MongoDB queries & 2dsphere indexing</td>
+        <td><span class="file-tag">backend/models/Salon.js</span> (L45-50)</td>
+        <td>Geospatial 2dsphere indexing on GeoJSON Point location coordinates.</td>
+      </tr>
+      <tr>
+        <td>Frontend route code-splitting</td>
+        <td><span class="file-tag">frontend/src/App.jsx</span></td>
+        <td><code>React.lazy</code> & <code>Suspense</code> to ensure rapid client bundle loading.</td>
+      </tr>
+      <tr>
+        <td>Graceful shutdown (SIGTERM & SIGINT)</td>
+        <td><span class="file-tag">backend/server.js</span> (L138-165)</td>
+        <td>Closes open HTTP sockets and database connections gracefully.</td>
+      </tr>
+      <tr>
+        <td>Real-time Booking Lifecycle (Sockets & Status)</td>
+        <td><span class="file-tag">backend/routes/bookingRoutes.js</span></td>
+        <td>Tested Socket.IO broadcasts, reschedules, cancellations, and status updates.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Step 5: Multi-Branch & Franchise Architecture</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 38%;">Capability</th>
+        <th style="width: 30%;">Codebase Proof</th>
+        <th style="width: 32%;">Benefit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Franchise & Outlet Support (Looks, Apple, Enrich)</td>
+        <td><span class="file-tag">backend/models/Salon.js</span> (L41-45)<br><span class="file-tag">backend/controllers/salonController.js</span></td>
+        <td>Enables onboarding multi-branch chains with parent brand and branch name tags stored dynamically in MongoDB.</td>
+      </tr>
+      <tr>
+        <td>Standard Service Catalog & Dynamic Pricing</td>
+        <td><span class="file-tag">frontend/src/modules/salon/pages/AddServicePage.jsx</span></td>
+        <td>Pre-built 95% industry templates covering Hair, Grooming, Skin, Nails, Makeup, Spa & Packages with salon-controlled pricing.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    DrimStyle (InstaaTrim) Full-Stack Enterprise Audit Verification Guide • All 24 Capabilities Verified in Production Codebase
+  </div>
+
+</body>
+</html>

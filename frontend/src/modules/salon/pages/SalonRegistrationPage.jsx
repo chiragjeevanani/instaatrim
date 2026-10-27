@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -18,7 +18,11 @@ import {
   AlertCircle,
   BadgePercent,
   Camera,
-  Upload
+  Upload,
+  Search,
+  CheckCircle2,
+  Tag,
+  X
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 import { requestFirebaseToken } from '../../../shared/lib/firebase';
@@ -52,18 +56,9 @@ export const SalonRegistrationPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [dbCategories, setDbCategories] = useState([]);
-
-  useEffect(() => {
-    import('../../../shared/services/api').then(({ api }) => {
-      api.categories.list().then((res) => {
-        const cats = res || [];
-        setDbCategories(cats);
-        if (cats.length > 0) {
-          setFormData((prev) => ({ ...prev, category: prev.category || cats[0]._id || cats[0].id || cats[0].name }));
-        }
-      });
-    });
-  }, []);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const [isManualCategory, setIsManualCategory] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState(() => {
@@ -71,11 +66,12 @@ export const SalonRegistrationPage = () => {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return {
       name: '',
       category: 'Unisex',
+      subcategories: [],
       ownerName: '',
       mobile: '',
       email: '',
@@ -100,6 +96,47 @@ export const SalonRegistrationPage = () => {
     };
   });
 
+  // Filtered categories for autocomplete search
+  const filteredCategoryList = useMemo(() => {
+    const q = categorySearch.trim().toLowerCase();
+    if (!q) return dbCategories;
+    return dbCategories.filter((cat) => {
+      const matchName = cat.name?.toLowerCase().includes(q);
+      const matchDesc = cat.description?.toLowerCase().includes(q);
+      const matchSub = (cat.serviceCategories || []).some((sub) => sub.toLowerCase().includes(q));
+      return matchName || matchDesc || matchSub;
+    });
+  }, [dbCategories, categorySearch]);
+
+  // Selected category object for subcategory tags preview
+  const selectedCategoryObj = useMemo(() => {
+    return dbCategories.find(
+      (c) => (c.id || c._id) === formData.category || c.name?.toLowerCase() === formData.category?.toLowerCase()
+    );
+  }, [dbCategories, formData.category]);
+
+  useEffect(() => {
+    import('../../../shared/services/api').then(({ api }) => {
+      api.categories.list().then((res) => {
+        const cats = res || [];
+        setDbCategories(cats);
+        if (cats.length > 0) {
+          setFormData((prev) => {
+            const firstCat = cats[0];
+            const catName = firstCat.name || firstCat.id;
+            return {
+              ...prev,
+              category: prev.category || catName,
+              subcategories: (prev.subcategories && prev.subcategories.length > 0)
+                ? prev.subcategories
+                : (firstCat.serviceCategories || [])
+            };
+          });
+        }
+      });
+    });
+  }, []);
+
   useEffect(() => {
     sessionStorage.setItem('instaatrim_salon_reg_step', step.toString());
   }, [step]);
@@ -113,6 +150,17 @@ export const SalonRegistrationPage = () => {
     if (error) setError(null);
   };
 
+  const toggleSubcategory = (sub) => {
+    setFormData((prev) => {
+      const current = prev.subcategories || [];
+      const exists = current.includes(sub);
+      return {
+        ...prev,
+        subcategories: exists ? current.filter((s) => s !== sub) : [...current, sub]
+      };
+    });
+  };
+
   const toggleAmenity = (amenity) => {
     setFormData((prev) => {
       const exists = prev.amenities.includes(amenity);
@@ -124,7 +172,6 @@ export const SalonRegistrationPage = () => {
       };
     });
   };
-
 
   const isStep1Valid =
     formData.name.trim().length >= 3 &&
@@ -193,6 +240,7 @@ export const SalonRegistrationPage = () => {
         email: formData.email.trim(),
         password: formData.password,
         category: formData.category,
+        subcategories: formData.subcategories || [],
         city: formData.city,
         area: formData.area.trim(),
         address: formData.address.trim(),
@@ -251,803 +299,1006 @@ export const SalonRegistrationPage = () => {
         eyebrow="Become a DrimStyle partner"
         title="Grow your salon with DrimStyle."
         subtitle="List your services, accept instant and scheduled bookings, and get paid on time."
-        points={['Reach customers searching nearby, right now','Zero-hassle onboarding with KYC verification','Daily (T+1) or weekly settlements to your bank']}
+        points={['Reach customers searching nearby, right now', 'Zero-hassle onboarding with KYC verification', 'Daily (T+1) or weekly settlements to your bank']}
         image="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80"
       />
       <div className="flex-1 min-w-0 flex justify-center lg:items-center lg:px-10 lg:py-10">
-      <main className="w-full max-w-[480px] lg:max-w-[560px] min-w-0 min-h-screen lg:min-h-0 flex flex-col justify-between px-4 lg:px-9 pt-3 lg:pt-7 pb-8 relative border-x lg:border border-purple-200/50 lg:bg-white lg:rounded-3xl lg:shadow-xl lg:shadow-purple-900/5 box-border">
-        {/* Top Header */}
-        <header className="w-full flex items-center justify-between min-h-[38px] pb-2">
-          <button
-            aria-label="Back"
-            onClick={handleBack}
-            className="p-1 -ml-1 rounded-full text-stone-700 hover:text-black active:scale-95 transition-all"
-            type="button"
-          >
-            <ArrowLeft className="w-5 h-5 stroke-[2]" />
-          </button>
-          <div className="flex items-center gap-1.5 bg-rose-900/10 border border-rose-900/20 px-2.5 py-0.5 rounded-full">
-            <ShieldCheck className="w-3.5 h-3.5 text-brand-maroon" />
-            <span className="text-[10px] font-bold text-brand-maroon uppercase tracking-wider">
-              Partner Registration
-            </span>
-          </div>
-          <button
-            onClick={() => navigate('/salon/login')}
-            className="text-[11px] font-bold text-stone-500 hover:text-brand-maroon transition-colors"
-            type="button"
-          >
-            Log In
-          </button>
-        </header>
+        <main className="w-full max-w-[480px] lg:max-w-[560px] min-w-0 min-h-screen lg:min-h-0 flex flex-col justify-between px-4 lg:px-9 pt-3 lg:pt-7 pb-8 relative border-x lg:border border-purple-200/50 lg:bg-white lg:rounded-3xl lg:shadow-xl lg:shadow-purple-900/5 box-border">
+          {/* Top Header */}
+          <header className="w-full flex items-center justify-between min-h-[38px] pb-2">
+            <button
+              aria-label="Back"
+              onClick={handleBack}
+              className="p-1 -ml-1 rounded-full text-stone-700 hover:text-black active:scale-95 transition-all"
+              type="button"
+            >
+              <ArrowLeft className="w-5 h-5 stroke-[2]" />
+            </button>
+            <div className="flex items-center gap-1.5 bg-rose-900/10 border border-rose-900/20 px-2.5 py-0.5 rounded-full">
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-maroon" />
+              <span className="text-[10px] font-bold text-brand-maroon uppercase tracking-wider">
+                Partner Registration
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/salon/login')}
+              className="text-[11px] font-bold text-stone-500 hover:text-brand-maroon transition-colors"
+              type="button"
+            >
+              Log In
+            </button>
+          </header>
 
-        {/* Progress Stepper */}
-        <div className="my-3 px-1">
-          <div className="flex items-center justify-between mb-2">
-            {stepTitles.map((s) => {
-              const Icon = s.icon;
-              const isDone = step > s.num;
-              const isCurrent = step === s.num;
-              return (
-                <button
-                  key={s.num}
-                  type="button"
-                  onClick={() => s.num < step && setStep(s.num)}
-                  disabled={s.num > step}
-                  className="flex flex-col items-center gap-1 group focus:outline-none"
-                >
-                  <div
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold transition-all shadow-2xs ${
-                      isDone
+          {/* Progress Stepper */}
+          <div className="my-3 px-1">
+            <div className="flex items-center justify-between mb-2">
+              {stepTitles.map((s) => {
+                const Icon = s.icon;
+                const isDone = step > s.num;
+                const isCurrent = step === s.num;
+                return (
+                  <button
+                    key={s.num}
+                    type="button"
+                    onClick={() => s.num < step && setStep(s.num)}
+                    disabled={s.num > step}
+                    className="flex flex-col items-center gap-1 group focus:outline-none"
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold transition-all shadow-2xs ${isDone
                         ? 'bg-emerald-600 text-white'
                         : isCurrent
-                        ? 'bg-brand-maroon text-white ring-2 ring-rose-300 scale-105 shadow-sm'
-                        : 'bg-white/80 text-stone-400 border border-stone-200'
-                    }`}
-                  >
-                    {isDone ? <Check className="w-3.5 h-3.5 stroke-[2.5]" /> : <Icon className="w-3.5 h-3.5" />}
-                  </div>
-                  <span
-                    className={`text-[9.5px] font-medium tracking-tight ${
-                      isCurrent ? 'text-brand-maroon font-bold' : isDone ? 'text-stone-700' : 'text-stone-400'
-                    }`}
-                  >
-                    {s.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                          ? 'bg-brand-maroon text-white ring-2 ring-rose-300 scale-105 shadow-sm'
+                          : 'bg-white/80 text-stone-400 border border-stone-200'
+                        }`}
+                    >
+                      {isDone ? <Check className="w-3.5 h-3.5 stroke-[2.5]" /> : <Icon className="w-3.5 h-3.5" />}
+                    </div>
+                    <span
+                      className={`text-[9.5px] font-medium tracking-tight ${isCurrent ? 'text-brand-maroon font-bold' : isDone ? 'text-stone-700' : 'text-stone-400'
+                        }`}
+                    >
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="w-full bg-stone-200/80 h-1.5 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-brand-maroon via-rose-600 to-emerald-500 rounded-full"
-              initial={{ width: '20%' }}
-              animate={{ width: `${(step / 5) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </div>
-
-        {/* Form Body */}
-        <div className="flex-1 flex flex-col justify-start pt-1 pb-4">
-          <AnimatePresence mode="wait">
-            {step === 1 && (
+            <div className="w-full bg-stone-200/80 h-1.5 rounded-full overflow-hidden">
               <motion.div
-                key="step-1"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-3"
-              >
-                <div>
-                  <h2 className="text-base font-bold text-stone-900 font-serif">Salon Profile &amp; Contact</h2>
-                  <p className="text-[11px] text-stone-500">Create your official salon identity and partner account</p>
-                </div>
+                className="h-full bg-gradient-to-r from-brand-maroon via-rose-600 to-emerald-500 rounded-full"
+                initial={{ width: '20%' }}
+                animate={{ width: `${(step / 5) * 100}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </div>
 
-                <div className="space-y-2.5">
+          {/* Form Body */}
+          <div className="flex-1 flex flex-col justify-start pt-1 pb-4">
+            <AnimatePresence mode="wait">
+
+              {/* ── STEP 1: Salon Profile & Contact ── */}
+              {step === 1 && (
+                <motion.div
+                  key="step-1"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3"
+                >
                   <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Salon / Studio Name <span className="text-rose-600">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Looks Salon / Apple Hair Studio / Aura Lounge"
-                      value={formData.name}
-                      onChange={(e) => updateField('name', e.target.value)}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
-                    />
+                    <h2 className="text-base font-bold text-stone-900 font-serif">Salon Profile &amp; Contact</h2>
+                    <p className="text-[11px] text-stone-500">Create your official salon identity and partner account</p>
                   </div>
 
-                  {/* Franchise / Multi-Branch Chain Option (Looks, Apple, Enrich, etc.) */}
-                  <div className="bg-stone-50/80 p-3 rounded-2xl border border-stone-200/80 space-y-2">
-                    <label className="text-[11px] font-bold text-stone-700 block">
-                      Salon Business Model
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { label: 'Independent', val: 'Independent Salon' },
-                        { label: 'Franchise', val: 'Franchise Branch' },
-                        { label: 'Brand Chain', val: 'Chain Outlet' }
-                      ].map((item) => (
-                        <button
-                          key={item.val}
-                          type="button"
-                          onClick={() => updateField('organizationType', item.val)}
-                          className={`py-1.5 px-2 rounded-xl text-[10.5px] font-bold border transition-all text-center cursor-pointer ${
-                            (formData.organizationType || 'Independent Salon') === item.val
-                              ? 'bg-brand-maroon text-white border-brand-maroon shadow-xs'
-                              : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {(formData.organizationType === 'Franchise Branch' || formData.organizationType === 'Chain Outlet') && (
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <div>
-                          <label className="text-[10px] font-bold text-stone-600 block mb-0.5">Parent Brand / Chain</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. Looks, Apple, Enrich"
-                            value={formData.parentBrandName || ''}
-                            onChange={(e) => updateField('parentBrandName', e.target.value)}
-                            className="w-full border border-stone-300 bg-white rounded-xl px-2.5 py-1.5 text-stone-900 text-[11px] outline-none focus:border-brand-maroon"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-stone-600 block mb-0.5">Branch / Outlet Name</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. MG Road Branch, Sector 18"
-                            value={formData.branchName || ''}
-                            onChange={(e) => updateField('branchName', e.target.value)}
-                            className="w-full border border-stone-300 bg-white rounded-xl px-2.5 py-1.5 text-stone-900 text-[11px] outline-none focus:border-brand-maroon"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1.5">
-                      Business Category <span className="text-rose-600">*</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {dbCategories.map((cat) => {
-                        const catId = cat.id || cat._id || cat.name;
-                        return (
-                          <button
-                            key={catId}
-                            type="button"
-                            onClick={() => updateField('category', catId)}
-                            className={`p-2.5 rounded-xl border text-left transition-all ${
-                              formData.category === catId
-                                ? 'border-brand-maroon bg-rose-50/70 ring-1 ring-brand-maroon'
-                                : 'border-stone-200 bg-white hover:border-stone-300'
-                            }`}
-                          >
-                            <span className="text-sm block mb-0.5">{cat.name?.charAt(0) || '✨'}</span>
-                            <span className="text-xs font-bold text-stone-900 block leading-tight">{cat.name}</span>
-                            <span className="text-[9.5px] text-stone-500 font-normal leading-snug mt-0.5 block line-clamp-2">
-                              {cat.description || cat.name}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-2.5">
+                    {/* Salon Name */}
                     <div>
                       <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                        Owner / Manager Name <span className="text-rose-600">*</span>
+                        Salon / Studio Name <span className="text-rose-600">*</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="Full Name"
-                        value={formData.ownerName}
-                        onChange={(e) => updateField('ownerName', e.target.value)}
+                        placeholder="e.g. Looks Salon / Apple Hair Studio / Aura Lounge"
+                        value={formData.name}
+                        onChange={(e) => updateField('name', e.target.value)}
                         className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
                       />
                     </div>
 
-                    <div>
-                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                        Mobile Number <span className="text-rose-600">*</span>
+                    {/* Business Model */}
+                    <div className="bg-stone-50/80 p-3 rounded-2xl border border-stone-200/80 space-y-2">
+                      <label className="text-[11px] font-bold text-stone-700 block">
+                        Salon Business Model
                       </label>
-                      <div className="flex items-center border border-stone-300 focus-within:border-brand-maroon focus-within:ring-1 focus-within:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2.5 transition-all">
-                        <span className="text-stone-700 font-bold text-xs pr-1.5 select-none">+91</span>
-                        <input
-                          type="tel"
-                          maxLength={10}
-                          placeholder="10 Digits"
-                          value={formData.mobile}
-                          onChange={(e) => updateField('mobile', e.target.value.replace(/\D/g, ''))}
-                          className="w-full bg-transparent border-0 p-0 text-stone-900 placeholder-stone-400 font-medium text-xs focus:ring-0 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Business Email Address <span className="text-rose-600">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="yoursalon@drimstyle.com"
-                      value={formData.email}
-                      onChange={(e) => updateField('email', e.target.value)}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Create Partner Password <span className="text-rose-600">*</span>
-                    </label>
-                    <div className="flex items-center border border-stone-300 focus-within:border-brand-maroon focus-within:ring-1 focus-within:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 transition-all">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="At least 6 characters"
-                        value={formData.password}
-                        onChange={(e) => updateField('password', e.target.value)}
-                        className="w-full bg-transparent border-0 p-0 text-stone-900 placeholder-stone-400 font-medium text-xs focus:ring-0 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        className="text-stone-400 hover:text-stone-700 shrink-0"
-                      >
-                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <motion.div
-                key="step-2"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-3"
-              >
-                <div>
-                  <h2 className="text-base font-bold text-stone-900 font-serif">Location &amp; Facilities</h2>
-                  <p className="text-[11px] text-stone-500">Help customers find and book services at your studio</p>
-                </div>
-
-                <div className="space-y-2.5">
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">City</label>
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {POPULAR_CITIES.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => updateField('city', c)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                            formData.city === c
-                              ? 'bg-brand-maroon text-white shadow-2xs'
-                              : 'bg-white border border-stone-200 text-stone-700 hover:border-stone-300'
-                          }`}
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Area / Neighborhood <span className="text-rose-600">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. South Tukoganj, Vijay Nagar, Palasia"
-                      value={formData.area}
-                      onChange={(e) => updateField('area', e.target.value)}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Complete Street Address &amp; Landmark <span className="text-rose-600">*</span>
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="e.g. Plot 14, Opposite Treasure Island Mall, MG Road"
-                      value={formData.address}
-                      onChange={(e) => updateField('address', e.target.value)}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none resize-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-bold text-stone-700 block mb-1">Opening Time</label>
-                      <input
-                        type="text"
-                        placeholder="09:30 AM"
-                        value={formData.openTime}
-                        onChange={(e) => updateField('openTime', e.target.value)}
-                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-medium text-xs outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-stone-700 block mb-1">Closing Time</label>
-                      <input
-                        type="text"
-                        placeholder="08:30 PM"
-                        value={formData.closeTime}
-                        onChange={(e) => updateField('closeTime', e.target.value)}
-                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-medium text-xs outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-[11px] font-bold text-stone-700">Total Styling Chairs / Stations</label>
-                      <span className="text-xs font-bold text-brand-maroon">{formData.totalChairs} Chairs</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={1}
-                      max={15}
-                      value={formData.totalChairs}
-                      onChange={(e) => updateField('totalChairs', Number(e.target.value))}
-                      className="w-full accent-brand-maroon cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1.5">Amenities Offered</label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {AMENITY_LIST.map((amenity) => {
-                        const isChecked = formData.amenities.includes(amenity);
-                        return (
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { label: 'Independent', val: 'Independent Salon' },
+                          { label: 'Franchise', val: 'Franchise Branch' },
+                          { label: 'Brand Chain', val: 'Chain Outlet' }
+                        ].map((item) => (
                           <button
-                            key={amenity}
+                            key={item.val}
                             type="button"
-                            onClick={() => toggleAmenity(amenity)}
-                            className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-medium text-left border flex items-center gap-1.5 transition-all ${
-                              isChecked
-                                ? 'bg-rose-50 border-brand-maroon text-brand-maroon font-bold'
-                                : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
-                            }`}
-                          >
-                            <div
-                              className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] ${
-                                isChecked ? 'bg-brand-maroon text-white' : 'border border-stone-300'
+                            onClick={() => updateField('organizationType', item.val)}
+                            className={`py-1.5 px-2 rounded-xl text-[10.5px] font-bold border transition-all text-center cursor-pointer ${(formData.organizationType || 'Independent Salon') === item.val
+                              ? 'bg-brand-maroon text-white border-brand-maroon shadow-xs'
+                              : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
                               }`}
-                            >
-                              {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                            </div>
-                            <span className="truncate">{amenity}</span>
+                          >
+                            {item.label}
                           </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+                        ))}
+                      </div>
 
-            {step === 3 && (
-              <motion.div
-                key="step-3"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-3"
-              >
-                <div>
-                  <h2 className="text-base font-bold text-stone-900 font-serif">Business KYC &amp; Verification</h2>
-                  <p className="text-[11px] text-stone-500">Fast-track verification badge for customer trust</p>
-                </div>
-
-                <div className="space-y-2.5">
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">Business Structure</label>
-                    <select
-                      value={formData.businessType}
-                      onChange={(e) => updateField('businessType', e.target.value)}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 font-medium text-xs outline-none"
-                    >
-                      <option value="Sole Proprietorship">Sole Proprietorship / Individual</option>
-                      <option value="Partnership Firm">Partnership Firm</option>
-                      <option value="Private Limited Company">Private Limited Company (Pvt Ltd)</option>
-                      <option value="LLP">Limited Liability Partnership (LLP)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      GSTIN (Optional / Tax ID)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 23AABCU9603R1ZM"
-                      value={formData.gstin}
-                      onChange={(e) => updateField('gstin', e.target.value.toUpperCase())}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-mono text-xs outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Shop &amp; Establishment License / Trade ID
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. IND-MP-2025-9921"
-                      value={formData.shopActLicense}
-                      onChange={(e) => updateField('shopActLicense', e.target.value.toUpperCase())}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-mono text-xs outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1.5">
-                      Salon Storefront &amp; Ambience Photo
-                    </label>
-                    <div className="relative rounded-2xl overflow-hidden border border-stone-300 bg-stone-900 group h-32 flex items-center justify-center">
-                      {formData.coverImage ? (
-                        <>
-                          <img
-                            src={formData.coverImage}
-                            alt="Salon Cover Preview"
-                            className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent flex items-end justify-between p-3">
-                            <span className="text-white text-xs font-bold drop-shadow">
-                              {formData.name || 'Your Salon Front'}
-                            </span>
-                            <span className="text-[10px] bg-white/20 backdrop-blur-md text-white font-medium px-2 py-0.5 rounded-full border border-white/30">
-                              Cover Photo Active
-                            </span>
+                      {(formData.organizationType === 'Franchise Branch' || formData.organizationType === 'Chain Outlet') && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <label className="text-[10px] font-bold text-stone-600 block mb-0.5">Parent Brand / Chain</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Looks, Apple, Enrich"
+                              value={formData.parentBrandName || ''}
+                              onChange={(e) => updateField('parentBrandName', e.target.value)}
+                              className="w-full border border-stone-300 bg-white rounded-xl px-2.5 py-1.5 text-stone-900 text-[11px] outline-none focus:border-brand-maroon"
+                            />
                           </div>
-                        </>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-stone-500">
-                          <Camera className="w-8 h-8 mb-2 opacity-50" />
-                          <span className="text-xs font-medium">No Image Selected</span>
+                          <div>
+                            <label className="text-[10px] font-bold text-stone-600 block mb-0.5">Branch / Outlet Name</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. MG Road Branch, Sector 18"
+                              value={formData.branchName || ''}
+                              onChange={(e) => updateField('branchName', e.target.value)}
+                              className="w-full border border-stone-300 bg-white rounded-xl px-2.5 py-1.5 text-stone-900 text-[11px] outline-none focus:border-brand-maroon"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
-                              const result = await window.flutter_inappwebview.callHandler('openCamera');
-                              if (result && result.success) {
-                                updateField('coverImage', `data:${result.mimeType};base64,${result.base64}`);
-                              }
-                            } else {
-                              // Fallback for standard web (using standard input capture)
-                              const input = document.createElement('input');
-                              input.type = 'file';
-                              input.accept = 'image/*';
-                              input.capture = 'environment';
-                              input.onchange = (e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) => updateField('coverImage', ev.target.result);
-                                  reader.readAsDataURL(file);
-                                }
-                              };
-                              input.click();
-                            }
-                          } catch (err) {
-                            console.error("Camera error:", err);
-                          }
-                        }}
-                        className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-brand-maroon bg-brand-maroon text-white flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        Take Photo
-                      </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.onchange = (e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (ev) => updateField('coverImage', ev.target.result);
-                              reader.readAsDataURL(file);
-                            }
-                          };
-                          input.click();
-                        }}
-                        className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-stone-300 bg-white text-stone-700 flex items-center justify-center gap-1.5 hover:bg-stone-50 transition-all"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        Upload Gallery
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 4 && (
-              <motion.div
-                key="step-4"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-3"
-              >
-                <div>
-                  <h2 className="text-base font-bold text-stone-900 font-serif">Direct Bank Settlements</h2>
-                  <p className="text-[11px] text-stone-500">Automated payouts for walk-ins &amp; online bookings</p>
-                </div>
-
-                <div className="bg-gradient-to-tr from-rose-900 to-stone-900 text-white rounded-2xl p-3.5 shadow-xs relative overflow-hidden">
-                  <div className="flex justify-between items-start">
+                    {/* Business Category — Smart Autocomplete */}
                     <div>
-                      <span className="text-[10px] text-rose-200 font-bold uppercase tracking-wider block">
-                        Direct Payout Account
-                      </span>
-                      <h4 className="text-sm font-bold mt-0.5">{formData.name || 'Salon Partner'}</h4>
-                    </div>
-                    <Landmark className="w-5 h-5 text-amber-300" />
-                  </div>
-                  <div className="mt-3.5 flex justify-between items-end">
-                    <div>
-                      <span className="text-[9px] text-rose-200/80 uppercase">Settlement Bank</span>
-                      <p className="text-xs font-semibold">
-                        {formData.bankName ? `${formData.bankName} ` : 'No Bank Selected'}
-                        {formData.accountNumber ? `••••${formData.accountNumber.slice(-4)}` : ''}
-                      </p>
-                    </div>
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
-                      Verified UPI / IMPS
-                    </span>
-                  </div>
-                </div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[11px] font-bold text-stone-700">
+                          Business Category <span className="text-rose-600">*</span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-purple-700 font-semibold flex items-center gap-1 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                            <Sparkles className="w-2.5 h-2.5 text-purple-600" /> Smart Autocomplete
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsManualCategory(!isManualCategory)}
+                            className="text-[10px] text-stone-500 hover:text-brand-maroon underline font-medium"
+                          >
+                            {isManualCategory ? 'Pick from List' : 'Enter Manually'}
+                          </button>
+                        </div>
+                      </div>
 
-                <div className="space-y-2.5">
+                      {isManualCategory ? (
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="e.g. Hair Salon, Luxury Spa, Nail Studio..."
+                            value={formData.category || ''}
+                            onChange={(e) => updateField('category', e.target.value)}
+                            className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
+                          />
+                          <p className="text-[10px] text-stone-400 mt-1">Manual category input enabled.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {/* Search Input with Autocomplete */}
+                          <div className="relative">
+                            <div className="relative flex items-center">
+                              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 pointer-events-none" />
+                              <input
+                                type="text"
+                                placeholder="Search category or subcategory (e.g. Hair, Beard, Facial, Nails)..."
+                                value={categorySearch}
+                                onFocus={() => setShowCategorySuggestions(true)}
+                                onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 250)}
+                                onChange={(e) => {
+                                  setCategorySearch(e.target.value);
+                                  setShowCategorySuggestions(true);
+                                }}
+                                className="w-full pl-8 pr-8 py-2 border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white rounded-xl text-stone-900 text-xs placeholder-stone-400 outline-none transition-all"
+                              />
+                              {categorySearch && (
+                                <button
+                                  type="button"
+                                  onClick={() => setCategorySearch('')}
+                                  className="absolute right-2.5 text-stone-400 hover:text-stone-600"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Autocomplete Dropdown */}
+                            {showCategorySuggestions && filteredCategoryList.length > 0 && (
+                              <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white border border-stone-200 rounded-xl shadow-xl overflow-hidden divide-y divide-stone-100 max-h-56 overflow-y-auto">
+                                <div className="px-3 py-1.5 bg-stone-50 text-[10px] uppercase tracking-wider font-bold text-stone-500 flex items-center justify-between">
+                                  <span>Dynamic DB Categories</span>
+                                  <span className="text-purple-600 font-normal">Click to select</span>
+                                </div>
+                                {filteredCategoryList.map((cat) => {
+                                  const catId = cat.id || cat._id || cat.name;
+                                  const isSelected = formData.category === catId || formData.category === cat.name;
+                                  return (
+                                    <div
+                                      key={catId}
+                                      onMouseDown={() => {
+                                        updateField('category', cat.name || catId);
+                                        updateField('subcategories', cat.serviceCategories || []);
+                                        setCategorySearch(cat.name);
+                                        setShowCategorySuggestions(false);
+                                      }}
+                                      className={`px-3 py-2 cursor-pointer transition-colors ${isSelected ? 'bg-rose-50 text-brand-maroon font-semibold' : 'hover:bg-purple-50/60 text-stone-800'
+                                        }`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-xs">{cat.name?.charAt(0) || '✨'}</span>
+                                          <span className="text-xs font-bold text-stone-900">{cat.name}</span>
+                                          {cat.gender && (
+                                            <span className="text-[9px] px-1.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 capitalize">
+                                              {cat.gender}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-brand-maroon" />}
+                                      </div>
+                                      {cat.serviceCategories && cat.serviceCategories.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {cat.serviceCategories.slice(0, 4).map((sub, idx) => (
+                                            <span key={idx} className="text-[9px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded border border-stone-200">
+                                              {sub}
+                                            </span>
+                                          ))}
+                                          {cat.serviceCategories.length > 4 && (
+                                            <span className="text-[9px] text-stone-400 self-center">
+                                              +{cat.serviceCategories.length - 4} more
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Category Grid Cards */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {filteredCategoryList.map((cat) => {
+                              const catId = cat.id || cat._id || cat.name;
+                              const isSelected = formData.category === catId || formData.category === cat.name;
+                              return (
+                                <button
+                                  key={catId}
+                                  type="button"
+                                  onClick={() => {
+                                    updateField('category', cat.name || catId);
+                                    updateField('subcategories', cat.serviceCategories || []);
+                                    setCategorySearch('');
+                                  }}
+                                  className={`p-2.5 rounded-xl border text-left transition-all ${isSelected
+                                    ? 'border-brand-maroon bg-rose-50/70 ring-1 ring-brand-maroon shadow-xs'
+                                    : 'border-stone-200 bg-white hover:border-stone-300'
+                                    }`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <span className="text-sm block mb-0.5">{cat.name?.charAt(0) || '✨'}</span>
+                                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-brand-maroon" />}
+                                  </div>
+                                  <span className="text-xs font-bold text-stone-900 block leading-tight">{cat.name}</span>
+                                  <span className="text-[9.5px] text-stone-500 font-normal leading-snug mt-0.5 block line-clamp-2">
+                                    {cat.description || cat.name}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Subcategory selectable badges */}
+                          {selectedCategoryObj && selectedCategoryObj.serviceCategories && selectedCategoryObj.serviceCategories.length > 0 && (
+                            <div className="p-2.5 rounded-xl bg-purple-50/50 border border-purple-200/70 space-y-2 mt-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-purple-900 flex items-center gap-1">
+                                  <Tag className="w-2.5 h-2.5 text-purple-600" />
+                                  Select Subcategories / Treatments Offered:
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateField('subcategories', [...selectedCategoryObj.serviceCategories])}
+                                    className="text-[9px] text-brand-maroon hover:underline font-bold"
+                                  >
+                                    Select All
+                                  </button>
+                                  <span className="text-stone-300">|</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateField('subcategories', [])}
+                                    className="text-[9px] text-stone-500 hover:underline font-medium"
+                                  >
+                                    Clear
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {selectedCategoryObj.serviceCategories.map((sub, sIdx) => {
+                                  const isChecked = (formData.subcategories || []).includes(sub);
+                                  return (
+                                    <button
+                                      key={sIdx}
+                                      type="button"
+                                      onClick={() => toggleSubcategory(sub)}
+                                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${isChecked
+                                        ? 'bg-brand-maroon text-white shadow-xs font-bold ring-1 ring-brand-maroon'
+                                        : 'bg-white text-stone-700 border border-purple-200/80 hover:border-purple-400'
+                                        }`}
+                                    >
+                                      <div
+                                        className={`w-3 h-3 rounded flex items-center justify-center text-[8px] ${isChecked ? 'bg-white text-brand-maroon' : 'border border-stone-300'
+                                          }`}
+                                      >
+                                        {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                      </div>
+                                      <span>{sub}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <p className="text-[9px] text-stone-400">
+                                Selected: {(formData.subcategories || []).length} of {selectedCategoryObj.serviceCategories.length} subcategories
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Owner + Mobile */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                          Owner / Manager Name <span className="text-rose-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Full Name"
+                          value={formData.ownerName}
+                          onChange={(e) => updateField('ownerName', e.target.value)}
+                          className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                          Mobile Number <span className="text-rose-600">*</span>
+                        </label>
+                        <div className="flex items-center border border-stone-300 focus-within:border-brand-maroon focus-within:ring-1 focus-within:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2.5 transition-all">
+                          <span className="text-stone-700 font-bold text-xs pr-1.5 select-none">+91</span>
+                          <input
+                            type="tel"
+                            maxLength={10}
+                            placeholder="10 Digits"
+                            value={formData.mobile}
+                            onChange={(e) => updateField('mobile', e.target.value.replace(/\D/g, ''))}
+                            className="w-full bg-transparent border-0 p-0 text-stone-900 placeholder-stone-400 font-medium text-xs focus:ring-0 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Business Email Address <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="yoursalon@drimstyle.com"
+                        value={formData.email}
+                        onChange={(e) => updateField('email', e.target.value)}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
+                      />
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Create Partner Password <span className="text-rose-600">*</span>
+                      </label>
+                      <div className="flex items-center border border-stone-300 focus-within:border-brand-maroon focus-within:ring-1 focus-within:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 transition-all">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="At least 6 characters"
+                          value={formData.password}
+                          onChange={(e) => updateField('password', e.target.value)}
+                          className="w-full bg-transparent border-0 p-0 text-stone-900 placeholder-stone-400 font-medium text-xs focus:ring-0 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          className="text-stone-400 hover:text-stone-700 shrink-0"
+                        >
+                          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP 2: Location & Facilities ── */}
+              {step === 2 && (
+                <motion.div
+                  key="step-2"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3"
+                >
                   <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Account Beneficiary Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={formData.ownerName || 'Account Holder Name'}
-                      value={formData.accountHolderName}
-                      onChange={(e) => updateField('accountHolderName', e.target.value)}
-                      className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs outline-none"
-                    />
+                    <h2 className="text-base font-bold text-stone-900 font-serif">Location &amp; Facilities</h2>
+                    <p className="text-[11px] text-stone-500">Help customers find and book services at your studio</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-2.5">
+                    {/* City */}
                     <div>
-                      <label className="text-[11px] font-bold text-stone-700 block mb-1">Bank Name</label>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">City</label>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {POPULAR_CITIES.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => updateField('city', c)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${formData.city === c
+                              ? 'bg-brand-maroon text-white shadow-2xs'
+                              : 'bg-white border border-stone-200 text-stone-700 hover:border-stone-300'
+                              }`}
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Area */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Area / Neighborhood <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. South Tukoganj, Vijay Nagar, Palasia"
+                        value={formData.area}
+                        onChange={(e) => updateField('area', e.target.value)}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
+                      />
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Complete Street Address &amp; Landmark <span className="text-rose-600">*</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="e.g. Plot 14, Opposite Treasure Island Mall, MG Road"
+                        value={formData.address}
+                        onChange={(e) => updateField('address', e.target.value)}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none resize-none"
+                      />
+                    </div>
+
+                    {/* Open / Close Time */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-700 block mb-1">Opening Time</label>
+                        <input
+                          type="text"
+                          placeholder="09:30 AM"
+                          value={formData.openTime}
+                          onChange={(e) => updateField('openTime', e.target.value)}
+                          className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-medium text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-700 block mb-1">Closing Time</label>
+                        <input
+                          type="text"
+                          placeholder="08:30 PM"
+                          value={formData.closeTime}
+                          onChange={(e) => updateField('closeTime', e.target.value)}
+                          className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-medium text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Total Chairs */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[11px] font-bold text-stone-700">Total Styling Chairs / Stations</label>
+                        <span className="text-xs font-bold text-brand-maroon">{formData.totalChairs} Chairs</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={15}
+                        value={formData.totalChairs}
+                        onChange={(e) => updateField('totalChairs', Number(e.target.value))}
+                        className="w-full accent-brand-maroon cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Amenities */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1.5">
+                        Amenities Offered
+                      </label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {AMENITY_LIST.map((amenity) => {
+                          const isChecked = formData.amenities.includes(amenity);
+                          return (
+                            <button
+                              key={amenity}
+                              type="button"
+                              onClick={() => toggleAmenity(amenity)}
+                              className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-medium text-left border flex items-center gap-1.5 transition-all ${isChecked
+                                ? 'bg-rose-50 border-brand-maroon text-brand-maroon font-bold'
+                                : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                                }`}
+                            >
+                              <div
+                                className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[9px] ${isChecked ? 'bg-brand-maroon text-white' : 'border border-stone-300'
+                                  }`}
+                              >
+                                {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              </div>
+                              <span className="truncate">{amenity}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP 3: KYC Docs ── */}
+              {step === 3 && (
+                <motion.div
+                  key="step-3"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <h2 className="text-base font-bold text-stone-900 font-serif">Business KYC &amp; Verification</h2>
+                    <p className="text-[11px] text-stone-500">Fast-track verification badge for customer trust</p>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {/* Business Structure */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">Business Structure</label>
                       <select
-                        value={formData.bankName}
-                        onChange={(e) => updateField('bankName', e.target.value)}
-                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-medium text-xs outline-none"
+                        value={formData.businessType}
+                        onChange={(e) => updateField('businessType', e.target.value)}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 font-medium text-xs outline-none"
                       >
-                        <option value="">Select Bank</option>
-                        <option value="HDFC Bank">HDFC Bank</option>
-                        <option value="ICICI Bank">ICICI Bank</option>
-                        <option value="State Bank of India">State Bank of India</option>
-                        <option value="Axis Bank">Axis Bank</option>
-                        <option value="Kotak Mahindra Bank">Kotak Mahindra</option>
+                        <option value="Sole Proprietorship">Sole Proprietorship / Individual</option>
+                        <option value="Partnership Firm">Partnership Firm</option>
+                        <option value="Private Limited Company">Private Limited Company (Pvt Ltd)</option>
+                        <option value="LLP">Limited Liability Partnership (LLP)</option>
                       </select>
                     </div>
 
+                    {/* GSTIN */}
                     <div>
-                      <label className="text-[11px] font-bold text-stone-700 block mb-1">IFSC Code</label>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        GSTIN (Optional / Tax ID)
+                      </label>
                       <input
                         type="text"
-                        placeholder="HDFC0001032"
-                        value={formData.ifscCode}
-                        onChange={(e) => updateField('ifscCode', e.target.value.toUpperCase())}
-                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-mono text-xs outline-none"
+                        placeholder="e.g. 23AABCU9603R1ZM"
+                        value={formData.gstin}
+                        onChange={(e) => updateField('gstin', e.target.value.toUpperCase())}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-mono text-xs outline-none"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">
-                      Bank Account Number
-                    </label>
-                    <div className="flex items-center border border-stone-300 focus-within:border-brand-maroon focus-within:ring-1 focus-within:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 transition-all">
+                    {/* Shop Act License */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Shop &amp; Establishment License / Trade ID
+                      </label>
                       <input
-                        type={showAccount ? 'text' : 'password'}
-                        placeholder="Enter 9-18 digit account number"
-                        value={formData.accountNumber}
-                        onChange={(e) => updateField('accountNumber', e.target.value)}
-                        className="w-full bg-transparent border-0 p-0 text-stone-900 placeholder-stone-400 font-medium text-xs focus:ring-0 focus:outline-none"
+                        type="text"
+                        placeholder="e.g. IND-MP-2025-9921"
+                        value={formData.shopActLicense}
+                        onChange={(e) => updateField('shopActLicense', e.target.value.toUpperCase())}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-mono text-xs outline-none"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowAccount((v) => !v)}
-                        className="text-stone-400 hover:text-stone-700 shrink-0"
-                      >
-                        {showAccount ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">Payout Frequency</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {['Daily Automated (T+1)', 'Weekly Batch Settlement'].map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => updateField('payoutCycle', p)}
-                          className={`p-2 rounded-xl text-left border text-xs font-semibold transition-all ${
-                            formData.payoutCycle.startsWith(p.slice(0, 5))
-                              ? 'bg-rose-50 border-brand-maroon text-brand-maroon ring-1 ring-brand-maroon'
-                              : 'bg-white border-stone-200 text-stone-700'
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 5 && (
-              <motion.div
-                key="step-5"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-3"
-              >
-                <div>
-                  <h2 className="text-base font-bold text-stone-900 font-serif">Review &amp; Go Live</h2>
-                  <p className="text-[11px] text-stone-500">Your partner account is ready to activate and receive bookings</p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-3.5 border border-purple-200 shadow-2xs space-y-3">
-                  <div className="flex items-start gap-3">
-                    <img
-                      src={formData.coverImage}
-                      alt="Salon"
-                      className="w-14 h-14 rounded-xl object-cover border border-stone-200 shadow-2xs shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-stone-900 truncate">
-                          {formData.name || 'Aura Salon'}
-                        </span>
-                        <span className="text-[8.5px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full shrink-0 border border-amber-300/60">
-                          PENDING APPROVAL
-                        </span>
+                    {/* Salon Cover Photo */}
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1.5">
+                        Salon Storefront &amp; Ambience Photo
+                      </label>
+                      <div className="relative rounded-2xl overflow-hidden border border-stone-300 bg-stone-900 group h-32 flex items-center justify-center">
+                        {formData.coverImage ? (
+                          <>
+                            <img
+                              src={formData.coverImage}
+                              alt="Salon Cover Preview"
+                              className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent flex items-end justify-between p-3">
+                              <span className="text-white text-xs font-bold drop-shadow">
+                                {formData.name || 'Your Salon Front'}
+                              </span>
+                              <span className="text-[10px] bg-white/20 backdrop-blur-md text-white font-medium px-2 py-0.5 rounded-full border border-white/30">
+                                Cover Photo Active
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-stone-500">
+                            <Camera className="w-8 h-8 mb-2 opacity-50" />
+                            <span className="text-xs font-medium">No Image Selected</span>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[10.5px] text-stone-500 mt-0.5 truncate">
-                        {formData.area}, {formData.city} • {formData.category}
-                      </p>
-                      <p className="text-[10px] text-stone-400 font-mono mt-0.5 truncate">
-                        Owner: {formData.ownerName} ({formData.mobile ? `+91 ${formData.mobile}` : '+91 9876543210'})
-                      </p>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                                const result = await window.flutter_inappwebview.callHandler('openCamera');
+                                if (result && result.success) {
+                                  updateField('coverImage', `data:${result.mimeType};base64,${result.base64}`);
+                                }
+                              } else {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.capture = 'environment';
+                                input.onchange = (e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (ev) => updateField('coverImage', ev.target.result);
+                                    reader.readAsDataURL(file);
+                                  }
+                                };
+                                input.click();
+                              }
+                            } catch (err) {
+                              console.error('Camera error:', err);
+                            }
+                          }}
+                          className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-brand-maroon bg-brand-maroon text-white flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          Take Photo
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = (e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => updateField('coverImage', ev.target.result);
+                                reader.readAsDataURL(file);
+                              }
+                            };
+                            input.click();
+                          }}
+                          className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-stone-300 bg-white text-stone-700 flex items-center justify-center gap-1.5 hover:bg-stone-50 transition-all"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          Upload from Gallery
+                        </button>
+                      </div>
                     </div>
                   </div>
+                </motion.div>
+              )}
 
-                  <div className="border-t border-stone-100 pt-2.5 grid grid-cols-3 gap-2 text-center text-stone-800">
-                    <div className="bg-stone-50 rounded-lg p-1.5">
-                      <span className="text-[9px] text-stone-400 block">Chairs</span>
-                      <span className="text-xs font-bold text-brand-maroon">{formData.totalChairs} Styling</span>
+              {/* ── STEP 4: Bank / Payouts ── */}
+              {step === 4 && (
+                <motion.div
+                  key="step-4"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <h2 className="text-base font-bold text-stone-900 font-serif">Direct Bank Settlements</h2>
+                    <p className="text-[11px] text-stone-500">Automated payouts for walk-ins &amp; online bookings</p>
+                  </div>
+
+                  <div className="bg-gradient-to-tr from-rose-900 to-stone-900 text-white rounded-2xl p-3.5 shadow-xs relative overflow-hidden">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] text-rose-200 font-bold uppercase tracking-wider block">
+                          Direct Payout Account
+                        </span>
+                        <h4 className="text-sm font-bold mt-0.5">{formData.name || 'Salon Partner'}</h4>
+                      </div>
+                      <Landmark className="w-5 h-5 text-amber-300" />
                     </div>
-                    <div className="bg-stone-50 rounded-lg p-1.5">
-                      <span className="text-[9px] text-stone-400 block">Hours</span>
-                      <span className="text-[10.5px] font-bold text-stone-700 truncate block">
-                        {formData.openTime.slice(0, 5)} - {formData.closeTime.slice(0, 5)}
+                    <div className="mt-3.5 flex justify-between items-end">
+                      <div>
+                        <span className="text-[9px] text-rose-200/80 uppercase">Settlement Bank</span>
+                        <p className="text-xs font-semibold">
+                          {formData.bankName ? `${formData.bankName} ` : 'No Bank Selected'}
+                          {formData.accountNumber ? `••••${formData.accountNumber.slice(-4)}` : ''}
+                        </p>
+                      </div>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
+                        Verified UPI / IMPS
                       </span>
                     </div>
-                    <div className="bg-stone-50 rounded-lg p-1.5">
-                      <span className="text-[9px] text-stone-400 block">Commission</span>
-                      <span className="text-[9px] font-bold text-amber-600">Pending Admin</span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Account Beneficiary Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={formData.ownerName || 'Account Holder Name'}
+                        value={formData.accountHolderName}
+                        onChange={(e) => updateField('accountHolderName', e.target.value)}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-700 block mb-1">Bank Name</label>
+                        <select
+                          value={formData.bankName}
+                          onChange={(e) => updateField('bankName', e.target.value)}
+                          className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-medium text-xs outline-none"
+                        >
+                          <option value="">Select Bank</option>
+                          <option value="HDFC Bank">HDFC Bank</option>
+                          <option value="ICICI Bank">ICICI Bank</option>
+                          <option value="State Bank of India">State Bank of India</option>
+                          <option value="Axis Bank">Axis Bank</option>
+                          <option value="Kotak Mahindra Bank">Kotak Mahindra</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-stone-700 block mb-1">IFSC Code</label>
+                        <input
+                          type="text"
+                          placeholder="HDFC0001032"
+                          value={formData.ifscCode}
+                          onChange={(e) => updateField('ifscCode', e.target.value.toUpperCase())}
+                          className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3 py-2 text-stone-900 font-mono text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Bank Account Number
+                      </label>
+                      <div className="flex items-center border border-stone-300 focus-within:border-brand-maroon focus-within:ring-1 focus-within:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 transition-all">
+                        <input
+                          type={showAccount ? 'text' : 'password'}
+                          placeholder="Enter 9-18 digit account number"
+                          value={formData.accountNumber}
+                          onChange={(e) => updateField('accountNumber', e.target.value)}
+                          className="w-full bg-transparent border-0 p-0 text-stone-900 placeholder-stone-400 font-medium text-xs focus:ring-0 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAccount((v) => !v)}
+                          className="text-stone-400 hover:text-stone-700 shrink-0"
+                        >
+                          {showAccount ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">Payout Frequency</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['Daily Automated (T+1)', 'Weekly Batch Settlement'].map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => updateField('payoutCycle', p)}
+                            className={`p-2 rounded-xl text-left border text-xs font-semibold transition-all ${formData.payoutCycle.startsWith(p.slice(0, 5))
+                              ? 'bg-rose-50 border-brand-maroon text-brand-maroon ring-1 ring-brand-maroon'
+                              : 'bg-white border-stone-200 text-stone-700'
+                              }`}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
+              )}
 
-                <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 space-y-1.5 text-stone-800">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-brand-maroon">
-                    <BadgePercent className="w-4 h-4" />
-                    <span>Onboarding &amp; Admin Approval Process</span>
+              {/* ── STEP 5: Review & Launch ── */}
+              {step === 5 && (
+                <motion.div
+                  key="step-5"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <h2 className="text-base font-bold text-stone-900 font-serif">Review &amp; Go Live</h2>
+                    <p className="text-[11px] text-stone-500">Your partner account is ready to activate and receive bookings</p>
                   </div>
-                  <ul className="text-[10.5px] text-stone-600 space-y-1 leading-snug pl-4 list-disc">
-                    <li>Upon submission, your salon application is reviewed by the DrimStyle Admin team.</li>
-                    <li>First approval from the admin is required before your salon can list treatments.</li>
-                    <li>Commission rate will be decided by Admin upon approval.</li>
-                  </ul>
-                </div>
 
-                <label className="flex items-start gap-2.5 p-2 rounded-xl bg-white/70 border border-stone-200 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.agreeTerms}
-                    onChange={(e) => updateField('agreeTerms', e.target.checked)}
-                    className="mt-0.5 accent-brand-maroon rounded"
-                  />
-                  <span className="text-[10.5px] text-stone-600 leading-snug">
-                    I agree to the <span className="font-bold text-brand-maroon">Partner Agreement</span>, platform service standards, and confirm that all submitted salon credentials are accurate.
-                  </span>
-                </label>
+                  <div className="bg-white rounded-2xl p-3.5 border border-purple-200 shadow-2xs space-y-3">
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={formData.coverImage}
+                        alt="Salon"
+                        className="w-14 h-14 rounded-xl object-cover border border-stone-200 shadow-2xs shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-stone-900 truncate">
+                            {formData.name || 'Aura Salon'}
+                          </span>
+                          <span className="text-[8.5px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full shrink-0 border border-amber-300/60">
+                            PENDING APPROVAL
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] text-stone-500 mt-0.5 truncate">
+                          {formData.area}, {formData.city} • {formData.category}
+                        </p>
+                        {formData.subcategories && formData.subcategories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {formData.subcategories.slice(0, 3).map((sub, sIdx) => (
+                              <span key={sIdx} className="text-[8.5px] bg-purple-50 text-purple-700 font-semibold px-1.5 py-0.2 rounded border border-purple-200">
+                                {sub}
+                              </span>
+                            ))}
+                            {formData.subcategories.length > 3 && (
+                              <span className="text-[8.5px] text-stone-400">+{formData.subcategories.length - 3} more</span>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-stone-400 font-mono mt-0.5 truncate">
+                          Owner: {formData.ownerName} ({formData.mobile ? `+91 ${formData.mobile}` : '+91 9876543210'})
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-stone-100 pt-2.5 grid grid-cols-3 gap-2 text-center text-stone-800">
+                      <div className="bg-stone-50 rounded-lg p-1.5">
+                        <span className="text-[9px] text-stone-400 block">Chairs</span>
+                        <span className="text-xs font-bold text-brand-maroon">{formData.totalChairs} Styling</span>
+                      </div>
+                      <div className="bg-stone-50 rounded-lg p-1.5">
+                        <span className="text-[9px] text-stone-400 block">Hours</span>
+                        <span className="text-[10.5px] font-bold text-stone-700 truncate block">
+                          {formData.openTime.slice(0, 5)} - {formData.closeTime.slice(0, 5)}
+                        </span>
+                      </div>
+                      <div className="bg-stone-50 rounded-lg p-1.5">
+                        <span className="text-[9px] text-stone-400 block">Commission</span>
+                        <span className="text-[9px] font-bold text-amber-600">Pending Admin</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 space-y-1.5 text-stone-800">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-brand-maroon">
+                      <BadgePercent className="w-4 h-4" />
+                      <span>Onboarding &amp; Admin Approval Process</span>
+                    </div>
+                    <ul className="text-[10.5px] text-stone-600 space-y-1 leading-snug pl-4 list-disc">
+                      <li>Upon submission, your salon application is reviewed by the DrimStyle Admin team.</li>
+                      <li>First approval from the admin is required before your salon can list treatments.</li>
+                      <li>Commission rate will be decided by Admin upon approval.</li>
+                    </ul>
+                  </div>
+
+                  <label className="flex items-start gap-2.5 p-2 rounded-xl bg-white/70 border border-stone-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.agreeTerms}
+                      onChange={(e) => updateField('agreeTerms', e.target.checked)}
+                      className="mt-0.5 accent-brand-maroon rounded"
+                    />
+                    <span className="text-[10.5px] text-stone-600 leading-snug">
+                      I agree to the <span className="font-bold text-brand-maroon">Partner Agreement</span>, platform service standards, and confirm that all submitted salon credentials are accurate.
+                    </span>
+                  </label>
+                </motion.div>
+              )}
+
+            </AnimatePresence>
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-2.5"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-red-700 leading-snug">{error}</p>
               </motion.div>
             )}
-          </AnimatePresence>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-3 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-2.5"
-            >
-              <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-red-700 leading-snug">{error}</p>
-            </motion.div>
-          )}
-
-          <div className="mt-4 pt-2">
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={handleNext}
-              className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-md transition-all duration-200 flex items-center justify-center gap-2 ${
-                isSubmitting
+            <div className="mt-4 pt-2">
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleNext}
+                className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-md transition-all duration-200 flex items-center justify-center gap-2 ${isSubmitting
                   ? 'bg-stone-400 text-white cursor-wait'
                   : 'bg-gradient-to-r from-brand-maroon via-[#981438] to-brand-darkMaroon hover:from-[#721528] hover:to-[#55101f] text-white active:scale-98 cursor-pointer'
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Activating Partner Account...</span>
-                </>
-              ) : step === 5 ? (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Submit &amp; Launch Salon Dashboard</span>
-                </>
-              ) : (
-                <>
-                  <span>Continue to Next Step</span>
-                  <ChevronRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+                  }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Activating Partner Account...</span>
+                  </>
+                ) : step === 5 ? (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Submit &amp; Launch Salon Dashboard</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Continue to Next Step</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <footer className="w-full text-center text-[10px] text-stone-400 leading-relaxed px-2 pt-2">
-          Need partner support? Call our onboarding desk at{' '}
-          <a className="text-brand-maroon font-bold hover:underline" href="tel:18001239999">
-            1800-123-9999
-          </a>
-        </footer>
-      </main>
+          <footer className="w-full text-center text-[10px] text-stone-400 leading-relaxed px-2 pt-2">
+            Need partner support? Call our onboarding desk at{' '}
+            <a className="text-brand-maroon font-bold hover:underline" href="tel:18001239999">
+              1800-123-9999
+            </a>
+          </footer>
+        </main>
       </div>
     </motion.div>
   );

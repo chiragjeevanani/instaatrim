@@ -178,11 +178,28 @@ export const AdminCategoriesPage = () => {
   // Standard catalog dictionary for smart autocomplete recommendations
   const CATALOG_SUGGESTIONS = useMemo(() => [
     {
-      name: 'Hair Styling',
-      shortName: 'Hair Style',
-      slug: 'hair-styling',
+      name: 'Hair',
+      shortName: 'Hair',
+      slug: 'hair',
       gender: 'unisex',
-      tags: ['Men\'s Haircut', 'Women\'s Haircut', 'Kids\' Haircut', 'Fringe / Trim', 'Blow-dry', 'Hair Wash + Blow-dry', 'Curls / Straightening', 'Party Hairstyle'],
+      tags: [
+        "Men's Haircut",
+        "Women's Haircut",
+        "Kids' Haircut",
+        'Fringe / Trim',
+        'Root Touch-up',
+        'Global Color',
+        'Highlights',
+        'Balayage / Ombre',
+        'Hair Spa',
+        'Keratin',
+        'Smoothening / Rebonding',
+        'Scalp Treatment',
+        'Blow-dry',
+        'Hair Wash + Blow-dry',
+        'Curls / Straightening',
+        'Party Hairstyle'
+      ],
       description: 'Professional haircuts, blow dries, and styling treatments.'
     },
     {
@@ -190,7 +207,16 @@ export const AdminCategoriesPage = () => {
       shortName: 'Hair Color',
       slug: 'hair-color-treatments',
       gender: 'unisex',
-      tags: ['Root Touch-up', 'Global Color', 'Highlights', 'Balayage / Ombre', 'Hair Spa', 'Keratin Treatment', 'Smoothening / Rebonding', 'Scalp Treatment'],
+      tags: [
+        'Root Touch-up',
+        'Global Color',
+        'Highlights (per streak/section)',
+        'Balayage / Ombre',
+        'Hair Spa',
+        'Keratin',
+        'Smoothening / Rebonding',
+        'Scalp Treatment'
+      ],
       description: 'Rich vibrant hair coloring, highlights, and specialized keratin treatments.'
     },
     {
@@ -198,7 +224,7 @@ export const AdminCategoriesPage = () => {
       shortName: 'Men\'s Grooming',
       slug: 'mens-grooming',
       gender: 'men',
-      tags: ['Beard Trim', 'Beard Styling / Shaping', 'Clean Shave', 'Haircut + Beard Combo', 'Haircut + Head Massage', 'Men\'s Cleanup', 'Men\'s Facial', 'De-tan (Men)'],
+      tags: ['Beard Trim', 'Beard Styling / Shaping', 'Clean Shave', 'Haircut + Beard', 'Haircut + Head Massage', "Men's Cleanup", "Men's Facial", 'De-tan'],
       description: 'Precision beard sculpting, grooming combos, and men\'s revitalizing cleanups.'
     },
     {
@@ -214,15 +240,15 @@ export const AdminCategoriesPage = () => {
       shortName: 'Waxing',
       slug: 'waxing-threading',
       gender: 'women',
-      tags: ['Full Arms Waxing', 'Full Legs Waxing', 'Underarms Waxing', 'Full Body Waxing', 'Eyebrows Threading'],
+      tags: ['Full Arms', 'Full Legs', 'Underarms', 'Full Body', 'Eyebrows', 'Upper Lip', 'Full Face'],
       description: 'Gentle waxing, hair removal, and precision threading.'
     },
     {
-      name: 'Nails, Art & Extensions',
-      shortName: 'Nail Studio',
-      slug: 'nails-extensions',
+      name: 'Nails',
+      shortName: 'Nails',
+      slug: 'nails',
       gender: 'women',
-      tags: ['Acrylic Nails', 'Gel Polish', 'Nail Art', 'French Tips', 'Refills', 'Classic Manicure', 'Pedicure'],
+      tags: ['Classic Manicure', 'Classic Pedicure', 'Spa Manicure + Pedicure', 'Gel Polish', 'Nail Extensions', 'Nail Art (per nail / full set)'],
       description: 'Full set acrylic nail extensions, long-lasting gel art and pedi-care.'
     },
     {
@@ -262,7 +288,9 @@ export const AdminCategoriesPage = () => {
   // Compute active autocomplete suggestions matching typed input (searches category name, tags, description, and keywords)
   const autocompleteSuggestions = useMemo(() => {
     const rawQuery = (formData.name || '').trim().toLowerCase();
-    if (!rawQuery || rawQuery.length < 1) return [];
+    if (!rawQuery || rawQuery.length < 1) {
+      return [...CATALOG_SUGGESTIONS].slice(0, 8);
+    }
 
     // Clean tokens to match even typos or individual words like 'head', 'massage'
     const queryTokens = rawQuery.split(/[\s-]+/).filter(Boolean);
@@ -373,7 +401,9 @@ export const AdminCategoriesPage = () => {
       serviceCategoriesText: suggestion.tags?.length
         ? suggestion.tags.join(', ')
         : prev.serviceCategoriesText,
-      description: suggestion.description || prev.description
+      description: suggestion.description || prev.description,
+      price: suggestion.price !== undefined ? suggestion.price : prev.price,
+      originalPrice: suggestion.price !== undefined ? suggestion.price : prev.originalPrice
     }));
   };
 
@@ -800,7 +830,7 @@ export const AdminCategoriesPage = () => {
                     placeholder="e.g. Hair, Nails, Facial, Spa..."
                     value={formData.name}
                     onFocus={() => {
-                      if (formData.name.trim().length >= 1) setShowSuggestions(true);
+                      setShowSuggestions(true);
                     }}
                     onBlur={() => {
                       // Slight delay so onMouseDown on suggestion can register before blur hides it
@@ -811,8 +841,8 @@ export const AdminCategoriesPage = () => {
                   />
 
                   {/* Autocomplete Suggestions Dropdown Menu */}
-                  {showSuggestions && autocompleteSuggestions.length > 0 && formData.name.trim().length >= 1 && (
-                    <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-[#161622] border border-[#2f2f45] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#232336] max-h-56 overflow-y-auto">
+                  {showSuggestions && autocompleteSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#161622] border border-[#2f2f45] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#232336] max-h-60 overflow-y-auto">
                       <div className="px-3 py-1.5 bg-[#12121b] text-[10px] uppercase tracking-wider font-bold text-purple-400 flex items-center justify-between">
                         <span>Related Suggestions</span>
                         <span className="text-stone-500 font-normal">Click to auto-fill</span>

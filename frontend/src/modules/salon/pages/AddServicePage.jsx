@@ -33,19 +33,19 @@ export const AddServicePage = () => {
   const availableCategories = (dynamicCategories && dynamicCategories.length > 0)
     ? dynamicCategories.map((c) => c.name || c.shortName)
     : [
-        'Waxing',
-        'Facial',
-        'Spa',
-        'Body Polishing',
-        'Mani-Pedi',
-        'Hair Studio',
-        'Beard',
-        'Grooming',
-        'Makeup',
-        'Mehandi',
-        'Cleanup',
-        'Bleach & D-Tan'
-      ];
+      'Waxing',
+      'Facial',
+      'Spa',
+      'Body Polishing',
+      'Mani-Pedi',
+      'Hair Studio',
+      'Beard',
+      'Grooming',
+      'Makeup',
+      'Mehandi',
+      'Cleanup',
+      'Bleach & D-Tan'
+    ];
 
   // Preset standard services catalog covering ~95% of all salon services for instant onboarding
   const STANDARD_TEMPLATES = [
@@ -134,7 +134,7 @@ export const AddServicePage = () => {
       image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
     },
     {
-      name: 'Keratin Treatment',
+      name: 'Keratin',
       category: 'Hair Styling',
       fallbackCategory: 'Hair Studio',
       duration: '3 hrs',
@@ -227,7 +227,7 @@ export const AddServicePage = () => {
       image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
     },
     {
-      name: 'Haircut + Beard Combo',
+      name: 'Haircut + Beard',
       category: 'Men\'s Hair & Grooming',
       fallbackCategory: 'Grooming',
       duration: '50 mins',
@@ -330,7 +330,7 @@ export const AddServicePage = () => {
 
     // --- 4. Waxing & Threading ---
     {
-      name: 'Full Arms Waxing',
+      name: 'Full Arms',
       category: 'Waxing',
       fallbackCategory: 'Waxing & RICA',
       duration: '30 mins',
@@ -339,7 +339,7 @@ export const AddServicePage = () => {
       image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
     },
     {
-      name: 'Full Legs Waxing',
+      name: 'Full Legs',
       category: 'Waxing',
       fallbackCategory: 'Waxing & RICA',
       duration: '40 mins',
@@ -348,7 +348,7 @@ export const AddServicePage = () => {
       image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
     },
     {
-      name: 'Underarms Waxing',
+      name: 'Underarms',
       category: 'Waxing',
       fallbackCategory: 'Waxing & RICA',
       duration: '15 mins',
@@ -357,7 +357,7 @@ export const AddServicePage = () => {
       image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
     },
     {
-      name: 'Full Body Waxing',
+      name: 'Full Body',
       category: 'Waxing',
       fallbackCategory: 'Waxing & RICA',
       duration: '1 hr 30 mins',
@@ -366,7 +366,7 @@ export const AddServicePage = () => {
       image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
     },
     {
-      name: 'Eyebrows Threading',
+      name: 'Eyebrows',
       category: 'Waxing',
       fallbackCategory: 'Waxing & RICA',
       duration: '10 mins',
@@ -378,7 +378,7 @@ export const AddServicePage = () => {
     // --- 5. Nails ---
     {
       name: 'Classic Manicure',
-      category: 'Nails, Art & Extensions',
+      category: 'Nails',
       fallbackCategory: 'Mani-Pedi',
       duration: '40 mins',
       suggestedPrice: 600,
@@ -387,7 +387,7 @@ export const AddServicePage = () => {
     },
     {
       name: 'Classic Pedicure',
-      category: 'Nails, Art & Extensions',
+      category: 'Nails',
       fallbackCategory: 'Mani-Pedi',
       duration: '50 mins',
       suggestedPrice: 800,
@@ -396,7 +396,7 @@ export const AddServicePage = () => {
     },
     {
       name: 'Spa Manicure + Pedicure',
-      category: 'Nails, Art & Extensions',
+      category: 'Nails',
       fallbackCategory: 'Mani-Pedi',
       duration: '1 hr 30 mins',
       suggestedPrice: 1800,
@@ -405,7 +405,7 @@ export const AddServicePage = () => {
     },
     {
       name: 'Gel Polish',
-      category: 'Nails, Art & Extensions',
+      category: 'Nails',
       fallbackCategory: 'Mani-Pedi',
       duration: '45 mins',
       suggestedPrice: 900,
@@ -414,7 +414,7 @@ export const AddServicePage = () => {
     },
     {
       name: 'Nail Extensions',
-      category: 'Nails, Art & Extensions',
+      category: 'Nails',
       fallbackCategory: 'Mani-Pedi',
       duration: '1 hr 30 mins',
       suggestedPrice: 2500,
@@ -423,7 +423,7 @@ export const AddServicePage = () => {
     },
     {
       name: 'Nail Art (per nail / full set)',
-      category: 'Nails, Art & Extensions',
+      category: 'Nails',
       fallbackCategory: 'Mani-Pedi',
       duration: '30 mins',
       suggestedPrice: 500,
@@ -594,7 +594,7 @@ export const AddServicePage = () => {
 
   // Platform controlled discount markup (e.g. 30% display discount on customer end)
   const PLATFORM_DISCOUNT_PERCENT = 30;
-  
+
   // Salon enters ONE price (their payout/selling rate).
   // Platform automatically computes and locks the Original Price (MSRP)
   const computedOriginalPrice = price && Number(price) > 0
@@ -640,10 +640,14 @@ export const AddServicePage = () => {
     if (matchedCategory) {
       setCategory(matchedCategory);
     }
-    setDuration(tmpl.duration || '45 mins');
+    if (tmpl.duration) setDuration(tmpl.duration);
+    else setDuration(tmpl.duration || '45 mins');
     setDescription(tmpl.description || '');
-    if (!price || price === '') {
-      setPrice(tmpl.suggestedPrice || '');
+    // Price mapping
+    if (tmpl.price !== undefined) {
+      setPrice(tmpl.price);
+    } else if (tmpl.suggestedPrice !== undefined) {
+      setPrice(tmpl.suggestedPrice);
     }
     if (tmpl.image) {
       setImage(tmpl.image);
@@ -1026,11 +1030,10 @@ export const AddServicePage = () => {
                       type="button"
                       key={cat}
                       onClick={() => setCategory(cat)}
-                      className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-rose-900 text-white border-rose-900 shadow-2xs scale-[1.02]'
-                          : 'bg-[#faf7fc] text-stone-600 border-purple-100 hover:bg-stone-100'
-                      }`}
+                      className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${isSelected
+                        ? 'bg-rose-900 text-white border-rose-900 shadow-2xs scale-[1.02]'
+                        : 'bg-[#faf7fc] text-stone-600 border-purple-100 hover:bg-stone-100'
+                        }`}
                     >
                       {cat}
                     </button>
@@ -1144,14 +1147,12 @@ export const AddServicePage = () => {
           <div className="bg-white rounded-2xl p-3.5 border border-purple-100/80 shadow-xs flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                  isInstantEligible ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-400'
-                }`}
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isInstantEligible ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-400'
+                  }`}
               >
                 <Zap
-                  className={`w-4 h-4 stroke-[2] ${
-                    isInstantEligible ? 'fill-amber-500 text-amber-500' : ''
-                  }`}
+                  className={`w-4 h-4 stroke-[2] ${isInstantEligible ? 'fill-amber-500 text-amber-500' : ''
+                    }`}
                 />
               </div>
               <div>
@@ -1167,14 +1168,12 @@ export const AddServicePage = () => {
             <button
               type="button"
               onClick={() => setIsInstantEligible(!isInstantEligible)}
-              className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer relative shrink-0 shadow-inner ${
-                isInstantEligible ? 'bg-rose-900' : 'bg-stone-300'
-              }`}
+              className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer relative shrink-0 shadow-inner ${isInstantEligible ? 'bg-rose-900' : 'bg-stone-300'
+                }`}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform duration-200 ${
-                  isInstantEligible ? 'translate-x-4' : 'translate-x-0'
-                }`}
+                className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform duration-200 ${isInstantEligible ? 'translate-x-4' : 'translate-x-0'
+                  }`}
               />
             </button>
           </div>

@@ -23,7 +23,7 @@ exports.uploadCategoryMiddleware = upload.single('image');
 
 exports.createCategory = async (req, res) => {
     try {
-        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan, price, discount, originalPrice } = req.body;
+        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan, price, discount, originalPrice, salonId, salonName } = req.body;
         
         let imageUrl = '';
         if (req.file) {
@@ -63,6 +63,8 @@ exports.createCategory = async (req, res) => {
             price: price ? Number(price) : 0,
             discount: discount ? Number(discount) : 0,
             originalPrice: originalPrice ? Number(originalPrice) : (price ? Number(price) : 0),
+            salonId: salonId && salonId !== 'all' && salonId !== 'null' ? salonId : null,
+            salonName: salonName || 'All Salons (Global)',
             image: imageUrl
         });
 
@@ -86,7 +88,7 @@ exports.getCategories = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
     try {
-        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan, price, discount, originalPrice } = req.body;
+        const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan, price, discount, originalPrice, salonId, salonName } = req.body;
         
         const updateData = {
             name,
@@ -94,6 +96,8 @@ exports.updateCategory = async (req, res) => {
             slug,
             gender,
             description,
+            salonId: salonId && salonId !== 'all' && salonId !== 'null' ? salonId : null,
+            salonName: salonName || 'All Salons (Global)',
             isActive: isActive === 'true' || isActive === true,
             colSpan: colSpan ? Number(colSpan) : 1,
             price: price ? Number(price) : 0,

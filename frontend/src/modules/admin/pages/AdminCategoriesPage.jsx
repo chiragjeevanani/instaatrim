@@ -24,6 +24,7 @@ export const AdminCategoriesPage = () => {
   const {
     categories = [],
     services = [],
+    salons = [],
     createCategory,
     updateCategory,
     deleteCategory,
@@ -40,6 +41,7 @@ export const AdminCategoriesPage = () => {
     import('../../../shared/services/api').then(({ api }) => {
       api.categories.list();
       api.services.listAll();
+      api.salons.list();
     });
   }, []);
 
@@ -75,6 +77,8 @@ export const AdminCategoriesPage = () => {
       shortName: '',
       slug: '',
       gender: 'unisex',
+      salonId: 'all',
+      salonName: 'All Salons (Global)',
       serviceCategoriesText: '',
       image: '',
       description: '',
@@ -162,6 +166,8 @@ export const AdminCategoriesPage = () => {
       shortName: '',
       slug: '',
       gender: 'unisex',
+      salonId: 'all',
+      salonName: 'All Salons (Global)',
       serviceCategoriesText: '',
       image: '',
       description: '',
@@ -220,12 +226,12 @@ export const AdminCategoriesPage = () => {
       description: 'Rich vibrant hair coloring, highlights, and specialized keratin treatments.'
     },
     {
-      name: 'Men\'s Grooming',
-      shortName: 'Men\'s Grooming',
+      name: "Men's Grooming",
+      shortName: "Men's Grooming",
       slug: 'mens-grooming',
       gender: 'men',
       tags: ['Beard Trim', 'Beard Styling / Shaping', 'Clean Shave', 'Haircut + Beard', 'Haircut + Head Massage', "Men's Cleanup", "Men's Facial", 'De-tan'],
-      description: 'Precision beard sculpting, grooming combos, and men\'s revitalizing cleanups.'
+      description: "Precision beard sculpting, grooming combos, and men's revitalizing cleanups."
     },
     {
       name: 'Skin & Facial',
@@ -337,6 +343,8 @@ export const AdminCategoriesPage = () => {
       shortName: category.shortName || category.name || '',
       slug: category.slug || '',
       gender: category.gender || 'unisex',
+      salonId: category.salonId ? (category.salonId._id || category.salonId.id || category.salonId) : 'all',
+      salonName: category.salonName || 'All Salons (Global)',
       serviceCategoriesText: Array.isArray(category.serviceCategories)
         ? category.serviceCategories.join(', ')
         : category.serviceCategories || '',
@@ -441,6 +449,8 @@ export const AdminCategoriesPage = () => {
 
     payload.append('slug', slug);
     payload.append('gender', formData.gender);
+    payload.append('salonId', formData.salonId || 'all');
+    payload.append('salonName', formData.salonName || 'All Salons (Global)');
     
     const serviceCategories = rawServices.length ? rawServices : [formData.name.trim()];
     payload.append('serviceCategories', JSON.stringify(serviceCategories));
@@ -600,6 +610,7 @@ export const AdminCategoriesPage = () => {
               <thead>
                 <tr className="admin-table-header border-b border-[#232333] bg-[#111119] text-stone-400 uppercase tracking-wider">
                   <th className="py-3.5 px-5 font-semibold">Category Details</th>
+                  <th className="py-3.5 px-4 font-semibold">Assigned Salon</th>
                   <th className="py-3.5 px-4 font-semibold">Slug Identifier</th>
                   <th className="py-3.5 px-4 font-semibold">Target Audience</th>
                   <th className="py-3.5 px-4 font-semibold">Base Price</th>
@@ -612,7 +623,7 @@ export const AdminCategoriesPage = () => {
               <tbody className="divide-y divide-[#1f1f2e]">
                 {filteredCategories.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-stone-500">
+                    <td colSpan={9} className="text-center py-12 text-stone-500">
                       <Layers className="w-8 h-8 mx-auto mb-2 opacity-40 text-purple-400" />
                       <p className="text-sm font-medium text-stone-300">No categories found matching filters</p>
                       <p className="text-xs text-stone-500 mt-1">
@@ -654,6 +665,18 @@ export const AdminCategoriesPage = () => {
                               </div>
                             </div>
                           </div>
+                        </td>
+
+                        {/* Assigned Salon Badge */}
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold border ${
+                            cat.salonId && cat.salonId !== 'all'
+                              ? 'bg-purple-950/50 text-purple-300 border-purple-500/30'
+                              : 'bg-stone-900/60 text-stone-300 border-stone-800'
+                          }`}>
+                            <Store className="w-3 h-3 text-purple-400" />
+                            <span>{cat.salonName || 'All Salons (Global)'}</span>
+                          </span>
                         </td>
 
                         {/* Slug */}
@@ -833,7 +856,6 @@ export const AdminCategoriesPage = () => {
                       setShowSuggestions(true);
                     }}
                     onBlur={() => {
-                      // Slight delay so onMouseDown on suggestion can register before blur hides it
                       setTimeout(() => setShowSuggestions(false), 200);
                     }}
                     onChange={(e) => handleNameChange(e.target.value)}
@@ -890,6 +912,47 @@ export const AdminCategoriesPage = () => {
                     className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
                   />
                 </div>
+              </div>
+
+              {/* Dynamic Salon Assignment Dropdown */}
+              <div>
+                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>Assign to Salon (Dynamic DB)</span>
+                  <span className="text-[10px] text-purple-400 font-normal">Choose Salon</span>
+                </label>
+                <div className="relative">
+                  <Store className="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={formData.salonId || 'all'}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      if (selId === 'all') {
+                        setFormData({ ...formData, salonId: 'all', salonName: 'All Salons (Global)' });
+                      } else {
+                        const s = salons.find((item) => (item.id || item._id) === selId);
+                        setFormData({
+                          ...formData,
+                          salonId: selId,
+                          salonName: s ? s.name : 'Specific Salon'
+                        });
+                      }
+                    }}
+                    className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl pl-10 pr-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    <option value="all">🌐 All Salons (Global Category - Available to all partners)</option>
+                    {salons.map((s) => {
+                      const sId = s.id || s._id;
+                      return (
+                        <option key={sId} value={sId}>
+                          🏢 {s.name} {s.city ? `(${s.city})` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <p className="text-[10px] text-stone-500 mt-1">
+                  Select which salon this category belongs to. Database will dynamically link and store it.
+                </p>
               </div>
 
               {/* Slug & Target Audience */}

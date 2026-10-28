@@ -119,7 +119,7 @@ export const AddServicePage = () => {
       category: 'Hair Styling',
       fallbackCategory: 'Hair Studio',
       duration: '3 hrs',
-      suggestedPrice: 6000,
+      suggestedPrice: 600,
       description: 'Freehand painted seamless gradient color transition for a sun-kissed, natural look.',
       image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
     },
@@ -592,14 +592,8 @@ export const AddServicePage = () => {
   const [image, setImage] = useState(null);
   const [showAutofillSuggestions, setShowAutofillSuggestions] = useState(false);
 
-  // Platform controlled discount markup (e.g. 30% display discount on customer end)
-  const PLATFORM_DISCOUNT_PERCENT = 30;
-
-  // Salon enters ONE price (their payout/selling rate).
-  // Platform automatically computes and locks the Original Price (MSRP)
-  const computedOriginalPrice = price && Number(price) > 0
-    ? Math.round(Number(price) / (1 - PLATFORM_DISCOUNT_PERCENT / 100))
-    : 0;
+  // Salon enters their price, and customer display price directly matches it
+  const computedOriginalPrice = price && Number(price) > 0 ? Number(price) : 0;
 
   useEffect(() => {
     if (existingService) {
@@ -685,7 +679,7 @@ export const AddServicePage = () => {
     if (!name.trim() || !price) return;
 
     const basePrice = Number(price);
-    const finalOriginalPrice = computedOriginalPrice || Math.round(basePrice * 1.3);
+    const finalOriginalPrice = basePrice;
 
     const servicePayload = {
       name: name.trim(),
@@ -1069,16 +1063,12 @@ export const AddServicePage = () => {
             </div>
           </div>
 
-          {/* Card 2: Pricing & Platform Controlled Yield */}
+          {/* Card 2: Pricing */}
           <div className="bg-white rounded-2xl p-3.5 border border-purple-100/80 shadow-xs space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block">
                 Salon Pricing
               </span>
-              <div className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-900 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/60">
-                <Lock className="w-2.5 h-2.5 stroke-[2]" />
-                <span>Discounts &amp; Offers controlled by Platform</span>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
@@ -1104,11 +1094,8 @@ export const AddServicePage = () => {
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold text-stone-500 block mb-1 flex items-center justify-between">
-                  <span>Customer Display MSRP (₹)</span>
-                  <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded">
-                    {PLATFORM_DISCOUNT_PERCENT}% Platform Deal
-                  </span>
+                <label className="text-[10px] font-semibold text-stone-700 block mb-1">
+                  Customer Display Price (₹)
                 </label>
                 <div className="flex items-center bg-stone-100/80 rounded-xl border border-stone-200/70 px-2.5 py-2 cursor-not-allowed">
                   <IndianRupee className="w-3.5 h-3.5 text-stone-400 mr-1 shrink-0" />
@@ -1116,14 +1103,13 @@ export const AddServicePage = () => {
                     type="number"
                     readOnly
                     disabled
-                    value={computedOriginalPrice || (price ? Math.round(Number(price) * 1.3) : '')}
-                    className="w-full bg-transparent text-xs text-stone-500 outline-none font-semibold cursor-not-allowed"
-                    placeholder="Auto-calculated"
+                    value={price || ''}
+                    className="w-full bg-transparent text-xs text-stone-700 outline-none font-bold cursor-not-allowed"
+                    placeholder="Same as your price"
                   />
-                  <Lock className="w-3 h-3 text-stone-400 shrink-0 ml-1" />
                 </div>
                 <p className="text-[9.5px] text-stone-400 mt-1 leading-tight">
-                  Auto-formatted with standard consumer discount for maximum conversions.
+                  Display price customers will see directly for this service.
                 </p>
               </div>
             </div>

@@ -226,10 +226,10 @@ export const CustomerProvider = ({ children }) => {
     } catch {}
     return {
       id: 'loc-default',
-      area: 'Corporate House, Chhoti Gwaltoli',
+      area: 'Detecting Location...',
       city: 'Indore',
       landmark: 'Near Railway Station & Regal Circle',
-      address: 'Corporate House, RNT Marg, Chhoti Gwaltoli, Indore, Madhya Pradesh 452001',
+      address: 'Detecting your live location...',
       pincode: '452001',
       lat: 22.7163,
       lng: 75.8711,

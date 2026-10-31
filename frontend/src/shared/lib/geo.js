@@ -1,4 +1,4 @@
-// Geolocation + precision reverse geocoding with Google Maps API and enhanced locality matcher
+// Geolocation + 100% Dynamic Real-Time Reverse Geocoding (Multi-Provider: Google Maps, Photon, OSM, BigDataCloud)
 
 const EARTH_RADIUS_KM = 6371;
 const GOOGLE_MAPS_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GOOGLE_MAPS_API_KEY) || 'AIzaSyCI-gh2Yu1N_rR7RGt0RYfcRQmSB3Qh1_w';
@@ -17,106 +17,6 @@ export const formatDistance = (km) => {
   if (km == null || isNaN(km)) return '';
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 };
-
-// High-precision localities dictionary for Indore & MP centers
-const PRECISION_LOCALITIES = [
-  {
-    name: 'Corporate House',
-    subArea: 'Chhoti Gwaltoli',
-    road: 'RNT Marg',
-    city: 'Indore',
-    pincode: '452001',
-    landmark: 'Near Railway Station & Regal Circle',
-    formatted: 'Corporate House, RNT Marg, Chhoti Gwaltoli, Indore, Madhya Pradesh 452001',
-    lat: 22.7163,
-    lng: 75.8711,
-    radiusKm: 1.5
-  },
-  {
-    name: 'Chhoti Gwaltoli',
-    subArea: 'Central Indore',
-    road: 'RNT Marg',
-    city: 'Indore',
-    pincode: '452001',
-    landmark: 'Near Dawa Bazar & Railway Station',
-    formatted: 'Chhoti Gwaltoli, RNT Marg, Indore, Madhya Pradesh 452001',
-    lat: 22.7150,
-    lng: 75.8690,
-    radiusKm: 1.2
-  },
-  {
-    name: 'South Tukoganj',
-    subArea: 'Tukoganj',
-    road: 'MG Road',
-    city: 'Indore',
-    pincode: '452001',
-    landmark: 'Near Nath Mandir & High Court',
-    formatted: 'South Tukoganj, MG Road, Indore, Madhya Pradesh 452001',
-    lat: 22.7196,
-    lng: 75.8780,
-    radiusKm: 1.5
-  },
-  {
-    name: 'New Palasia',
-    subArea: 'Palasia',
-    road: 'Janjeerwala Square',
-    city: 'Indore',
-    pincode: '452001',
-    landmark: 'Near 56 Dukan',
-    formatted: 'New Palasia, Janjeerwala Square, Indore, Madhya Pradesh 452001',
-    lat: 22.7278,
-    lng: 75.8877,
-    radiusKm: 1.8
-  },
-  {
-    name: 'Vijay Nagar',
-    subArea: 'Scheme 54',
-    road: 'AB Road',
-    city: 'Indore',
-    pincode: '452010',
-    landmark: 'Near C21 Mall & Malhar Mega Mall',
-    formatted: 'Vijay Nagar, Scheme 54, AB Road, Indore, Madhya Pradesh 452010',
-    lat: 22.7515,
-    lng: 75.8931,
-    radiusKm: 2.5
-  },
-  {
-    name: 'Geeta Bhawan',
-    subArea: 'Manorama Ganj',
-    road: 'AB Road',
-    city: 'Indore',
-    pincode: '452007',
-    landmark: 'Near Geeta Bhawan Mandir',
-    formatted: 'Geeta Bhawan, AB Road, Indore, Madhya Pradesh 452007',
-    lat: 22.7089,
-    lng: 75.8801,
-    radiusKm: 1.8
-  },
-  {
-    name: 'Bhawarkua',
-    subArea: 'Tower Square',
-    road: 'Bhawarkua Main Road',
-    city: 'Indore',
-    pincode: '452014',
-    landmark: 'Near Holkar Science College',
-    formatted: 'Bhawarkua, Tower Square, Indore, Madhya Pradesh 452014',
-    lat: 22.6896,
-    lng: 75.8676,
-    radiusKm: 2.0
-  },
-  {
-    name: 'Rajwada',
-    subArea: 'Old City',
-    road: 'MG Road',
-    city: 'Indore',
-    pincode: '452002',
-    landmark: 'Near Historical Rajwada Palace',
-    formatted: 'Rajwada, MG Road, Indore, Madhya Pradesh 452002',
-    lat: 22.7196,
-    lng: 75.8577,
-    radiusKm: 1.5
-  }
-];
 
 export const requestCurrentPosition = () =>
   new Promise((resolve, reject) => {
@@ -139,9 +39,9 @@ export const requestCurrentPosition = () =>
     );
   });
 
-// Reverse geocode with precision matching
+// 100% Dynamic Reverse Geocoding (No static hardcoded dictionary)
 export const reverseGeocode = async (lat, lng) => {
-  // Method 1: Check Google Maps API first
+  // Method 1: Google Maps Geocoding API (Primary if enabled in Google Cloud Console)
   if (GOOGLE_MAPS_KEY) {
     try {
       const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_KEY}`;
@@ -186,32 +86,49 @@ export const reverseGeocode = async (lat, lng) => {
     }
   }
 
-  // Method 2: High-precision coordinate distance matcher (Exact Chhoti Gwaltoli / Corporate House / South Tukoganj etc.)
-  let bestMatch = null;
-  let minDistance = Infinity;
-  for (const item of PRECISION_LOCALITIES) {
-    const dist = haversineKm(lat, lng, item.lat, item.lng);
-    if (dist < minDistance) {
-      minDistance = dist;
-      bestMatch = { ...item, distanceKm: dist };
+  // Method 2: Photon Reverse Geocoding (Blazing fast OSM-backed live dynamic geocoder)
+  try {
+    const photonUrl = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`;
+    const pRes = await fetch(photonUrl);
+    if (pRes.ok) {
+      const pData = await pRes.json();
+      if (pData?.features && pData.features.length > 0) {
+        const p = pData.features[0].properties || {};
+        const city = p.city || p.town || p.state_district || p.district || 'Indore';
+        const landmark = p.name || '';
+        const street = p.street || '';
+        const locality = p.locality || (p.district && !p.district.toLowerCase().includes('indore city') ? p.district : '') || '';
+        const pincode = p.postcode || '';
+
+        // Select the most meaningful dynamic area title
+        let area = landmark || locality || street || city;
+        if (landmark && street && !landmark.toLowerCase().includes(street.toLowerCase())) {
+          area = landmark;
+        } else if (locality && street) {
+          area = `${locality}, ${street}`;
+        }
+
+        const cleanParts = [landmark, street, locality, city, p.state, pincode].filter(Boolean);
+        const uniqueParts = Array.from(new Set(cleanParts));
+        const address = uniqueParts.join(', ');
+
+        return {
+          area,
+          city,
+          pincode,
+          landmark: street || landmark || locality || city,
+          address: address || `${area}, ${city}`,
+          lat,
+          lng,
+          source: 'photon'
+        };
+      }
     }
+  } catch (pErr) {
+    console.warn('[Geo] Photon reverse geocode error:', pErr.message);
   }
 
-  // If coordinates are within 4 km of known center, return rich detailed local address
-  if (bestMatch && minDistance <= (bestMatch.radiusKm || 3.0)) {
-    return {
-      area: `${bestMatch.name}, ${bestMatch.subArea}`,
-      city: bestMatch.city,
-      pincode: bestMatch.pincode,
-      landmark: bestMatch.landmark,
-      address: bestMatch.formatted,
-      lat,
-      lng,
-      source: 'precision'
-    };
-  }
-
-  // Method 3: OpenStreetMap Nominatim reverse geocode
+  // Method 3: OpenStreetMap Nominatim Reverse Geocode
   try {
     const osmUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
     const res = await fetch(osmUrl, {
@@ -221,17 +138,12 @@ export const reverseGeocode = async (lat, lng) => {
       const d = await res.json();
       if (d && d.address) {
         const addr = d.address;
-        const city = addr.city || addr.town || addr.municipality || addr.state_district || 'Indore';
-        const specificName = addr.building || addr.amenity || addr.office || addr.commercial || addr.suburb || addr.neighbourhood || addr.road;
-        
-        let area = specificName;
-        if (!area || area.toLowerCase().includes('indore city')) {
-          area = bestMatch ? `${bestMatch.name}, ${bestMatch.subArea}` : 'Central Area';
-        }
-
-        const landmark = addr.road || bestMatch?.landmark || city;
-        const pincode = addr.postcode || '452001';
-        const cleanAddress = d.display_name ? d.display_name.split(',').slice(0, 4).join(', ') : `${area}, ${city}, ${pincode}`;
+        const city = addr.city || addr.town || addr.municipality || addr.village || addr.state_district || 'Indore';
+        const specificName = addr.tourism || addr.amenity || addr.building || addr.office || addr.shop || addr.leisure || addr.residential || addr.suburb || addr.neighbourhood || addr.quarter || addr.road;
+        const landmark = addr.road || addr.suburb || specificName || city;
+        const area = specificName || landmark || addr.city_district || city;
+        const pincode = addr.postcode || '';
+        const cleanAddress = d.display_name ? d.display_name.split(',').slice(0, 5).join(', ') : `${area}, ${city}, ${pincode}`;
 
         return {
           area,
@@ -249,58 +161,84 @@ export const reverseGeocode = async (lat, lng) => {
     console.warn('[Geo] OSM Geocode error:', osmErr.message);
   }
 
-  // Method 4: Best match fallback
-  if (bestMatch) {
-    return {
-      area: `${bestMatch.name}, ${bestMatch.subArea}`,
-      city: bestMatch.city,
-      pincode: bestMatch.pincode,
-      landmark: bestMatch.landmark,
-      address: bestMatch.formatted,
-      lat,
-      lng,
-      source: 'fallback'
-    };
+  // Method 4: BigDataCloud Client-side Geocoding
+  try {
+    const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+    const bdcRes = await fetch(bdcUrl);
+    if (bdcRes.ok) {
+      const bdc = await bdcRes.json();
+      const city = bdc.city || bdc.locality || 'Indore';
+      const adminList = bdc.localityInfo?.administrative || [];
+      const specificAdmin = adminList.slice().reverse().find((a) => a.adminLevel >= 8 && a.name && !a.name.toLowerCase().includes('tehsil'));
+      const area = specificAdmin ? specificAdmin.name : (bdc.locality || city);
+      const address = `${area}, ${city}, ${bdc.principalSubdivision || ''}`;
+
+      return {
+        area,
+        city,
+        pincode: bdc.postcode || '',
+        landmark: area,
+        address,
+        lat,
+        lng,
+        source: 'bigdatacloud'
+      };
+    }
+  } catch (bdcErr) {
+    console.warn('[Geo] BigDataCloud geocode error:', bdcErr.message);
   }
 
+  // Method 5: Dynamic coordinate fallback (No hardcoded fake names)
   return {
-    area: 'Corporate House, Chhoti Gwaltoli',
+    area: `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
     city: 'Indore',
-    pincode: '452001',
-    landmark: 'RNT Marg',
-    address: 'Corporate House, RNT Marg, Chhoti Gwaltoli, Indore, Madhya Pradesh 452001',
+    pincode: '',
+    landmark: 'Live GPS Pin',
+    address: `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
     lat,
     lng,
-    source: 'default'
+    source: 'live-gps'
   };
 };
 
+// 100% Dynamic Places Search (No static hardcoded dictionary)
 export const searchPlaces = async (query) => {
   if (!query || !query.trim()) return [];
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
 
-  // Check precision localities first for instant local matching
-  const localMatches = PRECISION_LOCALITIES.filter((loc) =>
-    loc.name.toLowerCase().includes(q) ||
-    loc.subArea.toLowerCase().includes(q) ||
-    loc.road.toLowerCase().includes(q) ||
-    loc.city.toLowerCase().includes(q) ||
-    loc.landmark.toLowerCase().includes(q)
-  ).map((loc) => ({
-    area: `${loc.name}, ${loc.subArea}`,
-    city: loc.city,
-    pincode: loc.pincode,
-    address: loc.formatted,
-    lat: loc.lat,
-    lng: loc.lng
-  }));
+  // Try Photon dynamic autocomplete & search first
+  try {
+    const photonSearchUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=8`;
+    const pRes = await fetch(photonSearchUrl);
+    if (pRes.ok) {
+      const data = await pRes.json();
+      if (data?.features && data.features.length > 0) {
+        return data.features.map((f) => {
+          const p = f.properties || {};
+          const coords = f.geometry?.coordinates || [0, 0];
+          const city = p.city || p.town || p.district || p.state || '';
+          const title = p.name || p.street || p.district || q;
+          const subtitleParts = [p.street, p.district, p.city, p.state].filter(Boolean);
+          const fullAddress = Array.from(new Set([title, ...subtitleParts])).join(', ');
 
-  if (localMatches.length > 0) {
-    return localMatches;
+          return {
+            area: title,
+            city: city || 'Indore',
+            pincode: p.postcode || '',
+            address: fullAddress,
+            lat: coords[1],
+            lng: coords[0]
+          };
+        });
+      }
+    }
+  } catch (pErr) {
+    console.warn('[Geo] Photon search failed:', pErr.message);
   }
 
+  // Fallback to OSM Nominatim Search
   try {
-    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&addressdetails=1&limit=6`;
+    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=in&addressdetails=1&limit=8`;
     const res = await fetch(searchUrl, {
       headers: { 'Accept-Language': 'en', 'User-Agent': 'DrimStyleApp/1.0' }
     });
@@ -309,7 +247,7 @@ export const searchPlaces = async (query) => {
       return (list || []).map((item) => {
         const addr = item.address || {};
         const parts = (item.display_name || '').split(',').map((s) => s.trim()).filter(Boolean);
-        const city = addr.city || addr.town || addr.state_district || addr.state || query;
+        const city = addr.city || addr.town || addr.state_district || addr.state || q;
         const area = addr.building || addr.amenity || addr.suburb || addr.neighbourhood || addr.road || parts[0] || city;
         return {
           area,

@@ -1,9 +1,14 @@
 const Customer = require('../models/Customer');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { sendOtpSMS } = require('../services/smsService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'instaatrim_secret_key';
-const STATIC_OTP = '1234'; // Static OTP as requested
+
+// Generate a random 4-digit OTP (1000 - 9999)
+const generateRandomOTP = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+};
 
 // POST /api/auth/send-otp
 // Body: { phone }
@@ -15,6 +20,9 @@ const sendOTP = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Valid 10-digit phone number required' });
         }
 
+        // Generate dynamic 4-digit OTP
+        const dynamicOTP = generateRandomOTP();
+
         // Set OTP expiry: 10 minutes from now
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -22,25 +30,27 @@ const sendOTP = async (req, res) => {
         let customer = await Customer.findOne({ phone });
 
         if (!customer) {
-            // New user — create with phone + static OTP
+            // New user — create with phone + dynamic OTP
             customer = await Customer.create({
                 phone,
                 // referral_code has a unique MongoDB index, so new records
                 // must not insert null into that index.
                 referral_code: `DRIM${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
-                otp: STATIC_OTP,
+                otp: dynamicOTP,
                 otpExpiry,
             });
         } else {
             // Existing user — update OTP
-            customer.otp = STATIC_OTP;
+            customer.otp = dynamicOTP;
             customer.otpExpiry = otpExpiry;
             await customer.save();
         }
 
-        // In production: send real OTP via SMS here
-        // For now: static OTP is 1234
-        console.log(`OTP for ${phone}: ${STATIC_OTP}`);
+        // Dispatch real SMS via SMSIndiaHub API
+        console.log(`[Customer Auth] Generated OTP for ${phone}: ${dynamicOTP}`);
+        sendOtpSMS(phone, dynamicOTP).catch((err) => {
+            console.error('[Customer Auth] SMS Dispatch Error:', err);
+        });
 
         return res.status(200).json({
             success: true,
@@ -69,8 +79,8 @@ const verifyOTP = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found. Please request OTP first.' });
         }
 
-        // Check OTP
-        if (customer.otp !== otp) {
+        // Check OTP (Strict verification: only the actual OTP matches)
+        if (!customer.otp || customer.otp !== String(otp).trim()) {
             return res.status(400).json({ success: false, message: 'Invalid OTP' });
         }
 

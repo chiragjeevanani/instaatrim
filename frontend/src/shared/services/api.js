@@ -696,11 +696,23 @@ const offers = {
 
   listAll: async () => {
     try {
-      const res = await fetch(`${API_BASE}/salons`);
+      const res = await fetch(API_BASE + "/salons");
       const json = await res.json();
+      const seen = new Set();
       const allOffers = [];
       (json.data || []).forEach(salon => {
-        (salon.offers || []).forEach(o => allOffers.push({ ...o, salonId: salon._id || salon.id }));
+        (salon.offers || []).forEach(o => {
+          const key = String(o.id || o._id || o.title);
+          if (!seen.has(key)) {
+            seen.add(key);
+            const isGlobal = o.salonId === 'all' || (o.salonName && o.salonName.toLowerCase().includes('all salon'));
+            allOffers.push({
+              ...o,
+              id: o._id || o.id,
+              salonId: isGlobal ? 'all' : (o.salonId || salon._id || salon.id)
+            });
+          }
+        });
       });
       return allOffers;
     } catch (e) {
@@ -739,6 +751,8 @@ const offers = {
       });
       if (res.ok) {
         dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'approved', isActive: true } } });
+        const fresh = await offers.listAll();
+        if (fresh) dispatch({ type: 'SET_OFFERS', payload: fresh });
         return clone(getState().offers.find((o) => o.id === offerId));
       }
     } catch (e) { console.error(e); }
@@ -757,10 +771,42 @@ const offers = {
       });
       if (res.ok) {
         dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'rejected', isActive: false, rejectionReason: reason } } });
+        const fresh = await offers.listAll();
+        if (fresh) dispatch({ type: 'SET_OFFERS', payload: fresh });
         return clone(getState().offers.find((o) => o.id === offerId));
       }
     } catch (e) { console.error(e); }
     return null;
+  },
+
+  createAdminOffer: async (data) => {
+    const res = await fetch(API_BASE + "/salons/offers/create-admin-offer", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || 'Failed to create admin offer');
+    return json.data;
+  }
+  ,
+  updateAdminOffer: async (offerId, data) => {
+    const res = await fetch(API_BASE + "/salons/offers/" + offerId + "/update-admin-offer", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to update offer");
+    return json.data;
+  },
+  deleteAdminOffer: async (offerId) => {
+    const res = await fetch(API_BASE + "/salons/offers/" + offerId + "/delete-admin-offer", {
+      method: "DELETE"
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || "Failed to delete offer");
+    return json.data;
   }
 };
 

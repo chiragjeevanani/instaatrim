@@ -334,6 +334,47 @@ export const AdminProvider = ({ children }) => {
   }, [showToast]);
 
   // Offer actions
+  const refreshOffers = useCallback(async () => {
+    try {
+      const fresh = await api.offers.listAll();
+      if (fresh) dispatch({ type: 'SET_OFFERS', payload: fresh });
+    } catch (e) { console.error(e); }
+  }, [dispatch]);
+
+  const createOffer = useCallback(async (offerData) => {
+    try {
+      const created = await api.offers.createAdminOffer(offerData);
+      await refreshOffers();
+      showToast('Offer created successfully!', 'success');
+      return created;
+    } catch (err) {
+      showToast(err.message || 'Failed to create offer', 'error');
+      throw err;
+    }
+  }, [showToast, refreshOffers]);
+
+  const updateOffer = useCallback(async (offerId, offerData) => {
+    try {
+      await api.offers.updateAdminOffer(offerId, offerData);
+      await refreshOffers();
+      showToast('Offer updated successfully!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to update offer', 'error');
+      throw err;
+    }
+  }, [showToast, refreshOffers]);
+
+  const deleteOffer = useCallback(async (offerId) => {
+    try {
+      await api.offers.deleteAdminOffer(offerId);
+      await refreshOffers();
+      showToast('Offer deleted permanently', 'info');
+    } catch (err) {
+      showToast(err.message || 'Failed to delete offer', 'error');
+      throw err;
+    }
+  }, [showToast, refreshOffers]);
+
   const approveOffer = useCallback(async (offerId) => {
     try {
       await api.offers.approve(offerId);
@@ -871,6 +912,10 @@ export const AdminProvider = ({ children }) => {
       deleteSalon,
       setSalonCommission,
       toggleSalonActive,
+      createOffer,
+      updateOffer,
+      deleteOffer,
+      refreshOffers,
       approveOffer,
       rejectOffer,
       createCoupon,
@@ -959,6 +1004,10 @@ export const AdminProvider = ({ children }) => {
       deleteSalon,
       setSalonCommission,
       toggleSalonActive,
+      createOffer,
+      updateOffer,
+      deleteOffer,
+      refreshOffers,
       approveOffer,
       rejectOffer,
       createCoupon,

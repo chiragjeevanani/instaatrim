@@ -98,8 +98,8 @@ export const DesktopHeader = () => {
                   </span>
                   <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
                 </div>
-                {currentLocation?.landmark && (
-                  <p className="text-[10.5px] text-stone-500 truncate">{currentLocation.landmark}</p>
+                                {(currentLocation?.address || currentLocation?.landmark) && (
+                  <p className="text-[10.5px] text-stone-500 truncate">{currentLocation.address || currentLocation.landmark}</p>
                 )}
               </div>
             </button>

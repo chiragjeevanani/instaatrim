@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TopBar } from '../components/TopBar';
 import { AudienceToggle } from '../components/AudienceToggle';
 import { TopAdCarousel } from '../components/TopAdCarousel';
+import { LiveOffersStrip } from '../components/LiveOffersStrip';
 import { CategoryGrid } from '../components/CategoryGrid';
 import { TrendingServices } from '../components/TrendingServices';
 import { FeaturedServicesShowcase } from '../components/FeaturedServicesShowcase';
@@ -72,6 +73,9 @@ export const HomePage = () => {
 
         {/* 4. Core Categories (Immediate 1-tap entry point, filtered by active audience) */}
         <CategoryGrid genderFilter={genderFilter} />
+
+        {/* 4.5. Live Promotional Deals from Admin */}
+        <LiveOffersStrip />
 
         {/* 5. Trending Services Near You (Scoped by gender & category tabs) */}
         <TrendingServices genderFilter={genderFilter} />

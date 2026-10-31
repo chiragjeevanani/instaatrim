@@ -52,7 +52,7 @@ export const TopBar = ({ onSearchClick }) => {
                 <ChevronDown className="w-3.5 h-3.5 text-stone-500 stroke-[2.2] shrink-0" />
               </span>
               <span className="block text-[11px] text-stone-500 truncate">
-                {currentLocation?.landmark || currentLocation?.city || 'Tap to choose an address'}
+                {currentLocation?.address || currentLocation?.landmark || currentLocation?.city || 'Tap to choose an address'}
               </span>
             </span>
           </button>

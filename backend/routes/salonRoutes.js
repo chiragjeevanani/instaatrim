@@ -44,6 +44,9 @@ router.patch('/:id/verify', salonController.verifySalon);
 router.patch('/:id/reject', salonController.rejectSalon);
 router.patch('/:id/commission', salonController.setSalonCommission);
 router.put('/:id', salonController.updateSalon);
+router.post('/offers/create-admin-offer', salonController.createAdminOffer);
+router.put('/offers/:offerId/update-admin-offer', salonController.updateAdminOffer);
+router.delete('/offers/:offerId/delete-admin-offer', salonController.deleteAdminOffer);
 router.post('/:id/offers', salonController.addOffer);
 router.put('/:id/offers/:offerId/status', salonController.updateOfferStatus);
 

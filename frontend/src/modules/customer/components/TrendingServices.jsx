@@ -8,7 +8,7 @@ import { formatDuration } from '../../../shared/store/selectors';
 
 export const TrendingServices = ({ genderFilter = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail } = useCustomer();
+  const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail, currentLocation } = useCustomer();
   const { state } = useAppData();
 
   const filterTabs = useMemo(() => {
@@ -27,6 +27,32 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
         if (!s.isActive) return false;
         const salon = state.salons.find((sal) => sal.id === s.salonId);
         if (!salon?.isVerified || salon?.verificationStatus !== 'Live') return false;
+
+        // City location check
+        if (currentLocation?.city) {
+          const targetCity = currentLocation.city.toLowerCase().trim();
+          const targetArea = currentLocation.area?.toLowerCase()?.trim();
+          const sCity = (salon.locationCity || salon.city || '').toLowerCase();
+          const sArea = (salon.area || '').toLowerCase();
+          const sAddr = (salon.address || '').toLowerCase();
+          const inCity = (sCity && sCity.includes(targetCity)) ||
+                         (targetCity && (sArea.includes(targetCity) || sAddr.includes(targetCity))) ||
+                         (targetArea && (sArea.includes(targetArea) || sAddr.includes(targetArea)));
+          if (!inCity) return false;
+        }
+
+        // City location check
+        if (currentLocation?.city) {
+          const targetCity = currentLocation.city.toLowerCase().trim();
+          const targetArea = currentLocation.area?.toLowerCase()?.trim();
+          const sCity = (salon.locationCity || salon.city || '').toLowerCase();
+          const sArea = (salon.area || '').toLowerCase();
+          const sAddr = (salon.address || '').toLowerCase();
+          const inCity = (sCity && sCity.includes(targetCity)) ||
+                         (targetCity && (sArea.includes(targetCity) || sAddr.includes(targetCity))) ||
+                         (targetArea && (sArea.includes(targetArea) || sAddr.includes(targetArea)));
+          if (!inCity) return false;
+        }
 
         // Gender affinity filter
         const isMenOnly = s.category === 'Beard' || s.category === 'Grooming';
@@ -56,7 +82,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
         if (a.isBoosted && b.isBoosted) return a.boostRank - b.boostRank;
         return 0;
       });
-  }, [state.services, state.salons, genderFilter]);
+  }, [state.services, state.salons, genderFilter, currentLocation]);
 
   const filteredServices = trendingServices.filter((srv) => {
     if (selectedFilter === 'All') return true;

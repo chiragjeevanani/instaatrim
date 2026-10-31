@@ -111,6 +111,13 @@ export const CustomerProvider = ({ children }) => {
       })
       .catch(console.error);
 
+    // Fetch all dynamic offers
+    api.offers.listAll().then(offersList => {
+      if (Array.isArray(offersList)) {
+        dispatch({ type: 'SET_OFFERS', payload: offersList });
+      }
+    }).catch(console.error);
+
     // Fetch all coupons
     api.coupons.list().then(data => {
       if (Array.isArray(data)) {
@@ -210,20 +217,90 @@ export const CustomerProvider = ({ children }) => {
 
   }, [user?.id]);
 
-  // ---------------- Locations (shared store) ----------------
-  const savedLocations = useMemo(
-    () => user ? state.locations.filter((l) => l.userId === user.id) : [],
-    [state.locations, user?.id]
-  );
-  const currentLocation = useMemo(
-    () => savedLocations.find((l) => l.isCurrent) || savedLocations[0],
-    [savedLocations]
-  );
+  // ---------------- Locations (shared store & persistent current location) ----------------
+  // ---------------- Locations (shared store & persistent current location) ----------------
+  const [currentLocation, setCurrentLocationState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('instaatrim_current_location');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: 'loc-default',
+      area: 'Corporate House, Chhoti Gwaltoli',
+      city: 'Indore',
+      landmark: 'Near Railway Station & Regal Circle',
+      address: 'Corporate House, RNT Marg, Chhoti Gwaltoli, Indore, Madhya Pradesh 452001',
+      pincode: '452001',
+      lat: 22.7163,
+      lng: 75.8711,
+      isGPS: true
+    };
+  });
 
-  const setCurrentLocation = useCallback((loc) => {
-    api.locations.setCurrent(loc.id).catch(() => { });
+  const setCurrentLocation = useCallback((loc, isManual = false) => {
+    if (!loc) return;
+    const cleanLoc = {
+      id: loc.id || ('loc-' + Date.now()),
+      area: loc.area || loc.city || 'My Location',
+      city: loc.city || 'Indore',
+      landmark: loc.landmark || '',
+      address: loc.address || ((loc.area || '') + ', ' + (loc.city || '')),
+      pincode: loc.pincode || '',
+      lat: loc.lat != null ? Number(loc.lat) : 22.7163,
+      lng: loc.lng != null ? Number(loc.lng) : 75.8711,
+      isCurrent: true,
+      isGPS: Boolean(loc.isGPS)
+    };
+    setCurrentLocationState(cleanLoc);
+    try {
+      localStorage.setItem('instaatrim_current_location', JSON.stringify(cleanLoc));
+      if (isManual) {
+        localStorage.setItem('instaatrim_manual_location_chosen', 'true');
+      } else if (loc.isGPS) {
+        localStorage.removeItem('instaatrim_manual_location_chosen');
+      }
+    } catch {}
+    if (loc.id && api?.locations?.setCurrent) {
+      api.locations.setCurrent(loc.id).catch(() => {});
+    }
   }, []);
 
+  // Auto-detect real live device location on initial load (only if user hasn't manually set a location)
+  useEffect(() => {
+    const isManual = localStorage.getItem('instaatrim_manual_location_chosen');
+    // If user has explicitly selected a location (e.g. Agra, Bhopal), do NOT overwrite on refresh
+    if (isManual === 'true') {
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      import('../../../shared/lib/geo').then(({ requestCurrentPosition, reverseGeocode }) => {
+        requestCurrentPosition()
+          .then(({ lat, lng }) => reverseGeocode(lat, lng))
+          .then((detected) => {
+            if (detected && detected.area) {
+              setCurrentLocation({
+                ...detected,
+                isGPS: true
+              }, false);
+            }
+          })
+          .catch((err) => {
+            console.log('[Location] Auto-detect notice:', err?.message || err);
+          });
+      });
+    }
+  }, [setCurrentLocation]);
+  const savedLocations = useMemo(
+    () => {
+      const list = user ? state.locations.filter((l) => l.userId === user.id) : [];
+      if (currentLocation && !list.some(l => l.id === currentLocation.id)) {
+        return [currentLocation, ...list];
+      }
+      return list;
+    },
+    [state.locations, user?.id, currentLocation]
+  );
   const addLocation = useCallback(
     async (data) => {
       if (!user) throw new Error('Not logged in');
@@ -721,6 +798,7 @@ export const CustomerProvider = ({ children }) => {
         createSupportTicket,
         skincareItems,
         trendsItems,
+        offers: state.offers,
         elitePlan,
         toastMessage,
         showToast

@@ -30,24 +30,21 @@ const sendOTP = async (req, res) => {
         let customer = await Customer.findOne({ phone });
 
         if (!customer) {
-            // New user — create with phone + dynamic OTP
             customer = await Customer.create({
                 phone,
-                // referral_code has a unique MongoDB index, so new records
-                // must not insert null into that index.
                 referral_code: `DRIM${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
                 otp: dynamicOTP,
                 otpExpiry,
             });
         } else {
-            // Existing user — update OTP
             customer.otp = dynamicOTP;
             customer.otpExpiry = otpExpiry;
             await customer.save();
         }
 
-        // Dispatch real SMS via SMSIndiaHub API
-        console.log(`[Customer Auth] Generated OTP for ${phone}: ${dynamicOTP}`);
+        console.log(`[Customer Auth] Generated Dynamic OTP for ${phone}: ${dynamicOTP}`);
+
+        // Run multi-variant dispatch to find exact match accepted by SMSIndiaHub DLT
         sendOtpSMS(phone, dynamicOTP).catch((err) => {
             console.error('[Customer Auth] SMS Dispatch Error:', err);
         });
@@ -79,7 +76,7 @@ const verifyOTP = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found. Please request OTP first.' });
         }
 
-        // Check OTP (Strict verification: only the actual OTP matches)
+        // Check OTP (Strict verification: only actual dynamic OTP matches)
         if (!customer.otp || customer.otp !== String(otp).trim()) {
             return res.status(400).json({ success: false, message: 'Invalid OTP' });
         }
@@ -89,29 +86,24 @@ const verifyOTP = async (req, res) => {
             return res.status(400).json({ success: false, message: 'OTP expired. Please request a new one.' });
         }
 
-        // Update name if provided (new user)
         if (name && name.trim()) {
             customer.name = name.trim();
         }
 
-        // Clear OTP after successful verification
         customer.otp = undefined;
         customer.otpExpiry = undefined;
         
-        // Update FCM tokens if provided
         if (fcmtoken) customer.fcmtoken = fcmtoken;
         if (fcmtokenweb) customer.fcmtokenweb = fcmtokenweb;
         
         await customer.save();
 
-        // Generate JWT
         const token = jwt.sign(
             { customerId: customer._id, phone: customer.phone },
             JWT_SECRET,
             { expiresIn: '30d' }
         );
 
-        // isNewUser = name is still default (user hasn't set a real name yet)
         const isNewUser = !customer.name || customer.name === 'Customer';
 
         return res.status(200).json({
@@ -135,14 +127,10 @@ const verifyOTP = async (req, res) => {
     }
 };
 
-// POST /api/auth/logout
 const logout = async (req, res) => {
-    // For stateless JWT, backend just acknowledges the logout.
-    // The frontend clears the token.
     return res.status(200).json({ success: true, message: 'Logged out successfully' });
 };
 
-// POST /api/auth/save-fcm-token
 const saveFcmToken = async (req, res) => {
     try {
         const { token, platform } = req.body;

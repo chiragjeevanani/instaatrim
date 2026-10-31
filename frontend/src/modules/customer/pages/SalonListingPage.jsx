@@ -7,6 +7,7 @@ import { findCategoryBySlug } from '../../../shared/data/seed';
 import { BRAND_PARTNERS } from '../../../shared/data/advertisements';
 import { useCustomer } from '../context/CustomerContext';
 import { BottomNav } from '../components/BottomNav';
+import { distanceFromSalon, formatDistance } from '../../../shared/lib/geo';
 import { Search, ArrowLeft, Star, Heart, Zap, CheckCircle2, MapPin, X, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -40,11 +41,21 @@ export const SalonListingPage = () => {
 
   const salonsWithServices = useMemo(
     () =>
-      state.salons.map((salon) => ({
-        ...salon,
-        services: state.services.filter((sv) => sv.salonId === salon.id && sv.isActive)
-      })),
-    [state.salons, state.services]
+      state.salons.map((salon) => {
+        const sLat = salon.lat ?? salon.location?.coordinates?.[1];
+        const sLng = salon.lng ?? salon.location?.coordinates?.[0];
+        let computedDist = salon.distanceKm;
+        if (currentLocation?.lat && currentLocation?.lng && sLat && sLng) {
+          computedDist = distanceFromSalon(currentLocation.lat, currentLocation.lng, { lat: sLat, lng: sLng });
+          computedDist = Math.round(computedDist * 10) / 10;
+        }
+        return {
+          ...salon,
+          distanceKm: computedDist,
+          services: state.services.filter((sv) => sv.salonId === salon.id && sv.isActive)
+        };
+      }),
+    [state.salons, state.services, currentLocation]
   );
 
   const filteredSalons = useMemo(() => {
@@ -81,7 +92,20 @@ export const SalonListingPage = () => {
 
         const matchesInstant = !instantOnly || (salon.hasInstantBooking && salon.isInstantBookingEnabled && salon.isStoreOpen);
 
-        return matchesCategory && matchesSearch && matchesGender && matchesInstant;
+        // STRICT City/Location Match: Show only salons in the user's selected city/area
+        const targetCity = currentLocation?.city?.toLowerCase()?.trim();
+        const targetArea = currentLocation?.area?.toLowerCase()?.trim();
+        const matchesLocation = !targetCity || (() => {
+          const sCity = (salon.locationCity || salon.city || '').toLowerCase();
+          const sArea = (salon.area || '').toLowerCase();
+          const sAddr = (salon.address || '').toLowerCase();
+          if (sCity && sCity.includes(targetCity)) return true;
+          if (targetCity && (sArea.includes(targetCity) || sAddr.includes(targetCity))) return true;
+          if (targetArea && (sArea.includes(targetArea) || sAddr.includes(targetArea))) return true;
+          return false;
+        })();
+
+        return matchesCategory && matchesSearch && matchesGender && matchesInstant && matchesLocation;
       })
       .sort((a, b) => {
         // 1. Admin Indexing Override: Boosted / Sponsored salons always indexed at top
@@ -95,18 +119,32 @@ export const SalonListingPage = () => {
           if (aRank !== bRank) return aRank - bRank;
         }
 
-        // 2. Standard user-selected sorting
+        // 2. City & Location Match Priority (Salons in customer's selected city/area show first)
+        if (currentLocation?.city) {
+          const targetCity = currentLocation.city.toLowerCase().trim();
+          const aInCity = (a.locationCity || a.city || a.address || a.area || '').toLowerCase().includes(targetCity);
+          const bInCity = (b.locationCity || b.city || b.address || b.area || '').toLowerCase().includes(targetCity);
+          if (aInCity && !bInCity) return -1;
+          if (!aInCity && bInCity) return 1;
+        }
+
+        // 3. Standard user-selected sorting
         if (sortBy === 'Highest Rated') return b.rating - a.rating;
         if (sortBy === 'Nearest') return (a.distanceKm ?? 99) - (b.distanceKm ?? 99);
         if (sortBy === 'Price Low to High') return a.startingPrice - b.startingPrice;
         if (sortBy === 'Price High to Low') return b.startingPrice - a.startingPrice;
         if (sortBy === 'Best Offers') return (b.offer ? 1 : 0) - (a.offer ? 1 : 0);
 
+        // Nearest distance as default tie-breaker
+        if (a.distanceKm != null && b.distanceKm != null && Math.abs(a.distanceKm - b.distanceKm) > 0.5) {
+          return a.distanceKm - b.distanceKm;
+        }
+
         // Recommended default composite
         const scoreOf = (s) => s.rating * 20 + Math.min(s.reviewsCount, 500) / 10 + (s.isInstantBookingEnabled ? 15 : 0);
         return scoreOf(b) - scoreOf(a);
       });
-  }, [salonsWithServices, activeCategory, searchTerm, selectedGender, instantOnly, sortBy]);
+  }, [salonsWithServices, activeCategory, searchTerm, selectedGender, instantOnly, sortBy, currentLocation]);
 
   const clearCategory = () => {
     const next = new URLSearchParams(searchParams);
@@ -426,6 +464,26 @@ export const SalonListingPage = () => {
             </motion.article>
           );
         })}
+
+        {filteredSalons.length === 0 && (
+          <div className="col-span-full py-12 px-4 flex flex-col items-center justify-center text-center bg-white/70 rounded-2xl border border-purple-100 my-4 shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center mb-3 text-brand-maroon">
+              <MapPin className="w-6 h-6 stroke-[2]" />
+            </div>
+            <h3 className="font-bold text-sm text-stone-900 mb-1">
+              No salons available in {currentLocation?.area || currentLocation?.city || 'this location'} yet
+            </h3>
+            <p className="text-[11.5px] text-stone-500 max-w-xs mb-4 leading-relaxed">
+              We haven't onboarded salons in this specific area yet. Try searching another locality or change your city.
+            </p>
+            <button
+              onClick={() => navigate('/customer/location')}
+              className="px-4 py-2 bg-brand-maroon text-white text-xs font-bold rounded-xl shadow-xs active:scale-95 transition-transform cursor-pointer"
+            >
+              Change Location
+            </button>
+          </div>
+        )}
       </main>
 
       <BottomNav />

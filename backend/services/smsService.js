@@ -1,84 +1,64 @@
-/**
- * SMSIndiaHub Service for Drimstyle
- * DLT Template Details:
- * Sender ID / Header: BGADEC
- * PE ID: 1001164203633432409
- * Template ID: 1007282516644508833
- * Message: Welcome to the Drimstyle powered by Appzeto.Your OTP for registration is <OTP>.BGADEC
- */
-
 const API_KEY = process.env.SMS_API_KEY || 'Shd7kNGsDE6okDIB8Cajew';
 const SENDER_ID = process.env.SMS_SENDER_ID || 'BGADEC';
-const PE_ID = process.env.SMS_PE_ID || '1001164203633432409';
-const TEMPLATE_ID = process.env.SMS_TEMPLATE_ID || '1007282516644508833';
+const DLT_ENTITY_ID = process.env.SMS_PE_ID || '1001164203633432409';
+const DLT_TEMPLATE_ID = process.env.SMS_TEMPLATE_ID || '1007282516644508833';
 const APP_NAME = process.env.SMS_APP_NAME || 'Drimstyle';
 
 /**
- * Send OTP SMS using SMSIndiaHub API
- * @param {string} phone 10-digit mobile number
- * @param {string|number} otp 4-digit OTP
+ * Send Dynamic OTP SMS via SMSIndiaHub API
+ * @param {string} phone - 10-digit customer mobile number
+ * @param {string|number} otp - Dynamic 4-digit OTP
  */
 async function sendOtpSMS(phone, otp) {
     try {
-        // Format destination number (clean 10 digits)
         const cleanNumber = String(phone).replace(/[^0-9]/g, '').slice(-10);
         if (cleanNumber.length !== 10) {
-            console.error('[SMSIndiaHub] Invalid phone number:', phone);
-            return { success: false, message: 'Invalid phone number' };
+            console.error('[SMSIndiaHub] Invalid 10-digit phone number:', phone);
+            return { success: false, message: 'Invalid 10-digit phone number' };
         }
 
-        // Exact approved template text:
-        // Welcome to the ##var## powered by Appzeto.Your OTP for registration is ##var##.BGADEC
+        // Exact approved template text with dynamic OTP
         const messageText = `Welcome to the ${APP_NAME} powered by Appzeto.Your OTP for registration is ${otp}.BGADEC`;
 
-        // SMSIndiaHub provides SendSMS endpoint
-        // Method 1: REST JSON POST to https://cloud.smsindiahub.in/api/mt/SendSMS
-        const postData = {
-            Account: {
-                APIKey: API_KEY,
-                SenderId: SENDER_ID,
-                Channel: 'Trans',
-                DCS: '0',
-                FlashSms: '0',
-                Route: 1,
-                PEId: PE_ID,
-                TemplateId: TEMPLATE_ID
-            },
-            Messages: [
-                {
-                    Number: `91${cleanNumber}`,
-                    Text: messageText
-                }
-            ]
-        };
-
-        const postResponse = await fetch('https://cloud.smsindiahub.in/api/mt/SendSMS', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(postData)
+        const queryParams = new URLSearchParams({
+            APIKey: API_KEY,
+            senderid: SENDER_ID,
+            channel: 'Trans',
+            DCS: '0',
+            flashsms: '0',
+            number: `91${cleanNumber}`,
+            text: messageText,
+            route: '1',
+            DltEntityId: DLT_ENTITY_ID,
+            DltTemplateId: DLT_TEMPLATE_ID
         });
 
-        const postResult = await postResponse.json().catch(() => null);
-        console.log('[SMSIndiaHub] POST Response:', postResult);
+        const requestUrl = `https://cloud.smsindiahub.in/api/mt/SendSMS?${queryParams.toString()}`;
+        console.log(`[SMSIndiaHub] Dispatching OTP ${otp} to 91${cleanNumber}...`);
 
-        // If POST was successful (ErrorCode 000 or Success)
-        if (postResult && (postResult.ErrorCode === '000' || postResult.ErrorMessage === 'Success')) {
-            return { success: true, result: postResult };
+        const response = await fetch(requestUrl);
+        const data = await response.json().catch(() => null);
+
+        console.log('[SMSIndiaHub] Gateway Response:', JSON.stringify(data));
+
+        if (data && (data.ErrorCode === '000' || data.ErrorMessage === 'Done' || data.ErrorMessage === 'Success')) {
+            console.log(`[SMSIndiaHub] OTP ${otp} successfully sent to 91${cleanNumber}! JobId: ${data.JobId}`);
+            return {
+                success: true,
+                jobId: data.JobId,
+                message: 'OTP sent successfully'
+            };
         }
 
-        // Fallback: Query String / GET API format if POST fails or returns code
-        const encodedMsg = encodeURIComponent(messageText);
-        const getUrl = `https://cloud.smsindiahub.in/api/mt/SendSMS?APIKey=${encodeURIComponent(API_KEY)}&senderid=${encodeURIComponent(SENDER_ID)}&channel=Trans&DCS=0&flashsms=0&number=91${cleanNumber}&text=${encodedMsg}&route=1&PEId=${encodeURIComponent(PE_ID)}&TemplateId=${encodeURIComponent(TEMPLATE_ID)}`;
+        console.error('[SMSIndiaHub] Failed to send OTP:', data);
+        return {
+            success: false,
+            code: data?.ErrorCode,
+            message: data?.ErrorMessage || 'Failed to send SMS'
+        };
 
-        const getResponse = await fetch(getUrl);
-        const getResult = await getResponse.json().catch(() => null);
-        console.log('[SMSIndiaHub] GET Response:', getResult);
-
-        return { success: true, result: getResult || postResult };
     } catch (error) {
-        console.error('[SMSIndiaHub] Error sending SMS:', error);
+        console.error('[SMSIndiaHub] Network/Service Error:', error.message);
         return { success: false, error: error.message };
     }
 }
@@ -87,8 +67,6 @@ module.exports = {
     sendOtpSMS,
     API_KEY,
     SENDER_ID,
-    PE_ID,
-    TEMPLATE_ID,
-    APP_NAME
+    DLT_ENTITY_ID,
+    DLT_TEMPLATE_ID
 };
-

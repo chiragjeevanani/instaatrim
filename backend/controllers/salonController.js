@@ -393,12 +393,33 @@ exports.updateOfferStatus = async (req, res) => {
         const { id, offerId } = req.params;
         const { approvalStatus, isActive, rejectionReason } = req.body;
         
-        const salon = await Salon.findById(id);
-        if (!salon) return res.status(404).json({ success: false, message: 'Salon not found' });
+        let salonsToUpdate = [];
+        if (id && id !== 'all' && id.match(/^[0-9a-fA-F]{24}$/)) {
+            const s = await Salon.findById(id);
+            if (s) salonsToUpdate.push(s);
+        }
+        if (salonsToUpdate.length === 0) {
+            salonsToUpdate = await Salon.find({});
+        }
+
+        let foundSalon = null;
+        let offerIndex = -1;
+        for (const s of salonsToUpdate) {
+            if (s.offers && s.offers.length > 0) {
+                const idx = s.offers.findIndex(o => String(o._id) === String(offerId) || String(o.id) === String(offerId));
+                if (idx !== -1) {
+                    foundSalon = s;
+                    offerIndex = idx;
+                    break;
+                }
+            }
+        }
+
+        if (!foundSalon || offerIndex === -1) {
+            return res.status(404).json({ success: false, message: 'Offer not found' });
+        }
         
-        const offerIndex = salon.offers.findIndex(o => (o._id === offerId || o.id === offerId));
-        if (offerIndex === -1) return res.status(404).json({ success: false, message: 'Offer not found' });
-        
+        const salon = foundSalon;
         if (approvalStatus) salon.offers[offerIndex].approvalStatus = approvalStatus;
         if (isActive !== undefined) salon.offers[offerIndex].isActive = isActive;
         if (rejectionReason) salon.offers[offerIndex].rejectionReason = rejectionReason;
@@ -463,5 +484,115 @@ exports.saveFcmToken = async (req, res) => {
     } catch (error) {
         console.error('saveFcmToken error:', error);
         return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+exports.createAdminOffer = async (req, res) => {
+    try {
+        const { salonId, ...offerData } = req.body;
+        const offerId = 'off-' + Date.now();
+        const baseOffer = {
+            _id: offerId,
+            id: offerId,
+            isActive: true,
+            redeemedCount: 0,
+            approvalStatus: 'approved',
+            createdAt: new Date().toISOString(),
+            salonId: salonId || 'all',
+            ...offerData
+        };
+
+        if (salonId === 'all' || !salonId) {
+            // Single global offer attached to primary salon storage so it renders as 1 single card
+            const firstSalon = await Salon.findOne({});
+            if (firstSalon) {
+                if (!firstSalon.offers) firstSalon.offers = [];
+                firstSalon.offers.push(baseOffer);
+                firstSalon.markModified('offers');
+                await firstSalon.save();
+            }
+            return res.status(201).json({ success: true, data: baseOffer });
+        } else {
+            // Apply to specific salon
+            const salon = await Salon.findById(salonId);
+            if (!salon) return res.status(404).json({ success: false, message: 'Salon not found' });
+            
+            const salOffer = { ...baseOffer, salonId: salon._id || salon.id };
+            if (!salon.offers) salon.offers = [];
+            salon.offers.push(salOffer);
+            salon.markModified('offers');
+            await salon.save();
+
+            return res.status(201).json({ success: true, data: salOffer });
+        }
+    } catch (error) {
+        console.error('createAdminOffer error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateAdminOffer = async (req, res) => {
+    try {
+        const { offerId } = req.params;
+        const updateData = req.body;
+
+        const salons = await Salon.find({});
+        let updated = false;
+
+        for (const s of salons) {
+            if (s.offers && s.offers.length > 0) {
+                const idx = s.offers.findIndex(o => 
+                    String(o._id) === String(offerId) || 
+                    String(o.id) === String(offerId)
+                );
+                if (idx !== -1) {
+                    s.offers[idx] = { ...s.offers[idx], ...updateData };
+                    s.markModified('offers');
+                    await s.save();
+                    updated = true;
+                }
+            }
+        }
+
+        if (!updated) {
+            return res.status(404).json({ success: false, message: 'Offer not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'Offer updated successfully' });
+    } catch (error) {
+        console.error('updateAdminOffer error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.deleteAdminOffer = async (req, res) => {
+    try {
+        const { offerId } = req.params;
+        const salons = await Salon.find({});
+        let deleted = false;
+
+        for (const s of salons) {
+            if (s.offers && s.offers.length > 0) {
+                const initialLen = s.offers.length;
+                s.offers = s.offers.filter(o => 
+                    String(o._id) !== String(offerId) && 
+                    String(o.id) !== String(offerId)
+                );
+                if (s.offers.length !== initialLen) {
+                    s.markModified('offers');
+                    await s.save();
+                    deleted = true;
+                }
+            }
+        }
+
+        if (!deleted) {
+            return res.status(404).json({ success: false, message: 'Offer not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'Offer deleted successfully' });
+    } catch (error) {
+        console.error('deleteAdminOffer error:', error);
+        res.status(500).json({ success: false, message: error.message });
     }
 };

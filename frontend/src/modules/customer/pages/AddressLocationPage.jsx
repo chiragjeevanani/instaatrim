@@ -1,34 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
-import { requestCurrentPosition, nearestKnownLocality } from '../../../shared/lib/geo';
+import { requestCurrentPosition, reverseGeocode, searchPlaces } from '../../../shared/lib/geo';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Search, Navigation, Loader2, MapPinOff, Plus, CheckCircle2, MapPin } from 'lucide-react';
+import { ArrowLeft, Search, Navigation, Loader2, MapPinOff, CheckCircle2, MapPin } from 'lucide-react';
 
-// SRS §6.2 fix: this page used to be titled "Add Address" while having no
-// way to add one — "Use Current Location" just assigned a hardcoded mock
-// entry, and there was no manual City / Area / Landmark / PIN form at all.
-// It now requests real device location with proper permission-state
-// handling, and offers a genuine manual-entry form.
 export const AddressLocationPage = () => {
   const navigate = useNavigate();
   const { currentLocation, setCurrentLocation, savedLocations, addLocation, showToast } = useCustomer();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [locateState, setLocateState] = useState('idle'); // idle | locating | error
   const [locateError, setLocateError] = useState(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [form, setForm] = useState({ area: '', landmark: '', city: 'Indore', pincode: '' });
-  const [formErrors, setFormErrors] = useState({});
 
-  const filteredLocations = savedLocations.filter(
-    (loc) =>
-      loc.area.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loc.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Debounced search for cities and localities using geocoding
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const places = await searchPlaces(searchQuery);
+        setSearchResults(places);
+      } catch (err) {
+        console.error('Search places failed:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleSelectLocation = (loc) => {
-    setCurrentLocation(loc);
-    showToast(`Location set to ${loc.area}`);
+    setCurrentLocation(loc, true);
+    showToast(`Location set to ${loc.area || loc.city}`);
     navigate('/customer');
   };
 
@@ -37,18 +48,31 @@ export const AddressLocationPage = () => {
     setLocateError(null);
     try {
       const { lat, lng } = await requestCurrentPosition();
-      const nearest = nearestKnownLocality(lat, lng);
-      const newLoc = await addLocation({
-        area: nearest.area,
-        address: `Near ${nearest.area}, ${nearest.city}, ${nearest.pincode} (from device location)`,
-        landmark: 'Detected via GPS',
-        city: nearest.city,
-        pincode: nearest.pincode,
+      const detected = await reverseGeocode(lat, lng);
+
+      const newLoc = {
+        id: `gps-${Date.now()}`,
+        area: detected.area || 'Current Area',
+        city: detected.city || 'Indore',
+        landmark: detected.landmark || 'Detected via GPS',
+        address: detected.address || `${detected.area}, ${detected.city}`,
+        pincode: detected.pincode || '',
         lat,
-        lng
-      });
+        lng,
+        isCurrent: true,
+        isGPS: true
+      };
+
+      setCurrentLocation(newLoc);
+
+      if (typeof addLocation === 'function') {
+        try {
+          await addLocation(newLoc);
+        } catch {}
+      }
+
       setLocateState('idle');
-      showToast(`Detected location: ${newLoc.area}`);
+      showToast(`📍 Location detected: ${newLoc.area}, ${newLoc.city}`);
       navigate('/customer');
     } catch (err) {
       setLocateState('error');
@@ -56,30 +80,9 @@ export const AddressLocationPage = () => {
     }
   };
 
-  const validateForm = () => {
-    const errors = {};
-    if (!form.area.trim()) errors.area = 'Area is required';
-    if (!form.city.trim()) errors.city = 'City is required';
-    if (!/^\d{6}$/.test(form.pincode.trim())) errors.pincode = 'Enter a valid 6-digit PIN code';
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleAddManualAddress = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    const newLoc = await addLocation({
-      area: form.area.trim(),
-      landmark: form.landmark.trim(),
-      city: form.city.trim(),
-      pincode: form.pincode.trim(),
-      address: `${form.area.trim()}${form.landmark ? ', ' + form.landmark.trim() : ''}, ${form.city.trim()}, ${form.pincode.trim()}`
-    });
-    showToast(`Address saved: ${newLoc.area}`);
-    setIsFormOpen(false);
-    setForm({ area: '', landmark: '', city: 'Indore', pincode: '' });
-    navigate('/customer');
-  };
+  const otherSavedLocations = (savedLocations || []).filter(
+    (l) => l.id !== currentLocation?.id && l.area !== currentLocation?.area
+  );
 
   return (
     <motion.div
@@ -90,6 +93,7 @@ export const AddressLocationPage = () => {
       className="w-full flex justify-center items-start min-h-screen lg:min-h-0 text-stone-900 antialiased select-none bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] lg:bg-none"
     >
       <div className="relative w-full max-w-[480px] lg:max-w-2xl lg:my-8 min-w-0 min-h-screen lg:min-h-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] flex flex-col overflow-y-auto border-x lg:border border-purple-200/50 lg:rounded-3xl lg:shadow-sm box-border pb-8">
+        
         {/* Top Header & Search Area */}
         <div className="relative z-10 w-full flex flex-col pt-3 px-3.5 lg:pt-6 lg:px-6">
           <nav className="flex items-center gap-2 mb-2.5">
@@ -101,41 +105,77 @@ export const AddressLocationPage = () => {
             >
               <ArrowLeft className="w-4 h-4 stroke-[2]" />
             </button>
-            <h1 className="text-sm font-bold text-stone-900 tracking-tight">Your Addresses</h1>
+            <h1 className="text-sm font-bold text-stone-900 tracking-tight">Select Location / City</h1>
           </nav>
 
-          {/* Search Bar */}
+          {/* Search Bar for Any City / Area */}
           <div className="w-full relative">
             <div className="relative flex items-center">
               <Search className="w-3.5 h-3.5 text-stone-500 absolute left-3 pointer-events-none stroke-[1.8]" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-[34px] pl-8 pr-3 text-[12px] bg-[#eaddf3] text-stone-900 placeholder:text-stone-500 rounded-2xl border border-purple-200/60 focus:outline-none focus:ring-1 focus:ring-purple-400 transition-all"
-                placeholder="Search saved addresses..."
+                className="w-full h-[38px] pl-8 pr-8 text-[13px] bg-white text-stone-900 placeholder:text-stone-400 rounded-2xl border border-purple-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-maroon/20 focus:border-brand-maroon transition-all"
+                placeholder="Search city, area, locality..."
                 type="text"
+                autoFocus
               />
+              {isSearching && (
+                <Loader2 className="w-3.5 h-3.5 text-brand-maroon animate-spin absolute right-3" />
+              )}
             </div>
           </div>
         </div>
 
-        {/* Use current location */}
+        {/* Live Search Results (if user types) */}
+        {searchResults.length > 0 && (
+          <div className="px-3.5 lg:px-6 mt-3">
+            <div className="bg-white rounded-2xl border border-purple-100 shadow-md overflow-hidden divide-y divide-stone-100">
+              <div className="px-3 py-2 bg-stone-50 text-[10.5px] font-bold text-stone-500 uppercase tracking-wider">
+                Matching Places
+              </div>
+              {searchResults.map((place, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSelectLocation({
+                    id: `place-${idx}-${Date.now()}`,
+                    area: place.area,
+                    city: place.city,
+                    address: place.address,
+                    pincode: place.pincode,
+                    lat: place.lat,
+                    lng: place.lng
+                  })}
+                  className="p-3 hover:bg-purple-50/60 active:bg-purple-100 cursor-pointer transition-colors flex items-start gap-2.5"
+                >
+                  <MapPin className="w-4 h-4 text-brand-maroon shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-stone-900 truncate">{place.area || place.city}</p>
+                    <p className="text-[11px] text-stone-500 line-clamp-1">{place.address}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Use Current GPS Location Button */}
         <div className="px-3.5 lg:px-6 mt-3">
           <button
             onClick={handleUseCurrentLocation}
             disabled={locateState === 'locating'}
-            className="w-full h-[42px] bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-70"
+            className="w-full h-[44px] bg-gradient-to-r from-brand-maroon to-purple-900 hover:opacity-95 active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
             type="button"
           >
             {locateState === 'locating' ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Getting your location…</span>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Detecting precise GPS location…</span>
               </>
             ) : (
               <>
-                <Navigation className="w-3.5 h-3.5 fill-current" />
-                <span>Use Current Location</span>
+                <Navigation className="w-4 h-4 fill-current" />
+                <span>Use Current Device Location (GPS)</span>
               </>
             )}
           </button>
@@ -155,124 +195,67 @@ export const AddressLocationPage = () => {
           </AnimatePresence>
         </div>
 
-        {/* Saved addresses list */}
-        <div className="px-3.5 lg:px-6 mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-              {searchQuery ? 'Search Results' : 'Saved Addresses'}
-            </span>
-            <button
-              onClick={() => setIsFormOpen((v) => !v)}
-              className="flex items-center gap-1 text-[10.5px] font-bold text-brand-maroon active:opacity-70"
-              type="button"
-            >
-              <Plus className="w-3 h-3" />
-              Add New
-            </button>
+        {/* Current Active Location Display */}
+        {currentLocation && (
+          <div className="px-3.5 lg:px-6 mt-4">
+            <div className="p-3 bg-white/90 rounded-2xl border-2 border-brand-maroon/30 shadow-xs flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-brand-maroon/10 flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4 text-brand-maroon" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase font-bold text-brand-maroon tracking-wider">Live Active Location</span>
+                    {currentLocation?.isGPS && (
+                      <span className="text-[9px] font-bold bg-green-100 text-green-700 px-1.5 py-0.2 rounded-full">GPS Live</span>
+                    )}
+                  </div>
+                  <p className="text-xs font-bold text-stone-900 truncate">
+                    {currentLocation.area && currentLocation.area.toLowerCase() !== (currentLocation.city || '').toLowerCase()
+                      ? `${currentLocation.area}, ${currentLocation.city}`
+                      : (currentLocation.landmark ? `${currentLocation.landmark}, ${currentLocation.city}` : currentLocation.city)}
+                  </p>
+                  <p className="text-[10.5px] text-stone-500 line-clamp-2 mt-0.5 leading-snug">{currentLocation.address}</p>
+                </div>
+              </div>
+              <CheckCircle2 className="w-4 h-4 text-brand-maroon shrink-0 ml-2" />
+            </div>
           </div>
+        )}
 
-          <AnimatePresence>
-            {isFormOpen && (
-              <motion.form
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                onSubmit={handleAddManualAddress}
-                className="bg-white rounded-xl border border-stone-200 shadow-xs p-3 mb-3 space-y-2 overflow-hidden"
-              >
-                <div>
-                  <label htmlFor="addr-area" className="text-[10px] font-bold text-stone-500 block mb-1">Area *</label>
-                  <input
-                    id="addr-area"
-                    value={form.area}
-                    onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
-                    placeholder="e.g. Vijay Nagar"
-                    className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
-                  />
-                  {formErrors.area && <p className="text-[10px] text-red-600 mt-0.5">{formErrors.area}</p>}
-                </div>
-                <div>
-                  <label htmlFor="addr-landmark" className="text-[10px] font-bold text-stone-500 block mb-1">Landmark</label>
-                  <input
-                    id="addr-landmark"
-                    value={form.landmark}
-                    onChange={(e) => setForm((f) => ({ ...f, landmark: e.target.value }))}
-                    placeholder="e.g. Near C21 Mall"
-                    className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="addr-city" className="text-[10px] font-bold text-stone-500 block mb-1">City *</label>
-                    <input
-                      id="addr-city"
-                      value={form.city}
-                      onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                      className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
-                    />
-                    {formErrors.city && <p className="text-[10px] text-red-600 mt-0.5">{formErrors.city}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="addr-pin" className="text-[10px] font-bold text-stone-500 block mb-1">PIN Code *</label>
-                    <input
-                      id="addr-pin"
-                      value={form.pincode}
-                      inputMode="numeric"
-                      maxLength={6}
-                      onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value.replace(/\D/g, '') }))}
-                      className="w-full h-9 px-2.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-maroon"
-                    />
-                    {formErrors.pincode && <p className="text-[10px] text-red-600 mt-0.5">{formErrors.pincode}</p>}
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full h-9 bg-stone-900 text-white text-xs font-bold rounded-lg mt-1 active:scale-[0.98] transition-transform"
-                >
-                  Save Address
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
+        {/* Saved Addresses list */}
+        {otherSavedLocations.length > 0 && (
+          <div className="px-3.5 lg:px-6 mt-4">
+            <div className="mb-2">
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                Saved Addresses
+              </span>
+            </div>
 
-          <div className="space-y-2">
-            {filteredLocations.length === 0 ? (
-              <p className="text-xs text-stone-500 p-3 text-center bg-white/60 rounded-xl border border-dashed border-stone-300">
-                {searchQuery ? `No saved address matches "${searchQuery}"` : 'No saved addresses yet — add one above.'}
-              </p>
-            ) : (
-              filteredLocations.map((loc) => (
+            <div className="space-y-2">
+              {otherSavedLocations.map((loc) => (
                 <div
                   key={loc.id}
                   onClick={() => handleSelectLocation(loc)}
-                  className={`p-3 rounded-xl bg-white border cursor-pointer transition-colors flex items-start justify-between gap-2 ${
-                    currentLocation?.id === loc.id ? 'border-brand-maroon shadow-xs' : 'border-stone-200 hover:border-stone-300'
-                  }`}
+                  className="p-3 rounded-xl bg-white border border-stone-200 hover:border-purple-300 cursor-pointer transition-colors flex items-start justify-between gap-2"
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-bold text-stone-900">{loc.area}</p>
-                      {currentLocation?.id === loc.id && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-brand-maroon shrink-0" />
-                      )}
-                    </div>
+                    <p className="text-xs font-bold text-stone-900">{loc.area || loc.city}</p>
                     <p className="text-[10px] text-stone-500 truncate mt-0.5">{loc.address}</p>
                   </div>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Decorative footer strip — keeps the page from ending in bare empty space when the address list is short */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 py-8 text-center min-h-[140px]">
-          <div className="w-11 h-11 rounded-2xl bg-white/70 border border-purple-200/60 flex items-center justify-center shadow-xs">
-            <MapPin className="w-5 h-5 text-brand-maroon" />
-          </div>
-          <p className="text-[11px] text-stone-500 max-w-[220px] leading-relaxed">
-            We use your address to show salons that are actually nearby and estimate accurate travel time.
+        {/* Footer info note */}
+        <div className="mt-8 px-6 text-center">
+          <p className="text-[11px] text-stone-400">
+            Salons and services are dynamically displayed based on your selected city and area.
           </p>
         </div>
+
       </div>
     </motion.div>
   );

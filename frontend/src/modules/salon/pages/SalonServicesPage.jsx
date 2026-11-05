@@ -213,7 +213,7 @@ export const SalonServicesPage = () => {
                 {/* Top Info Row */}
                 <div className="flex items-start gap-2.5">
                   <img
-                    src={service.image}
+                    src={service.image || undefined}
                     alt={service.name}
                     className="w-16 h-16 rounded-xl object-cover bg-stone-100 shrink-0"
                   />

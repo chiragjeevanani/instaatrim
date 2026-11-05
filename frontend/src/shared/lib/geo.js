@@ -54,6 +54,7 @@ export const reverseGeocode = async (lat, lng) => {
         let landmark = '';
         let pincode = '';
         let sublocality2 = '';
+        let district = '';
 
         top.address_components.forEach((c) => {
           if (c.types.includes('sublocality_level_2')) sublocality2 = c.long_name;
@@ -61,6 +62,7 @@ export const reverseGeocode = async (lat, lng) => {
             if (!area) area = c.long_name;
           }
           if (c.types.includes('locality')) city = c.long_name;
+          if (c.types.includes('administrative_area_level_2')) district = c.long_name;
           if (c.types.includes('postal_code')) pincode = c.long_name;
           if (c.types.includes('premise') || c.types.includes('point_of_interest') || c.types.includes('establishment')) {
             landmark = c.long_name;
@@ -72,7 +74,7 @@ export const reverseGeocode = async (lat, lng) => {
 
         return {
           area: primaryArea,
-          city: city || 'Indore',
+          city: city || district || '',
           pincode: pincode || '',
           landmark: secondary,
           address: top.formatted_address,
@@ -94,10 +96,10 @@ export const reverseGeocode = async (lat, lng) => {
       const pData = await pRes.json();
       if (pData?.features && pData.features.length > 0) {
         const p = pData.features[0].properties || {};
-        const city = p.city || p.town || p.state_district || p.district || 'Indore';
+        const city = p.city || p.town || p.village || p.county || p.state_district || '';
         const landmark = p.name || '';
         const street = p.street || '';
-        const locality = p.locality || (p.district && !p.district.toLowerCase().includes('indore city') ? p.district : '') || '';
+        const locality = p.locality || (p.district && (!city || !p.district.toLowerCase().includes(city.toLowerCase())) ? p.district : '') || '';
         const pincode = p.postcode || '';
 
         // Select the most meaningful dynamic area title
@@ -138,7 +140,7 @@ export const reverseGeocode = async (lat, lng) => {
       const d = await res.json();
       if (d && d.address) {
         const addr = d.address;
-        const city = addr.city || addr.town || addr.municipality || addr.village || addr.state_district || 'Indore';
+        const city = addr.city || addr.town || addr.municipality || addr.village || addr.county || addr.state_district || '';
         const specificName = addr.tourism || addr.amenity || addr.building || addr.office || addr.shop || addr.leisure || addr.residential || addr.suburb || addr.neighbourhood || addr.quarter || addr.road;
         const landmark = addr.road || addr.suburb || specificName || city;
         const area = specificName || landmark || addr.city_district || city;
@@ -167,7 +169,7 @@ export const reverseGeocode = async (lat, lng) => {
     const bdcRes = await fetch(bdcUrl);
     if (bdcRes.ok) {
       const bdc = await bdcRes.json();
-      const city = bdc.city || bdc.locality || 'Indore';
+      const city = bdc.city || bdc.locality || '';
       const adminList = bdc.localityInfo?.administrative || [];
       const specificAdmin = adminList.slice().reverse().find((a) => a.adminLevel >= 8 && a.name && !a.name.toLowerCase().includes('tehsil'));
       const area = specificAdmin ? specificAdmin.name : (bdc.locality || city);
@@ -191,7 +193,7 @@ export const reverseGeocode = async (lat, lng) => {
   // Method 5: Dynamic coordinate fallback (No hardcoded fake names)
   return {
     area: `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-    city: 'Indore',
+    city: '',
     pincode: '',
     landmark: 'Live GPS Pin',
     address: `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
@@ -208,7 +210,8 @@ export const searchPlaces = async (query) => {
 
   // Try Photon dynamic autocomplete & search first
   try {
-    const photonSearchUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=8`;
+    // bbox limits results to India (same as the OSM fallback's countrycodes=in)
+    const photonSearchUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=8&bbox=68.1,6.5,97.5,35.7`;
     const pRes = await fetch(photonSearchUrl);
     if (pRes.ok) {
       const data = await pRes.json();
@@ -216,18 +219,28 @@ export const searchPlaces = async (query) => {
         return data.features.map((f) => {
           const p = f.properties || {};
           const coords = f.geometry?.coordinates || [0, 0];
-          const city = p.city || p.town || p.district || p.state || '';
+          // When the result itself is a city/town (e.g. "Agra"), its own name is the city —
+          // otherwise Photon has no `city` field and we'd wrongly fall back to the state.
+          const placeType = (p.type || p.osm_value || '').toLowerCase();
+          const isCityLevel = ['city', 'town', 'village', 'municipality', 'county'].includes(placeType);
+          const isStateLevel = ['state', 'country', 'region'].includes(placeType);
+          const city = isCityLevel
+            ? p.name
+            : isStateLevel
+              ? ''
+              : p.city || p.town || p.village || p.county || p.district || p.state || '';
           const title = p.name || p.street || p.district || q;
           const subtitleParts = [p.street, p.district, p.city, p.state].filter(Boolean);
           const fullAddress = Array.from(new Set([title, ...subtitleParts])).join(', ');
 
           return {
             area: title,
-            city: city || 'Indore',
+            city: city || '',
             pincode: p.postcode || '',
             address: fullAddress,
             lat: coords[1],
-            lng: coords[0]
+            lng: coords[0],
+            placeType: isCityLevel ? 'city' : isStateLevel ? 'state' : 'locality'
           };
         });
       }

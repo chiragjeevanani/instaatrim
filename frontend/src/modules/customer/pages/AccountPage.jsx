@@ -222,7 +222,7 @@ export const AccountPage = () => {
               </div>
               <div>
                 <p className="font-bold text-stone-900 text-xs">Salon Visit Location</p>
-                <p className="text-[10px] text-stone-500">{currentLocation?.area || 'South Tukoganj'}</p>
+                <p className="text-[10px] text-stone-500">{currentLocation?.area || currentLocation?.city || 'Location not set'}</p>
               </div>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-stone-400" />

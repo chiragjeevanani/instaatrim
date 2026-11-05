@@ -25,8 +25,10 @@ import {
   X
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
+import { requestCurrentPosition, reverseGeocode, searchPlaces } from '../../../shared/lib/geo';
 import { requestFirebaseToken } from '../../../shared/lib/firebase';
 import { AuthBrandPanel } from '../../../shared/components/AuthBrandPanel';
+import { getCategorySuggestions, findCategoryByName } from '../../../shared/data/categoryCatalog';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -43,7 +45,6 @@ const AMENITY_LIST = [
   'Express Fast-Lane'
 ];
 
-const POPULAR_CITIES = ['Indore', 'Bhopal', 'Mumbai', 'Pune', 'Delhi NCR', 'Bangalore'];
 
 export const SalonRegistrationPage = () => {
   const navigate = useNavigate();
@@ -56,9 +57,7 @@ export const SalonRegistrationPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [dbCategories, setDbCategories] = useState([]);
-  const [categorySearch, setCategorySearch] = useState('');
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
-  const [isManualCategory, setIsManualCategory] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState(() => {
@@ -70,13 +69,16 @@ export const SalonRegistrationPage = () => {
     }
     return {
       name: '',
-      category: 'Unisex',
+      category: '',
       subcategories: [],
       ownerName: '',
       mobile: '',
       email: '',
       password: '',
-      city: 'Indore',
+      city: '',
+      pincode: '',
+      lat: null,
+      lng: null,
       area: '',
       address: '',
       openTime: '09:30 AM',
@@ -96,43 +98,80 @@ export const SalonRegistrationPage = () => {
     };
   });
 
-  // Filtered categories for autocomplete search
-  const filteredCategoryList = useMemo(() => {
-    const q = categorySearch.trim().toLowerCase();
-    if (!q) return dbCategories;
-    return dbCategories.filter((cat) => {
-      const matchName = cat.name?.toLowerCase().includes(q);
-      const matchDesc = cat.description?.toLowerCase().includes(q);
-      const matchSub = (cat.serviceCategories || []).some((sub) => sub.toLowerCase().includes(q));
-      return matchName || matchDesc || matchSub;
-    });
-  }, [dbCategories, categorySearch]);
+  // Smart autocomplete — exactly the same source & matching as Admin → Categories
+  // (shared catalog + live DB categories; DB wins when names match)
+  const categorySuggestions = useMemo(
+    () => getCategorySuggestions(formData.category, dbCategories),
+    [formData.category, dbCategories]
+  );
 
-  // Selected category object for subcategory tags preview
-  const selectedCategoryObj = useMemo(() => {
-    return dbCategories.find(
-      (c) => (c.id || c._id) === formData.category || c.name?.toLowerCase() === formData.category?.toLowerCase()
-    );
-  }, [dbCategories, formData.category]);
+  // Category (catalog or DB) whose name / short name / slug exactly matches the typed text
+  const selectedCategoryObj = useMemo(
+    () => findCategoryByName(formData.category, dbCategories),
+    [formData.category, dbCategories]
+  );
+
+  // Subcategory chips = tags of the matched category + any custom ones the partner added
+  const availableSubcategories = useMemo(() => {
+    const base = selectedCategoryObj?.tags || [];
+    const custom = (formData.subcategories || []).filter((s) => !base.includes(s));
+    return [...base, ...custom];
+  }, [selectedCategoryObj, formData.subcategories]);
+
+  const [customSubInput, setCustomSubInput] = useState('');
+
+  // Click a suggestion → auto-fill category + all its subcategories (same as admin "Apply")
+  const selectCategorySuggestion = (sug) => {
+    setFormData((prev) => ({
+      ...prev,
+      category: sug.name,
+      subcategories: [...(sug.tags || [])]
+    }));
+    setShowCategorySuggestions(false);
+    if (error) setError(null);
+  };
+
+  // Typing = manual entry. If text exactly matches a known category, its subcategories auto-load;
+  // if the text is changed away / cleared, those subcategories go away too.
+  const handleCategoryChange = (value) => {
+    setShowCategorySuggestions(true);
+    const match = findCategoryByName(value, dbCategories);
+    setFormData((prev) => {
+      if (!value.trim()) return { ...prev, category: value, subcategories: [] };
+      const prevMatch = findCategoryByName(prev.category, dbCategories);
+      let subs = prev.subcategories || [];
+      if (match && match.name !== prevMatch?.name) subs = [...(match.tags || [])];
+      else if (!match && prevMatch) subs = subs.filter((s) => !(prevMatch.tags || []).includes(s));
+      return { ...prev, category: value, subcategories: subs };
+    });
+    if (error) setError(null);
+  };
+
+  const addCustomSubcategories = () => {
+    const parts = customSubInput.split(',').map((s) => s.trim()).filter(Boolean);
+    if (!parts.length) return;
+    setFormData((prev) => {
+      const current = prev.subcategories || [];
+      const lower = current.map((s) => s.toLowerCase());
+      const fresh = parts.filter((p) => !lower.includes(p.toLowerCase()));
+      return { ...prev, subcategories: [...current, ...fresh] };
+    });
+    setCustomSubInput('');
+  };
 
   useEffect(() => {
-    import('../../../shared/services/api').then(({ api }) => {
-      api.categories.list().then((res) => {
-        const cats = res || [];
-        setDbCategories(cats);
-        if (cats.length > 0) {
-          setFormData((prev) => {
-            const firstCat = cats[0];
-            const catName = firstCat.name || firstCat.id;
-            return {
-              ...prev,
-              category: prev.category || catName,
-              subcategories: (prev.subcategories && prev.subcategories.length > 0)
-                ? prev.subcategories
-                : (firstCat.serviceCategories || [])
-            };
-          });
+    api.categories.list({ onlyActive: true }).then((res) => {
+      // Only global categories (not ones assigned to a specific salon) are offered at onboarding
+      const cats = (res || []).filter((c) => !c.salonId || c.salonId === 'all');
+      setDbCategories(cats);
+      setFormData((prev) => {
+        // Drop the old hardcoded 'Unisex' default
+        if (prev.category === 'Unisex') return { ...prev, category: '', subcategories: [] };
+        const match = findCategoryByName(prev.category, cats);
+        if (match && !(prev.subcategories || []).length) {
+          return { ...prev, category: match.name, subcategories: [...(match.tags || [])] };
         }
+        return prev;
       });
     });
   }, []);
@@ -175,10 +214,69 @@ export const SalonRegistrationPage = () => {
 
   const isStep1Valid =
     formData.name.trim().length >= 3 &&
+    (formData.category || '').trim().length > 0 &&
     formData.ownerName.trim().length >= 2 &&
     formData.mobile.replace(/\D/g, '').length === 10 &&
     formData.email.includes('@') &&
     formData.password.length >= 6;
+
+  // ── Live location (same geo helpers as the customer app) ──
+  const [locateState, setLocateState] = useState('idle'); // idle | locating | error
+  const [locateError, setLocateError] = useState(null);
+  const [placeQuery, setPlaceQuery] = useState('');
+  const [placeResults, setPlaceResults] = useState([]);
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
+
+  const applyPickedLocation = (loc) => {
+    // Picked a whole city (e.g. "Agra")? Its name is not an area — let the partner type the area.
+    const isCityLevel = loc.placeType === 'city' || loc.placeType === 'state';
+    setFormData((prev) => ({
+      ...prev,
+      city: loc.city || prev.city,
+      area: isCityLevel ? '' : loc.area || prev.area,
+      address: loc.address || prev.address,
+      pincode: loc.pincode || prev.pincode || '',
+      lat: typeof loc.lat === 'number' && !isNaN(loc.lat) ? loc.lat : prev.lat,
+      lng: typeof loc.lng === 'number' && !isNaN(loc.lng) ? loc.lng : prev.lng
+    }));
+    if (error) setError(null);
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setLocateState('locating');
+    setLocateError(null);
+    try {
+      const { lat, lng } = await requestCurrentPosition();
+      const detected = await reverseGeocode(lat, lng);
+      applyPickedLocation({ ...detected, lat, lng });
+      setLocateState('idle');
+    } catch (err) {
+      setLocateState('error');
+      setLocateError(err?.message || 'Could not fetch your location. Please search or type it manually.');
+    }
+  };
+
+  // Debounced place search (Photon / OSM — same as customer location page)
+  useEffect(() => {
+    if (!placeQuery || placeQuery.trim().length < 2) {
+      setPlaceResults([]);
+      setIsSearchingPlaces(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingPlaces(true);
+      try {
+        setPlaceResults(await searchPlaces(placeQuery));
+      } catch {
+        setPlaceResults([]);
+      } finally {
+        setIsSearchingPlaces(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [placeQuery]);
+
+  const hasPinnedLocation = typeof formData.lat === 'number' && typeof formData.lng === 'number';
 
   const isStep2Valid =
     formData.city.trim().length > 0 &&
@@ -200,9 +298,25 @@ export const SalonRegistrationPage = () => {
     return formData.agreeTerms;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Typed the address manually without pinning? Try to geocode it so the salon gets real coordinates
+    if (step === 2 && isStep2Valid && !hasPinnedLocation) {
+      try {
+        const hits = await searchPlaces([formData.area, formData.city].filter(Boolean).join(', '));
+        const hit = hits.find((h) => typeof h.lat === 'number' && !isNaN(h.lat));
+        if (hit) setFormData((prev) => ({ ...prev, lat: hit.lat, lng: hit.lng, pincode: prev.pincode || hit.pincode || '' }));
+      } catch {
+        /* non-blocking */
+      }
+    }
     if (!canProceed()) {
-      if (step === 1) setError('Please fill all required partner contact details (10-digit mobile & 6+ char password).');
+      if (step === 1) {
+        setError(
+          !(formData.category || '').trim()
+            ? 'Please select or enter your business category.'
+            : 'Please fill all required partner contact details (10-digit mobile & 6+ char password).'
+        );
+      }
       if (step === 2) setError('Please provide your salon address and location details.');
       return;
     }
@@ -255,6 +369,9 @@ export const SalonRegistrationPage = () => {
         accountNumber: formData.accountNumber,
         ifscCode: formData.ifscCode.toUpperCase(),
         payoutCycle: formData.payoutCycle,
+        pincode: formData.pincode || '',
+        lat: typeof formData.lat === 'number' ? formData.lat : undefined,
+        lng: typeof formData.lng === 'number' ? formData.lng : undefined,
         organizationType: formData.organizationType || 'Independent Salon',
         parentBrandName: formData.parentBrandName || '',
         branchName: formData.branchName || ''
@@ -460,208 +577,169 @@ export const SalonRegistrationPage = () => {
                       )}
                     </div>
 
-                    {/* Business Category — Smart Autocomplete */}
+                    {/* Business Category — Smart Autocomplete (same as Admin → Categories) */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-[11px] font-bold text-stone-700">
-                          Business Category <span className="text-rose-600">*</span>
-                        </label>
-                        <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[11px] font-bold text-stone-700">
+                            Business Category <span className="text-rose-600">*</span>
+                          </label>
                           <span className="text-[10px] text-purple-700 font-semibold flex items-center gap-1 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
                             <Sparkles className="w-2.5 h-2.5 text-purple-600" /> Smart Autocomplete
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => setIsManualCategory(!isManualCategory)}
-                            className="text-[10px] text-stone-500 hover:text-brand-maroon underline font-medium"
-                          >
-                            {isManualCategory ? 'Pick from List' : 'Enter Manually'}
-                          </button>
                         </div>
-                      </div>
-
-                      {isManualCategory ? (
-                        <div>
+                        <div className="relative flex items-center">
                           <input
                             type="text"
-                            placeholder="e.g. Hair Salon, Luxury Spa, Nail Studio..."
+                            placeholder="e.g. Hair, Nails, Facial, Spa..."
                             value={formData.category || ''}
-                            onChange={(e) => updateField('category', e.target.value)}
-                            className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
+                            onFocus={() => setShowCategorySuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
+                            onChange={(e) => handleCategoryChange(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                setShowCategorySuggestions(false);
+                              }
+                            }}
+                            className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl pl-3.5 pr-8 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
                           />
-                          <p className="text-[10px] text-stone-400 mt-1">Manual category input enabled.</p>
+                          {formData.category && (
+                            <button
+                              type="button"
+                              onClick={() => handleCategoryChange('')}
+                              className="absolute right-2.5 text-stone-400 hover:text-stone-600"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {/* Search Input with Autocomplete */}
-                          <div className="relative">
-                            <div className="relative flex items-center">
-                              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 pointer-events-none" />
-                              <input
-                                type="text"
-                                placeholder="Search category or subcategory (e.g. Hair, Beard, Facial, Nails)..."
-                                value={categorySearch}
-                                onFocus={() => setShowCategorySuggestions(true)}
-                                onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 250)}
-                                onChange={(e) => {
-                                  setCategorySearch(e.target.value);
-                                  setShowCategorySuggestions(true);
+
+                        {/* Autocomplete Suggestions Dropdown */}
+                        {showCategorySuggestions && categorySuggestions.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white border border-stone-200 rounded-xl shadow-xl overflow-hidden divide-y divide-stone-100 max-h-60 overflow-y-auto">
+                            <div className="px-3 py-1.5 bg-stone-50 text-[10px] uppercase tracking-wider font-bold text-purple-700 flex items-center justify-between">
+                              <span>Related Suggestions</span>
+                              <span className="text-stone-400 font-normal">Click to auto-fill</span>
+                            </div>
+                            {categorySuggestions.map((sug, i) => (
+                              <div
+                                key={`${sug.slug || sug.name}-${i}`}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  selectCategorySuggestion(sug);
                                 }}
-                                className="w-full pl-8 pr-8 py-2 border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white rounded-xl text-stone-900 text-xs placeholder-stone-400 outline-none transition-all"
-                              />
-                              {categorySearch && (
+                                className="w-full text-left p-2.5 hover:bg-purple-50/70 transition-colors flex items-center justify-between group cursor-pointer"
+                              >
+                                <div className="min-w-0">
+                                  <div className="font-bold text-stone-900 group-hover:text-brand-maroon text-[12px] flex items-center gap-1.5">
+                                    <span className="truncate">{sug.name}</span>
+                                    {sug.slug && (
+                                      <span className="text-[9px] px-1.5 rounded-md bg-stone-100 text-stone-500 font-mono shrink-0">
+                                        /{sug.slug}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {sug.tags?.length > 0 && (
+                                    <p className="text-[10.5px] text-stone-500 mt-0.5 line-clamp-1">
+                                      {sug.tags.slice(0, 4).join(', ')}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-purple-700 opacity-0 group-hover:opacity-100 font-medium px-2 py-0.5 rounded bg-purple-100 transition-all shrink-0 ml-2">
+                                  Apply
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Subcategories: auto-filled from the selected category + custom additions */}
+                      {(formData.category || '').trim() && (
+                        <div className="p-2.5 rounded-xl bg-purple-50/50 border border-purple-200/70 space-y-2 mt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-purple-900 flex items-center gap-1">
+                              <Tag className="w-2.5 h-2.5 text-purple-600" />
+                              Subcategories / Treatments Offered
+                            </span>
+                            {availableSubcategories.length > 0 && (
+                              <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setCategorySearch('')}
-                                  className="absolute right-2.5 text-stone-400 hover:text-stone-600"
+                                  onClick={() => updateField('subcategories', [...availableSubcategories])}
+                                  className="text-[9px] text-brand-maroon hover:underline font-bold"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  Select All
                                 </button>
-                              )}
-                            </div>
-
-                            {/* Autocomplete Dropdown */}
-                            {showCategorySuggestions && filteredCategoryList.length > 0 && (
-                              <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white border border-stone-200 rounded-xl shadow-xl overflow-hidden divide-y divide-stone-100 max-h-56 overflow-y-auto">
-                                <div className="px-3 py-1.5 bg-stone-50 text-[10px] uppercase tracking-wider font-bold text-stone-500 flex items-center justify-between">
-                                  <span>Dynamic DB Categories</span>
-                                  <span className="text-purple-600 font-normal">Click to select</span>
-                                </div>
-                                {filteredCategoryList.map((cat) => {
-                                  const catId = cat.id || cat._id || cat.name;
-                                  const isSelected = formData.category === catId || formData.category === cat.name;
-                                  return (
-                                    <div
-                                      key={catId}
-                                      onMouseDown={() => {
-                                        updateField('category', cat.name || catId);
-                                        updateField('subcategories', cat.serviceCategories || []);
-                                        setCategorySearch(cat.name);
-                                        setShowCategorySuggestions(false);
-                                      }}
-                                      className={`px-3 py-2 cursor-pointer transition-colors ${isSelected ? 'bg-rose-50 text-brand-maroon font-semibold' : 'hover:bg-purple-50/60 text-stone-800'
-                                        }`}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="text-xs">{cat.name?.charAt(0) || '✨'}</span>
-                                          <span className="text-xs font-bold text-stone-900">{cat.name}</span>
-                                          {cat.gender && (
-                                            <span className="text-[9px] px-1.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 capitalize">
-                                              {cat.gender}
-                                            </span>
-                                          )}
-                                        </div>
-                                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-brand-maroon" />}
-                                      </div>
-                                      {cat.serviceCategories && cat.serviceCategories.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-1">
-                                          {cat.serviceCategories.slice(0, 4).map((sub, idx) => (
-                                            <span key={idx} className="text-[9px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded border border-stone-200">
-                                              {sub}
-                                            </span>
-                                          ))}
-                                          {cat.serviceCategories.length > 4 && (
-                                            <span className="text-[9px] text-stone-400 self-center">
-                                              +{cat.serviceCategories.length - 4} more
-                                            </span>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
+                                <span className="text-stone-300">|</span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateField('subcategories', [])}
+                                  className="text-[9px] text-stone-500 hover:underline font-medium"
+                                >
+                                  Clear
+                                </button>
                               </div>
                             )}
                           </div>
 
-                          {/* Category Grid Cards */}
-                          <div className="grid grid-cols-2 gap-2">
-                            {filteredCategoryList.map((cat) => {
-                              const catId = cat.id || cat._id || cat.name;
-                              const isSelected = formData.category === catId || formData.category === cat.name;
-                              return (
-                                <button
-                                  key={catId}
-                                  type="button"
-                                  onClick={() => {
-                                    updateField('category', cat.name || catId);
-                                    updateField('subcategories', cat.serviceCategories || []);
-                                    setCategorySearch('');
-                                  }}
-                                  className={`p-2.5 rounded-xl border text-left transition-all ${isSelected
-                                    ? 'border-brand-maroon bg-rose-50/70 ring-1 ring-brand-maroon shadow-xs'
-                                    : 'border-stone-200 bg-white hover:border-stone-300'
-                                    }`}
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <span className="text-sm block mb-0.5">{cat.name?.charAt(0) || '✨'}</span>
-                                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-brand-maroon" />}
-                                  </div>
-                                  <span className="text-xs font-bold text-stone-900 block leading-tight">{cat.name}</span>
-                                  <span className="text-[9.5px] text-stone-500 font-normal leading-snug mt-0.5 block line-clamp-2">
-                                    {cat.description || cat.name}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Subcategory selectable badges */}
-                          {selectedCategoryObj && selectedCategoryObj.serviceCategories && selectedCategoryObj.serviceCategories.length > 0 && (
-                            <div className="p-2.5 rounded-xl bg-purple-50/50 border border-purple-200/70 space-y-2 mt-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-purple-900 flex items-center gap-1">
-                                  <Tag className="w-2.5 h-2.5 text-purple-600" />
-                                  Select Subcategories / Treatments Offered:
-                                </span>
-                                <div className="flex items-center gap-2">
+                          {availableSubcategories.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {availableSubcategories.map((sub) => {
+                                const isChecked = (formData.subcategories || []).includes(sub);
+                                return (
                                   <button
+                                    key={sub}
                                     type="button"
-                                    onClick={() => updateField('subcategories', [...selectedCategoryObj.serviceCategories])}
-                                    className="text-[9px] text-brand-maroon hover:underline font-bold"
+                                    onClick={() => toggleSubcategory(sub)}
+                                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${isChecked
+                                      ? 'bg-brand-maroon text-white shadow-xs font-bold ring-1 ring-brand-maroon'
+                                      : 'bg-white text-stone-700 border border-purple-200/80 hover:border-purple-400'
+                                      }`}
                                   >
-                                    Select All
-                                  </button>
-                                  <span className="text-stone-300">|</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateField('subcategories', [])}
-                                    className="text-[9px] text-stone-500 hover:underline font-medium"
-                                  >
-                                    Clear
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {selectedCategoryObj.serviceCategories.map((sub, sIdx) => {
-                                  const isChecked = (formData.subcategories || []).includes(sub);
-                                  return (
-                                    <button
-                                      key={sIdx}
-                                      type="button"
-                                      onClick={() => toggleSubcategory(sub)}
-                                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${isChecked
-                                        ? 'bg-brand-maroon text-white shadow-xs font-bold ring-1 ring-brand-maroon'
-                                        : 'bg-white text-stone-700 border border-purple-200/80 hover:border-purple-400'
+                                    <div
+                                      className={`w-3 h-3 rounded flex items-center justify-center text-[8px] ${isChecked ? 'bg-white text-brand-maroon' : 'border border-stone-300'
                                         }`}
                                     >
-                                      <div
-                                        className={`w-3 h-3 rounded flex items-center justify-center text-[8px] ${isChecked ? 'bg-white text-brand-maroon' : 'border border-stone-300'
-                                          }`}
-                                      >
-                                        {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                                      </div>
-                                      <span>{sub}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                              <p className="text-[9px] text-stone-400">
-                                Selected: {(formData.subcategories || []).length} of {selectedCategoryObj.serviceCategories.length} subcategories
-                              </p>
+                                      {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                    </div>
+                                    <span>{sub}</span>
+                                  </button>
+                                );
+                              })}
                             </div>
+                          ) : (
+                            <p className="text-[10px] text-stone-500">New category — add the treatments you offer below.</p>
                           )}
+
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              placeholder="Add more (comma separated), e.g. Hair Spa, Keratin"
+                              value={customSubInput}
+                              onChange={(e) => setCustomSubInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addCustomSubcategories();
+                                }
+                              }}
+                              className="flex-1 min-w-0 border border-purple-200 focus:border-brand-maroon bg-white rounded-lg px-2.5 py-1.5 text-stone-900 text-[10.5px] placeholder-stone-400 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={addCustomSubcategories}
+                              disabled={!customSubInput.trim()}
+                              className="px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold bg-brand-maroon text-white disabled:opacity-40 shrink-0"
+                            >
+                              Add
+                            </button>
+                          </div>
+
+                          <p className="text-[9px] text-stone-400">
+                            Selected: {(formData.subcategories || []).length} of {availableSubcategories.length} subcategories
+                          </p>
                         </div>
                       )}
                     </div>
@@ -755,24 +833,116 @@ export const SalonRegistrationPage = () => {
                   </div>
 
                   <div className="space-y-2.5">
+                    {/* Live GPS location (same as customer app) */}
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      disabled={locateState === 'locating'}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-brand-maroon bg-rose-50/70 text-brand-maroon text-xs font-bold hover:bg-rose-100/70 transition-all disabled:opacity-60 disabled:cursor-wait"
+                    >
+                      {locateState === 'locating' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Fetching your current location...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="w-4 h-4" />
+                          <span>Use Current Location (GPS)</span>
+                        </>
+                      )}
+                    </button>
+                    {locateError && (
+                      <p className="text-[10.5px] text-red-600 flex items-start gap-1">
+                        <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                        <span>{locateError}</span>
+                      </p>
+                    )}
+
+                    {/* Search salon location */}
+                    <div className="relative">
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Or Search Your Salon Location
+                      </label>
+                      <div className="relative flex items-center">
+                        <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="Search area, landmark or city (e.g. Vijay Nagar Indore)"
+                          value={placeQuery}
+                          onChange={(e) => setPlaceQuery(e.target.value)}
+                          className="w-full pl-8 pr-8 py-2.5 border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white rounded-xl text-stone-900 text-xs placeholder-stone-400 outline-none transition-all"
+                        />
+                        {isSearchingPlaces ? (
+                          <Loader2 className="w-3.5 h-3.5 text-stone-400 absolute right-2.5 animate-spin" />
+                        ) : placeQuery ? (
+                          <button
+                            type="button"
+                            onClick={() => setPlaceQuery('')}
+                            className="absolute right-2.5 text-stone-400 hover:text-stone-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
+                      {placeResults.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white border border-stone-200 rounded-xl shadow-xl overflow-hidden divide-y divide-stone-100 max-h-60 overflow-y-auto">
+                          <div className="px-3 py-1.5 bg-stone-50 text-[10px] uppercase tracking-wider font-bold text-stone-500">
+                            Matching Places
+                          </div>
+                          {placeResults.map((p, i) => (
+                            <button
+                              key={`${p.lat}-${p.lng}-${i}`}
+                              type="button"
+                              onClick={() => {
+                                applyPickedLocation(p);
+                                setPlaceQuery('');
+                                setPlaceResults([]);
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-purple-50/60 flex items-start gap-2"
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-brand-maroon shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-stone-900 block truncate">{p.area}</span>
+                                <span className="text-[10px] text-stone-500 block truncate">{p.address}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {hasPinnedLocation && (
+                      <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
+                        <span className="text-[10.5px] text-emerald-800 font-semibold flex items-center gap-1.5 min-w-0">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">
+                            Location pinned ({formData.lat.toFixed(5)}, {formData.lng.toFixed(5)})
+                            {formData.pincode ? ` · PIN ${formData.pincode}` : ''}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, lat: null, lng: null }))}
+                          className="text-[10px] text-stone-500 hover:text-red-600 underline shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+
                     {/* City */}
                     <div>
-                      <label className="text-[11px] font-bold text-stone-700 block mb-1">City</label>
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {POPULAR_CITIES.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => updateField('city', c)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${formData.city === c
-                              ? 'bg-brand-maroon text-white shadow-2xs'
-                              : 'bg-white border border-stone-200 text-stone-700 hover:border-stone-300'
-                              }`}
-                          >
-                            {c}
-                          </button>
-                        ))}
-                      </div>
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        City <span className="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Indore, Bhopal, Patna..."
+                        value={formData.city}
+                        onChange={(e) => updateField('city', e.target.value)}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
+                      />
                     </div>
 
                     {/* Area */}

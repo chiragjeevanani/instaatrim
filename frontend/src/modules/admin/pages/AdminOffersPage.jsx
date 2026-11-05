@@ -2,41 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { Tag, CheckCircle2, XCircle, Clock, Search, AlertCircle, Percent, Plus, Sparkles, Store, X, Layers, Calendar, ChevronDown, Check, Edit3, Trash2 } from 'lucide-react';
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
+import { api } from '../../../shared/services/api';
 
-// Standard catalog suggestions for autocomplete
-const CATEGORY_CATALOG = [
-  {
-    name: 'Hair',
-    subcategories: ["Men's Haircut", "Women's Haircut", "Hair Spa", "Keratin", "Global Color", "Root Touch-up", "Smoothening / Rebonding", "Blow-dry"]
-  },
-  {
-    name: 'Nails',
-    subcategories: ['Gel Polish', 'Acrylic Extensions', 'Nail Art', 'Classic Manicure', 'Classic Pedicure', 'French Tips']
-  },
-  {
-    name: 'Facial',
-    subcategories: ['Hydra Facial', 'Gold Glow Facial', 'Anti-Aging Cleanup', 'Fruit Cleanup', 'De-Tan Pack', 'O3+ Facial']
-  },
-  {
-    name: 'Spa & Massage',
-    subcategories: ['Full Body Swedish', 'Deep Tissue Massage', 'Head & Shoulder Spa', 'Aromatherapy', 'Foot Reflexology']
-  },
-  {
-    name: 'Beard & Grooming',
-    subcategories: ['Beard Trim & Shape', 'Beard Spa', 'Royal Shave', 'Beard Color', 'Charcoal Face Mask']
-  },
-  {
-    name: 'Waxing & Threading',
-    subcategories: ['Full Body Rica Wax', 'Arms & Legs Wax', 'Eyebrow Threading', 'Upper Lip & Chin']
-  },
-  {
-    name: 'Bridal & Makeup',
-    subcategories: ['HD Party Makeup', 'Bridal Package', 'Pre-Bridal Glow', 'Saree Draping', 'Hair Styling']
-  }
-];
 
 export const AdminOffersPage = () => {
-  const { offers = [], salons = [], approveOffer, rejectOffer, createOffer, updateOffer, deleteOffer } = useAdmin();
+  const { offers = [], salons = [], categories = [], approveOffer, rejectOffer, createOffer, updateOffer, deleteOffer } = useAdmin();
 
   const [tab, setTab] = useState('all'); // 'all' | 'pending' | 'approved' | 'rejected'
   const [search, setSearch] = useState('');
@@ -57,22 +27,38 @@ export const AdminOffersPage = () => {
     subcategories: [], // Multi-select array
     salonId: 'all',
     salonName: 'All Salons (Global Offer)',
-    price: '', // Base Price / MRP
-    discount: '25', // Discount %
-    originalPrice: '', // Final Selling / Offer Price
+    discount: '25', // Discount % applied on each matching service's own price
+    maxDiscount: '', // optional cap in ₹
     description: '',
     applicableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    validTill: '2026-12-31'
+    validTill: '' // '' = no expiry (admin can pick a date)
   };
 
   const [formData, setFormData] = useState(initialFormState);
+
+  // Make sure the latest DB categories are loaded even if admin opens this page directly
+  React.useEffect(() => {
+    api.categories.list().catch(() => {});
+  }, []);
+
+  // Categories & sub-categories from DB (admin-defined). Global ones + ones assigned to the chosen salon.
+  const CATEGORY_CATALOG = useMemo(() => {
+    const sel = String(formData.salonId || 'all');
+    return (categories || [])
+      .filter((c) => c && c.name && c.isActive !== false)
+      .filter((c) => {
+        const cs = c.salonId ? String(c.salonId._id || c.salonId.id || c.salonId) : '';
+        return !cs || cs === 'all' || cs === sel;
+      })
+      .map((c) => ({ name: c.name, subcategories: Array.isArray(c.serviceCategories) ? c.serviceCategories : [] }));
+  }, [categories, formData.salonId]);
 
   // Autocomplete category filter
   const catSuggestions = useMemo(() => {
     const q = (formData.category || '').toLowerCase().trim();
     if (!q) return CATEGORY_CATALOG;
     return CATEGORY_CATALOG.filter((c) => c.name.toLowerCase().includes(q));
-  }, [formData.category]);
+  }, [formData.category, CATEGORY_CATALOG]);
 
   // Dynamic available subcategories for currently selected category
   const availableSubcategories = useMemo(() => {
@@ -80,13 +66,13 @@ export const AdminOffersPage = () => {
       (c) => c.name.toLowerCase() === (formData.category || '').toLowerCase()
     );
     return found ? found.subcategories : [];
-  }, [formData.category]);
+  }, [formData.category, CATEGORY_CATALOG]);
 
   const handleSelectCategory = (cat) => {
     setFormData((prev) => ({
       ...prev,
       category: cat.name,
-      subcategories: cat.subcategories?.slice(0, 2) || [] // Default select first 2
+      subcategories: [] // none selected = offer applies to the whole category
     }));
     setShowCatSuggestions(false);
   };
@@ -142,37 +128,8 @@ export const AdminOffersPage = () => {
     }));
   };
 
-  const handleBasePriceChange = (val) => {
-    const base = parseFloat(val) || 0;
-    const disc = parseFloat(formData.discount) || 0;
-    const calculatedOfferPrice = disc > 0 ? Math.round(base - (base * disc) / 100) : base;
-    setFormData((prev) => ({
-      ...prev,
-      price: val,
-      originalPrice: calculatedOfferPrice
-    }));
-  };
-
   const handleDiscountChange = (val) => {
-    const disc = parseFloat(val) || 0;
-    const base = parseFloat(formData.price) || 0;
-    const calculatedOfferPrice = disc > 0 ? Math.round(base - (base * disc) / 100) : base;
-    setFormData((prev) => ({
-      ...prev,
-      discount: val,
-      originalPrice: calculatedOfferPrice
-    }));
-  };
-
-  const handleOfferPriceChange = (val) => {
-    const offerPrice = parseFloat(val) || 0;
-    const disc = parseFloat(formData.discount) || 0;
-    const calculatedBase = disc > 0 && disc < 100 ? Math.round(offerPrice / (1 - disc / 100)) : offerPrice;
-    setFormData((prev) => ({
-      ...prev,
-      originalPrice: val,
-      price: calculatedBase
-    }));
+    setFormData((prev) => ({ ...prev, discount: val }));
   };
 
   const handleOpenCreate = () => {
@@ -191,20 +148,17 @@ export const AdminOffersPage = () => {
       subArr = offer.subcategory.split(",").map((s) => s.trim()).filter(Boolean);
     }
     const discVal = offer.discountPercent || (parseFloat(offer.discount) || 25);
-    const originalMrp = offer.price || (parseFloat(offer.originalPrice) || 0);
-    const finalDeal = offer.originalPrice || Math.round(originalMrp - (originalMrp * discVal) / 100);
     setFormData({
       title: offer.title || "",
       category: offer.category || "",
       subcategories: subArr,
       salonId: offer.salonId || "all",
       salonName: offer.salonName || "All Salons (Global Offer)",
-      price: originalMrp || "",
       discount: discVal || "25",
-      originalPrice: finalDeal || "",
+      maxDiscount: offer.maxDiscount || "",
       description: offer.description || "",
       applicableDays: offer.applicableDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      validTill: offer.validTill || "2026-12-31"
+      validTill: offer.validTill || ""
     });
     setCustomSubInput("");
     setIsModalOpen(true);
@@ -231,25 +185,27 @@ export const AdminOffersPage = () => {
 
     setIsSubmitting(true);
     try {
-      const subcategoryDisplay = formData.subcategories.length > 0
-        ? formData.subcategories.join(', ')
-        : (customSubInput.trim() || formData.category.trim());
+      const pendingTag = customSubInput.trim();
+      const subs = pendingTag && !formData.subcategories.includes(pendingTag) ? [...formData.subcategories, pendingTag] : formData.subcategories;
+      const scopeText = subs.length > 0 ? subs.join(', ') : formData.category.trim();
+      const pct = Number(formData.discount) || 0;
+      if (pct < 1 || pct > 90) {
+        alert('Discount must be between 1% and 90%');
+        setIsSubmitting(false);
+        return;
+      }
 
       const offerPayload = {
         title: formData.title.trim(),
         category: formData.category.trim(),
-        subcategory: subcategoryDisplay,
-        subcategories: formData.subcategories.length > 0 ? formData.subcategories : [subcategoryDisplay],
+        subcategories: subs, // [] = whole category
         salonId: formData.salonId,
         salonName: formData.salonName,
-        price: Number(formData.price) || 0, // Base Price
-        discount: `${formData.discount}% OFF`,
-        discountPercent: Number(formData.discount) || 0,
-        originalPrice: Number(formData.originalPrice) || Number(formData.price) || 0, // Final Offer Price
-        description: formData.description.trim() || `Special ${formData.discount}% discount on ${subcategoryDisplay}`,
+        discountPercent: pct,
+        maxDiscount: Number(formData.maxDiscount) || 0,
+        description: formData.description.trim() || `Flat ${pct}% off on ${scopeText}`,
         applicableDays: formData.applicableDays,
         validTill: formData.validTill,
-        approvalStatus: 'approved',
         isActive: true
       };
 
@@ -421,17 +377,16 @@ export const AdminOffersPage = () => {
 
                   {/* Pricing and Details Box */}
                   <div className="bg-[#1b1b26] border border-[#242433] rounded-xl p-3 space-y-2 text-xs mb-4">
-                    {(offer.price || offer.originalPrice) && (
-                      <div className="flex justify-between items-center pb-1.5 border-b border-[#26263a]">
-                        <span className="text-stone-400">Deal Price</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-emerald-400 font-extrabold text-sm">
-                            ₹{offer.originalPrice || offer.price}
-                          </span>
-                          {offer.price > (offer.originalPrice || 0) && (
-                            <span className="text-stone-500 line-through text-[11px]">₹{offer.price}</span>
-                          )}
-                        </div>
+                    <div className="flex justify-between items-center pb-1.5 border-b border-[#26263a] gap-2">
+                      <span className="text-stone-400 shrink-0">Applies on</span>
+                      <span className="text-stone-200 font-semibold text-right truncate">
+                        {(offer.subcategories || []).filter((x) => x && x !== offer.category).join(', ') || offer.category || 'All services'}
+                      </span>
+                    </div>
+                    {Number(offer.maxDiscount) > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-stone-400">Max discount</span>
+                        <span className="text-stone-200 font-semibold">₹{offer.maxDiscount}</span>
                       </div>
                     )}
 
@@ -450,6 +405,11 @@ export const AdminOffersPage = () => {
                         </span>
                       </div>
                     )}
+
+                    <div className="flex justify-between">
+                      <span className="text-stone-400">Valid Till</span>
+                      <span className="text-stone-200">{offer.validTill || 'No expiry'}</span>
+                    </div>
 
                     <div className="flex justify-between">
                       <span className="text-stone-400">Redeemed Count</span>
@@ -539,29 +499,31 @@ export const AdminOffersPage = () => {
 
       {/* CREATE OFFER MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#14141e] border border-[#2d2d42] rounded-3xl max-w-xl w-full p-6 sm:p-7 space-y-5 my-8 shadow-2xl relative">
-            
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          {/* Mobile: bottom sheet (full width) · Desktop: centered card. Header & buttons stay visible, form scrolls. */}
+          <div className="bg-[#14141e] border border-[#2d2d42] rounded-t-3xl sm:rounded-3xl max-w-xl w-full max-h-[100dvh] sm:max-h-[92vh] flex flex-col shadow-2xl relative overflow-hidden">
+
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-[#252538]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center">
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-7 pt-4 sm:pt-6 pb-3 border-b border-[#252538] shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center shrink-0">
                   <Tag className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">{editingOfferId ? "Edit Promotional Offer Deal" : "Create Promotional Offer Deal"}</h3>
-                  <p className="text-[11px] text-stone-400">Launch dynamic discounts for categories, subcategories &amp; partner salons</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">{editingOfferId ? "Edit Promotional Offer Deal" : "Create Promotional Offer Deal"}</h3>
+                  <p className="text-[11px] text-stone-400 line-clamp-2 sm:line-clamp-none">Launch dynamic discounts for categories, subcategories &amp; partner salons</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-[#1e1e2d] text-stone-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                className="w-8 h-8 shrink-0 rounded-full bg-[#1e1e2d] text-stone-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateOfferSubmit} className="space-y-4">
+            <form onSubmit={handleCreateOfferSubmit} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-7 pt-4 space-y-4">
               
               {/* 1. Offer Name */}
               <div>
@@ -732,10 +694,10 @@ export const AdminOffersPage = () => {
                     <option value="all">🌐 All Salons (Global Deal - Apply to all partner salons in DB)</option>
                     {salons.map((s) => {
                       const sId = s.id || s._id;
-                      const sLoc = s.locationCity || s.city || s.area || 'Indore';
+                      const sLoc = s.locationCity || s.city || s.area || '';
                       return (
                         <option key={sId} value={sId}>
-                          🏪 {s.name} ({sLoc})
+                          🏪 {s.name}{sLoc ? ` (${sLoc})` : ''}
                         </option>
                       );
                     })}
@@ -748,55 +710,86 @@ export const AdminOffersPage = () => {
                 </p>
               </div>
 
-              {/* 5. 2-Way Pricing Setup */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-2xl bg-[#101018] border border-[#232336]">
-                <div>
-                  <label className="block text-[10.5px] font-bold text-stone-300 uppercase tracking-wider mb-1">
-                    Base Price / MRP (₹)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 1000"
-                    value={formData.price}
-                    onChange={(e) => handleBasePriceChange(e.target.value)}
-                    className="w-full bg-[#141420] border border-[#2d2d42] rounded-xl px-3 py-2 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500 text-xs font-semibold"
-                  />
-                  <p className="text-[9.5px] text-stone-500 mt-0.5">Original MRP rate</p>
-                </div>
-
+              {/* 5. Discount rule — applied on each matching service's OWN price in the salon */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#101018] border border-[#232336]">
                 <div>
                   <label className="block text-[10.5px] font-bold text-stone-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                    <span>Discount (%)</span>
+                    <span>Discount (%) *</span>
                     {Number(formData.discount) > 0 && (
                       <span className="text-[9.5px] text-emerald-400 font-bold">{formData.discount}% OFF</span>
                     )}
                   </label>
                   <input
                     type="number"
-                    min="0"
-                    max="99"
+                    min="1"
+                    max="90"
                     value={formData.discount}
                     onChange={(e) => handleDiscountChange(e.target.value)}
                     className="w-full bg-[#141420] border border-purple-500/40 rounded-xl px-3 py-2 text-purple-300 placeholder-stone-600 focus:outline-none focus:border-purple-500 text-xs font-semibold"
                   />
-                  <p className="text-[9.5px] text-stone-500 mt-0.5">Platform discount</p>
+                  <p className="text-[9.5px] text-stone-500 mt-0.5">1–90%, cut from each salon's own service price</p>
                 </div>
 
                 <div>
-                  <label className="block text-[10.5px] font-bold text-emerald-400 uppercase tracking-wider mb-1">
-                    Final Offer Price (₹)
+                  <label className="block text-[10.5px] font-bold text-stone-300 uppercase tracking-wider mb-1">
+                    Max Discount (₹) — optional
                   </label>
                   <input
                     type="number"
                     min="0"
-                    placeholder="e.g. 750"
-                    value={formData.originalPrice}
-                    onChange={(e) => handleOfferPriceChange(e.target.value)}
-                    className="w-full bg-[#141420] border border-emerald-500/40 rounded-xl px-3 py-2 text-emerald-400 placeholder-stone-600 focus:outline-none focus:border-emerald-400 text-xs font-bold font-mono"
+                    placeholder="No limit"
+                    value={formData.maxDiscount}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, maxDiscount: e.target.value }))}
+                    className="w-full bg-[#141420] border border-[#2d2d42] rounded-xl px-3 py-2 text-white placeholder-stone-600 focus:outline-none focus:border-purple-500 text-xs font-semibold"
                   />
-                  <p className="text-[9.5px] text-emerald-400/80 mt-0.5">2-Way Auto Calculated</p>
+                  <p className="text-[9.5px] text-stone-500 mt-0.5">e.g. 20% off, up to ₹200</p>
                 </div>
+
+                <p className="sm:col-span-2 text-[10.5px] text-emerald-300/90 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-2.5 py-1.5">
+                  Example: a ₹1,000 service →{' '}
+                  <b>
+                    ₹
+                    {(() => {
+                      const pct = Math.min(90, Math.max(0, Number(formData.discount) || 0));
+                      let off = Math.round((1000 * pct) / 100);
+                      if (Number(formData.maxDiscount) > 0) off = Math.min(off, Number(formData.maxDiscount));
+                      return 1000 - off;
+                    })()}
+                  </b>{' '}
+                  for the customer. Applies on{' '}
+                  {formData.subcategories.length > 0 ? formData.subcategories.join(', ') : formData.category || 'the selected category'}
+                  {formData.salonId && formData.salonId !== 'all' ? ` at ${formData.salonName}` : ' in all salons'}.
+                </p>
+              </div>
+
+              {/* Validity — optional end date */}
+              <div>
+                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
+                  Valid Till (optional)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    min={new Date().toISOString().slice(0, 10)}
+                    value={formData.validTill || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, validTill: e.target.value }))}
+                    className="flex-1 bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500 text-xs [color-scheme:dark]"
+                  />
+                  {formData.validTill && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, validTill: '' }))}
+                      className="text-[11px] font-semibold text-stone-400 hover:text-white px-2.5 py-2 rounded-lg border border-[#2d2d42]"
+                    >
+                      No expiry
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-stone-500 mt-1">
+                  {formData.validTill
+                    ? `Offer stops automatically after ${formData.validTill}.`
+                    : 'No end date — offer runs until you deactivate it.'}
+                </p>
               </div>
 
               {/* 6. Description / Tagline */}
@@ -814,7 +807,7 @@ export const AdminOffersPage = () => {
               </div>
 
               {/* Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#232338]">
+              <div className="sticky bottom-0 -mx-4 sm:-mx-7 px-4 sm:px-7 py-3 bg-[#14141e] flex items-center justify-end gap-3 border-t border-[#232338] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}

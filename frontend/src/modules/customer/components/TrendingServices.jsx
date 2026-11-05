@@ -145,7 +145,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                     <SafeImage
                       alt={service.title}
                       className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
-                      src={service.image}
+                      src={service.image || undefined}
                       loading="lazy"
                     />
                   </div>

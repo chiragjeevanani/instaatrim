@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Loader2, User, Mail, Calendar } from 'lucide-react';
@@ -9,6 +9,10 @@ import { AuthBrandPanel } from '../../../shared/components/AuthBrandPanel';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
 export const AuthPage = () => {
+  const location = useLocation();
+  // Came here from checkout (or another page)? Go back there after login.
+  const requested = location.state?.redirectTo;
+  const afterLoginPath = typeof requested === 'string' && requested.startsWith('/customer') && !requested.startsWith('/customer/auth') ? requested : '/customer';
   const navigate = useNavigate();
   const { login } = useCustomer();
 
@@ -151,7 +155,7 @@ export const AuthPage = () => {
         // Existing user → directly login
         clearAuthState();
         login(phoneNumber, data.customer?.name || 'Customer');
-        navigate('/customer');
+        navigate(afterLoginPath);
       }
     } catch (err) {
       setError(err.message || 'Invalid OTP. Please try again.');
@@ -223,7 +227,7 @@ export const AuthPage = () => {
       localStorage.setItem('instaatrim_customer', JSON.stringify(data.customer));
       clearAuthState();
       login(phoneNumber, data.customer?.name || profileForm.name);
-      navigate('/customer');
+      navigate(afterLoginPath);
     } catch (err) {
       setError(err.message || 'Could not save profile. Please try again.');
     } finally {
@@ -507,7 +511,7 @@ export const AuthPage = () => {
 
                 {/* Skip profile */}
                 <button
-                  onClick={() => { clearAuthState(); login(phoneNumber, 'Customer'); navigate('/customer'); }}
+                  onClick={() => { clearAuthState(); login(phoneNumber, 'Customer'); navigate(afterLoginPath); }}
                   className="mt-3 text-center text-xs text-stone-400 hover:text-stone-600 w-full"
                   type="button"
                 >

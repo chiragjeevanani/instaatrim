@@ -42,6 +42,7 @@ export const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('Pay Online');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
+  const [showLoginRequired, setShowLoginRequired] = useState(false); // shown only after a guest taps Confirm
   const [holdExpired, setHoldExpired] = useState(false);
   const [showSuccessTick, setShowSuccessTick] = useState(false);
 
@@ -122,9 +123,9 @@ export const CheckoutPage = () => {
   const confirmBookingAfterPayment = async (paymentStatus, transactionId) => {
     try {
       const newBooking = await createBooking({
-        salonId: cartItems[0]?.salonId || 'sal-1',
-        salonName: cartItems[0]?.salonName || 'Luxe Glow Salon & Spa',
-        address: currentLocation?.area || 'South Tukoganj, Indore',
+        salonId: cartItems[0]?.salonId,
+        salonName: cartItems[0]?.salonName || '',
+        address: currentLocation?.area || currentLocation?.address || '',
         paymentMethod,
         paymentStatus,
         transactionId,
@@ -152,6 +153,12 @@ export const CheckoutPage = () => {
 
   const handlePayAndConfirm = async () => {
     setPaymentError(null);
+
+    // Guest → show validation next to the button (must login / sign up first)
+    if (!user?.isLoggedIn) {
+      setShowLoginRequired(true);
+      return;
+    }
 
     if (bookingSlot.holdId && !isHoldStillValid({ id: bookingSlot.holdId }, state.holds)) {
       setHoldExpired(true);
@@ -306,7 +313,7 @@ export const CheckoutPage = () => {
               </p>
               <p className="text-[10.5px] text-stone-500 mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
-                {currentLocation?.area || 'South Tukoganj, Indore'}
+                {currentLocation?.area || currentLocation?.address || 'Location not set'}
               </p>
             </div>
           </div>
@@ -466,6 +473,19 @@ export const CheckoutPage = () => {
 
         {/* Pay action: fixed bottom bar on mobile, inline under the price summary on desktop */}
         <div className="fixed lg:static bottom-0 left-0 right-0 w-full max-w-[480px] lg:max-w-none mx-auto px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:p-0 bg-white/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t lg:border-0 border-stone-200 z-40 shadow-soft-up lg:shadow-none box-border">
+          {showLoginRequired && !user?.isLoggedIn && (
+            <p className="mb-2 text-[11.5px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-center">
+              Please{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/customer/auth', { state: { redirectTo: '/customer/checkout' } })}
+                className="font-bold underline cursor-pointer"
+              >
+                login / sign up
+              </button>{' '}
+              first to confirm your booking.
+            </p>
+          )}
           <button
             disabled={isProcessing || holdExpired}
             onClick={handlePayAndConfirm}

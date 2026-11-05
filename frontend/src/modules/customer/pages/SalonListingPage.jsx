@@ -64,8 +64,22 @@ export const SalonListingPage = () => {
         const isLive = salon.isVerified && salon.verificationStatus === 'Live';
         if (!isLive) return false;
 
+        // A salon matches if any of its services is filed under this category (by name / short name / slug)
+        // or its sub-category / title is one of the category's service tags.
+        const lc = (v) => String(v || '').trim().toLowerCase();
+        const catKeys = activeCategory
+          ? [activeCategory.name, activeCategory.shortName, activeCategory.slug].map(lc).filter(Boolean)
+          : [];
+        const catTags = (activeCategory?.serviceCategories || []).map(lc);
         const matchesCategory =
-          !activeCategory || salon.services.some((s) => activeCategory.serviceCategories.includes(s.category));
+          !activeCategory ||
+          salon.services.some(
+            (s) =>
+              catKeys.includes(lc(s.category)) ||
+              catTags.includes(lc(s.category)) ||
+              (s.subcategory && catTags.includes(lc(s.subcategory))) ||
+              catTags.includes(lc(s.name || s.title))
+          );
 
         const term = searchTerm.trim().toLowerCase();
         
@@ -191,12 +205,12 @@ export const SalonListingPage = () => {
               {activeBrand
                 ? `${activeBrand.name} Certified Salons`
                 : activeCategory
-                ? `${activeCategory.name} in ${currentLocation?.area || 'Indore'}`
+                ? `${activeCategory.name} in ${currentLocation?.area || currentLocation?.city || 'your area'}`
                 : 'Discover Salons & Spas'}
             </h1>
             <p className="text-[11px] lg:text-[13px] text-stone-500 truncate flex items-center gap-1 mt-0.5 lg:mt-1">
               <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
-              {currentLocation?.area || 'South Tukoganj'}
+              {currentLocation?.area || currentLocation?.city || 'Location not set'}
             </p>
           </div>
         </div>
@@ -373,13 +387,13 @@ export const SalonListingPage = () => {
                     </span>
                     <div className="bg-black/75 backdrop-blur-xs text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-xs">
                       <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <span>{salon.rating}</span>
+                      <span>{Number(salon.rating) > 0 ? Number(salon.rating).toFixed(1) : 'New'}</span>
                     </div>
                   </div>
                 ) : (
                   <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span>{salon.rating}</span>
+                    <span>{Number(salon.rating) > 0 ? Number(salon.rating).toFixed(1) : 'New'}</span>
                     {salon.reviewsCount > 0 && <span className="text-stone-300 font-normal text-[9.5px]">({salon.reviewsCount})</span>}
                   </div>
                 )}

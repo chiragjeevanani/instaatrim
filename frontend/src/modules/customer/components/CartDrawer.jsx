@@ -29,6 +29,7 @@ export const CartDrawer = () => {
 
   const handleCheckout = () => {
     if (bookingSlot && bookingSlot.time) {
+      setIsCartOpen(false); // close the cart popup so Review & Payment is visible
       navigate('/customer/checkout');
     } else {
       setIsCartOpen(false);

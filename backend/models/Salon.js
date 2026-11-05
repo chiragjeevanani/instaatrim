@@ -7,12 +7,17 @@ const salonSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // bcrypt hashed
     category: { type: mongoose.Schema.Types.Mixed }, // Can be ObjectId ref or plain string
+    subcategories: [{ type: String }],
     city: { type: String },
     area: { type: String },
+    pincode: { type: String, default: '' },
     address: { type: String },
     openTime: { type: String },
     closeTime: { type: String },
     totalChairs: { type: Number, default: 4 },
+    // True once real Station documents were created for this salon. After that,
+    // chairs are managed only by the salon (deleting all must NOT auto-recreate them).
+    stationsInitialized: { type: Boolean, default: false },
     amenities: [{ type: String }],
     coverImage: { type: String },
     gstin: { type: String },
@@ -26,7 +31,8 @@ const salonSchema = new mongoose.Schema({
     commissionRate: { type: String, default: 'Pending Admin Approval' },
     isStoreOpen: { type: Boolean, default: true },
     hasInstantBooking: { type: Boolean, default: true },
-    rating: { type: Number, default: 0.0 },
+    rating: { type: Number, default: 0.0 }, // average of real customer reviews (auto-calculated)
+    reviewsCount: { type: Number, default: 0 },
     isBoosted: { type: Boolean, default: false },
     isSponsored: { type: Boolean, default: false },
     boostRank: { type: Number },
@@ -42,9 +48,11 @@ const salonSchema = new mongoose.Schema({
     organizationType: { type: String, enum: ['Independent Salon', 'Franchise Branch', 'Chain Outlet'], default: 'Independent Salon' },
     parentBrandName: { type: String, default: '' },
     branchName: { type: String, default: '' },
+    // Real coordinates from GPS / place search only — no hardcoded default city.
+    // Left unset when unknown (2dsphere index skips docs without it).
     location: {
-        type: { type: String, enum: ['Point'], default: 'Point' },
-        coordinates: { type: [Number], default: [72.8777, 19.0760] } // [longitude, latitude]
+        type: { type: String, enum: ['Point'] },
+        coordinates: { type: [Number], default: undefined } // [longitude, latitude]
     }
 }, { timestamps: true });
 

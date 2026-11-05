@@ -14,8 +14,22 @@ exports.getServices = async (req, res) => {
 
 exports.createService = async (req, res) => {
     try {
-        const { salonId, name, category, description, duration, price, originalPrice, isInstantEligible, image, isActive } = req.body;
-        
+        const { name, category, subcategory, description, duration, price, originalPrice, isInstantEligible, image, isActive } = req.body;
+
+        // Salon partners can only add services to their OWN salon, and only after admin approval.
+        // Admin may pass salonId explicitly.
+        let salonId = req.body.salonId;
+        if (req.salon) {
+            salonId = req.salon._id;
+            if (!req.salon.isVerified || req.salon.verificationStatus !== 'Live') {
+                return res.status(403).json({ success: false, message: 'Your salon is pending admin approval. You can list services only after approval.' });
+            }
+        }
+
+        if (!category || !String(category).trim()) {
+            return res.status(400).json({ success: false, message: 'Category is required' });
+        }
+
         if (!salonId || !name || !price) {
             return res.status(400).json({ success: false, message: 'SalonId, name, and price are required' });
         }
@@ -63,7 +77,8 @@ exports.createService = async (req, res) => {
         const newService = new Service({
             salonId,
             title: name,
-            category: category || 'Unisex',
+            category: String(category).trim(),
+            subcategory: subcategory ? String(subcategory).trim() : '',
             description,
             duration: parsedDuration,
             price,
@@ -89,7 +104,21 @@ exports.updateService = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Valid service ID is required' });
         }
 
+        const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { id: id };
+
         let updateData = { ...req.body };
+
+        if (req.salon) {
+            const existing = await Service.findOne(query).select('salonId');
+            if (!existing) {
+                return res.status(404).json({ success: false, message: 'Service not found' });
+            }
+            if (String(existing.salonId) !== String(req.salon._id)) {
+                return res.status(403).json({ success: false, message: 'You can only edit your own salon services.' });
+            }
+            // Salons cannot move a service to another salon or grant themselves paid boosts
+            ['salonId', 'isBoosted', 'isSponsored', 'boostRank', 'sponsorBadge', 'boostReason'].forEach((k) => delete updateData[k]);
+        }
         
         // Never allow updating immutable MongoDB _id / id
         delete updateData._id;
@@ -139,7 +168,6 @@ exports.updateService = async (req, res) => {
             }
         }
 
-        const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { id: id };
         const updatedService = await Service.findOneAndUpdate(query, updateData, { new: true });
         
         if (!updatedService) {
@@ -161,6 +189,17 @@ exports.deleteService = async (req, res) => {
         }
 
         const query = mongoose.Types.ObjectId.isValid(id) ? { _id: id } : { id: id };
+
+        if (req.salon) {
+            const existing = await Service.findOne(query).select('salonId');
+            if (!existing) {
+                return res.status(404).json({ success: false, message: 'Service not found' });
+            }
+            if (String(existing.salonId) !== String(req.salon._id)) {
+                return res.status(403).json({ success: false, message: 'You can only delete your own salon services.' });
+            }
+        }
+
         const deletedService = await Service.findOneAndDelete(query);
         
         if (!deletedService) {

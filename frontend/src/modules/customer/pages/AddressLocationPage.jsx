@@ -53,7 +53,7 @@ export const AddressLocationPage = () => {
       const newLoc = {
         id: `gps-${Date.now()}`,
         area: detected.area || 'Current Area',
-        city: detected.city || 'Indore',
+        city: detected.city || '',
         landmark: detected.landmark || 'Detected via GPS',
         address: detected.address || `${detected.area}, ${detected.city}`,
         pincode: detected.pincode || '',

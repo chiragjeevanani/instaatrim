@@ -127,6 +127,9 @@ const salons = {
     if (json.token) {
       localStorage.setItem('instaatrim_partner_token', json.token);
     }
+    if (json.refreshToken) {
+      localStorage.setItem('instaatrim_partner_refresh_token', json.refreshToken);
+    }
     dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: json.data.id } });
     return json.data;
   },
@@ -186,14 +189,18 @@ const salons = {
         partnerLoginId: (data.email || `partner_${Date.now()}@drimstyle.com`).toLowerCase(),
         partnerPassword: data.password || 'demo1234',
         tagline: data.tagline || 'Premier Beauty & Wellness Destination',
-        category: data.category || 'Unisex',
+        category: data.category || '',
+        subcategories: data.subcategories || [],
         rating: 5.0,
         reviewsCount: 1,
-        lat: 22.7204,
-        lng: 75.8721,
-        distanceKm: 1.1,
-        area: data.area || 'Indore Central',
-        locationCity: data.city || 'Indore',
+        // Real coordinates captured during onboarding (GPS / place search) — no hardcoded city
+        lat: typeof data.lat === 'number' ? data.lat : null,
+        lng: typeof data.lng === 'number' ? data.lng : null,
+        distanceKm: null,
+        area: data.area || '',
+        city: data.city || '',
+        pincode: data.pincode || '',
+        locationCity: data.city || '',
         startingPrice: Number(data.startingPrice) || 299,
         coverImage: data.coverImage || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80',
         images: [
@@ -211,7 +218,7 @@ const salons = {
         weeklyHours: defaultHours,
         breaks: [],
         holidays: [],
-        address: data.address || `${data.area || 'South Tukoganj'}, ${data.city || 'Indore'}`,
+        address: data.address || [data.area, data.city].filter(Boolean).join(', '),
         phone: data.mobile || '+91 98765 43210',
         amenities: data.amenities && data.amenities.length > 0
           ? data.amenities
@@ -251,6 +258,7 @@ const salons = {
       // Ignore network errors
     }
     localStorage.removeItem('instaatrim_partner_token');
+    localStorage.removeItem('instaatrim_partner_refresh_token');
     dispatch({ type: 'SET_PARTNER_SESSION', payload: null });
     return true;
   },
@@ -324,21 +332,66 @@ const salons = {
 // =============================================================================
 // Services
 // =============================================================================
+// Service add/edit/delete need a logged-in salon partner (or admin) token.
+// Function declaration so it is hoisted above the services object.
+function serviceAuthHeaders() {
+  const state = getState();
+  const token = state && state.adminSession
+    ? 'mock-jwt-token-7a8b9c0d1e2f3g4h5i6j'
+    : localStorage.getItem('instaatrim_partner_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
+// Salon partner token lives 1h. On 401, rotate it once with the refresh token and retry.
+async function fetchWithServiceAuth(url, options = {}) {
+  let res = await fetch(url, { ...options, headers: serviceAuthHeaders() });
+  const state = getState();
+  const refreshToken = localStorage.getItem('instaatrim_partner_refresh_token');
+  if (res.status !== 401 || (state && state.adminSession) || !refreshToken) return res;
+
+  try {
+    const r = await fetch(`${API_BASE}/salons/refresh-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken })
+    });
+    if (!r.ok) return res;
+    const j = await r.json();
+    if (j.token) localStorage.setItem('instaatrim_partner_token', j.token);
+    if (j.refreshToken) localStorage.setItem('instaatrim_partner_refresh_token', j.refreshToken);
+    res = await fetch(url, { ...options, headers: serviceAuthHeaders() });
+  } catch {
+    /* keep original 401 response */
+  }
+  return res;
+}
+
+// No salon photo? Use the admin category banner (DB) — never a stock image.
+const withServiceImage = (svc) => {
+  if (!svc || svc.image) return svc;
+  const cat = (getState().categories || []).find(
+    (c) => (c.name || '').trim().toLowerCase() === String(svc.category || '').trim().toLowerCase()
+  );
+  return { ...svc, image: (cat && cat.image) || '' };
+};
+
 const services = {
   listBySalon: async (salonId) => {
     try {
       const res = await fetch(`${API_BASE}/services?salonId=${salonId}`);
       if (res.ok) {
         const json = await res.json();
-        const mapped = (json.data || []).map(s => ({
+        const mapped = (json.data || []).map(s => withServiceImage({
           ...s,
           id: s._id || s.id,
           name: s.name || s.title || 'Service',
           salonId: s.salonId ? (s.salonId._id || s.salonId.id || s.salonId.toString()) : salonId
         }));
-        if (mapped.length > 0) {
-          dispatch({ type: 'SET_SERVICES', payload: mapped });
-        }
+        // Replace this salon's services with exactly what DB has (handles deletes / empty list)
+        dispatch({ type: 'REPLACE_SALON_SERVICES', payload: { salonId, services: mapped } });
         return clone(mapped);
       }
     } catch (e) {
@@ -353,8 +406,13 @@ const services = {
       if (res.ok) {
         const json = await res.json();
         // We only use the id instead of _id here for UI mapping
-        const mapped = json.data.map(s => ({ ...s, id: s._id }));
-        dispatch({ type: 'SET_SERVICES', payload: mapped });
+        const mapped = json.data.map(s => withServiceImage({
+          ...s,
+          id: s._id,
+          name: s.name || s.title || 'Service',
+          salonId: s.salonId ? (s.salonId._id || s.salonId.id || String(s.salonId)) : s.salonId
+        }));
+        dispatch({ type: 'REPLACE_ALL_SERVICES', payload: mapped });
         return clone(mapped);
       }
     } catch (e) {
@@ -373,15 +431,14 @@ const services = {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/services`, {
+      const res = await fetchWithServiceAuth(`${API_BASE}/services`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ salonId, ...data })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to create service');
 
-      const newService = { ...json.data, id: json.data._id, name: json.data.title || data.name };
+      const newService = withServiceImage({ ...json.data, id: json.data._id, name: json.data.title || data.name });
       dispatch({ type: 'ADD_SERVICE', payload: newService });
       return clone(newService);
     } catch (e) {
@@ -396,15 +453,14 @@ const services = {
       const cleanPatch = { ...patch };
       delete cleanPatch._id;
       delete cleanPatch.id;
-      const res = await fetch(`${API_BASE}/services/${cleanId}`, {
+      const res = await fetchWithServiceAuth(`${API_BASE}/services/${cleanId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanPatch)
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to update service');
 
-      const updatedService = { ...json.data, id: json.data._id, name: json.data.title || patch.name || json.data.name };
+      const updatedService = withServiceImage({ ...json.data, id: json.data._id, name: json.data.title || patch.name || json.data.name });
       dispatch({ type: 'UPDATE_SERVICE', payload: { serviceId, patch: updatedService } });
       return clone(updatedService);
     } catch (e) {
@@ -416,7 +472,7 @@ const services = {
   remove: async (serviceId) => {
     try {
       const cleanId = typeof serviceId === 'object' ? (serviceId?.id || serviceId?._id) : serviceId;
-      const res = await fetch(`${API_BASE}/services/${cleanId}`, {
+      const res = await fetchWithServiceAuth(`${API_BASE}/services/${cleanId}`, {
         method: 'DELETE'
       });
       const json = await res.json();
@@ -428,6 +484,60 @@ const services = {
       console.error(e);
       throw e;
     }
+  }
+};
+
+// =============================================================================
+// Category Requests (salon asks → admin approves / rejects)
+// =============================================================================
+const adminJsonHeaders = () => ({
+  'Content-Type': 'application/json',
+  Authorization: 'Bearer mock-jwt-token-7a8b9c0d1e2f3g4h5i6j'
+});
+
+const readJson = async (res, fallbackMsg) => {
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(json.message || fallbackMsg, 'REQUEST_FAILED');
+  return json;
+};
+
+const categoryRequests = {
+  // Salon partner
+  create: async ({ type, categoryId, requestedName, tags, gender, note }) => {
+    const res = await fetchWithServiceAuth(`${API_BASE}/category-requests`, {
+      method: 'POST',
+      body: JSON.stringify({ type, categoryId, requestedName, tags, gender, note })
+    });
+    return (await readJson(res, 'Could not send request')).data;
+  },
+  listMine: async () => {
+    const res = await fetchWithServiceAuth(`${API_BASE}/category-requests/mine`, { method: 'GET' });
+    return (await readJson(res, 'Could not load your requests')).data || [];
+  },
+
+  // Admin
+  listAll: async (status) => {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await fetch(`${API_BASE}/category-requests${qs}`, { headers: adminJsonHeaders() });
+    return (await readJson(res, 'Could not load category requests')).data || [];
+  },
+  approve: async (id, body = {}) => {
+    const res = await fetch(`${API_BASE}/category-requests/${id}/approve`, {
+      method: 'PUT',
+      headers: adminJsonHeaders(),
+      body: JSON.stringify(body)
+    });
+    const json = await readJson(res, 'Could not approve request');
+    await categories.list(); // refresh categories in store
+    return json.data;
+  },
+  reject: async (id, adminNote = '') => {
+    const res = await fetch(`${API_BASE}/category-requests/${id}/reject`, {
+      method: 'PUT',
+      headers: adminJsonHeaders(),
+      body: JSON.stringify({ adminNote })
+    });
+    return (await readJson(res, 'Could not reject request')).data;
   }
 };
 
@@ -490,9 +600,8 @@ const stations = {
   },
 
   add: async (salonId, data) => {
-    const res = await fetch(`${API_BASE}/stations`, {
+    const res = await fetchWithServiceAuth(`${API_BASE}/stations`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ salonId, ...data })
     });
     const json = await res.json();
@@ -503,9 +612,8 @@ const stations = {
   },
 
   update: async (stationId, patch) => {
-    const res = await fetch(`${API_BASE}/stations/${stationId}`, {
+    const res = await fetchWithServiceAuth(`${API_BASE}/stations/${stationId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch)
     });
     const json = await res.json();
@@ -516,10 +624,13 @@ const stations = {
   },
 
   remove: async (stationId) => {
-    const res = await fetch(`${API_BASE}/stations/${stationId}`, {
+    const res = await fetchWithServiceAuth(`${API_BASE}/stations/${stationId}`, {
       method: 'DELETE'
     });
-    if (!res.ok) throw new Error('Failed to delete station');
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.message || 'Failed to delete station');
+    }
     dispatch({ type: 'DELETE_STATION', payload: { stationId } });
     return true;
   }
@@ -662,151 +773,144 @@ const bookings = {
 // =============================================================================
 // Offers & Coupons
 // =============================================================================
+// Offers = discount rules stored in their own DB collection (/api/offers).
+// Method names kept the same so admin / salon / customer screens keep working.
+const offerAdminHeaders = () => ({
+  'Content-Type': 'application/json',
+  Authorization: 'Bearer mock-jwt-token-7a8b9c0d1e2f3g4h5i6j'
+});
+
+const readOfferJson = async (res, fallback) => {
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.success === false) throw new ApiError(json.message || fallback, 'OFFER_ERROR');
+  return json;
+};
+
 const offers = {
+  // Customer app: live (approved, not expired) offers — all, or one salon's + global
+  listLive: async (salonId) => {
+    try {
+      const qs = salonId ? `?salonId=${encodeURIComponent(salonId)}` : '';
+      const res = await fetch(`${API_BASE}/offers${qs}`);
+      const json = await readOfferJson(res, 'Could not load offers');
+      const list = json.data || [];
+      if (!salonId) dispatch({ type: 'SET_OFFERS', payload: list });
+      return clone(list);
+    } catch (e) {
+      console.error(e);
+      return clone(getState().offers || []);
+    }
+  },
+
+  // Salon panel: own + global offers
+  listMine: async () => {
+    try {
+      const res = await fetchWithServiceAuth(`${API_BASE}/offers/mine`, { method: 'GET' });
+      const json = await readOfferJson(res, 'Could not load offers');
+      dispatch({ type: 'SET_OFFERS', payload: json.data || [] });
+      return clone(json.data || []);
+    } catch (e) {
+      console.error(e);
+      return clone(getState().offers || []);
+    }
+  },
+
   listBySalon: async (salonId) => {
-    try {
-      const res = await fetch(`${API_BASE}/salons/${salonId}`);
-      const json = await res.json();
-      const salon = json.data;
-      return clone((salon?.offers || []));
-    } catch (e) {
-      console.error(e);
-      return clone(getState().offers.filter((o) => o.salonId === salonId));
-    }
+    const all = await offers.listLive(salonId);
+    return all;
   },
 
-  add: async (salonId, data) => {
-    try {
-      const res = await fetch(`${API_BASE}/salons/${salonId}/offers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      const json = await res.json();
-      if (res.ok && json.data) {
-        const offer = { ...json.data, id: json.data._id || json.data.id, salonId };
-        dispatch({ type: 'ADD_OFFER', payload: offer });
-        return clone(offer);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return null;
+  // Salon pauses / resumes an offer of ITS OWN salon (global offers are admin-only)
+  toggleMine: async (offerId, isActive) => {
+    const res = await fetchWithServiceAuth(`${API_BASE}/offers/${offerId}/toggle`, {
+      method: 'PUT',
+      body: JSON.stringify({ isActive })
+    });
+    const json = await readOfferJson(res, 'Could not update offer');
+    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: json.data } });
+    return clone(json.data);
   },
 
+  // Salon proposes an offer → pending admin approval
+  add: async (_salonId, data) => {
+    const res = await fetchWithServiceAuth(`${API_BASE}/offers/salon`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    const json = await readOfferJson(res, 'Could not create offer');
+    dispatch({ type: 'ADD_OFFER', payload: json.data });
+    return clone(json.data);
+  },
+
+  // Admin: every offer
   listAll: async () => {
     try {
-      const res = await fetch(API_BASE + "/salons");
-      const json = await res.json();
-      const seen = new Set();
-      const allOffers = [];
-      (json.data || []).forEach(salon => {
-        (salon.offers || []).forEach(o => {
-          const key = String(o.id || o._id || o.title);
-          if (!seen.has(key)) {
-            seen.add(key);
-            const isGlobal = o.salonId === 'all' || (o.salonName && o.salonName.toLowerCase().includes('all salon'));
-            allOffers.push({
-              ...o,
-              id: o._id || o.id,
-              salonId: isGlobal ? 'all' : (o.salonId || salon._id || salon.id)
-            });
-          }
-        });
-      });
-      return allOffers;
+      const res = await fetch(`${API_BASE}/offers/admin`, { headers: offerAdminHeaders() });
+      const json = await readOfferJson(res, 'Could not load offers');
+      return json.data || [];
     } catch (e) {
       console.error(e);
-      return clone(getState().offers);
+      return clone(getState().offers || []);
     }
   },
 
   update: async (offerId, patch) => {
-    try {
-      const offer = getState().offers.find(o => o.id === offerId);
-      if (!offer) return null;
-
-      const res = await fetch(`${API_BASE}/salons/${offer.salonId}/offers/${offerId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch)
-      });
-      if (res.ok) {
-        dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch } });
-        return clone({ ...offer, ...patch });
-      }
-    } catch (e) { console.error(e); }
-    return null;
+    const res = await fetch(`${API_BASE}/offers/${offerId}`, {
+      method: 'PUT',
+      headers: offerAdminHeaders(),
+      body: JSON.stringify(patch)
+    });
+    const json = await readOfferJson(res, 'Could not update offer');
+    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: json.data } });
+    return clone(json.data);
   },
 
   approve: async (offerId) => {
-    try {
-      const offer = getState().offers.find(o => o.id === offerId);
-      if (!offer) return null;
-
-      const res = await fetch(`${API_BASE}/salons/${offer.salonId}/offers/${offerId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approvalStatus: 'approved', isActive: true })
-      });
-      if (res.ok) {
-        dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'approved', isActive: true } } });
-        const fresh = await offers.listAll();
-        if (fresh) dispatch({ type: 'SET_OFFERS', payload: fresh });
-        return clone(getState().offers.find((o) => o.id === offerId));
-      }
-    } catch (e) { console.error(e); }
-    return null;
+    const res = await fetch(`${API_BASE}/offers/${offerId}/status`, {
+      method: 'PUT',
+      headers: offerAdminHeaders(),
+      body: JSON.stringify({ approvalStatus: 'approved' })
+    });
+    const json = await readOfferJson(res, 'Could not approve offer');
+    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: json.data } });
+    return clone(json.data);
   },
 
   reject: async (offerId, reason = 'Rejected by administrator') => {
-    try {
-      const offer = getState().offers.find(o => o.id === offerId);
-      if (!offer) return null;
-
-      const res = await fetch(`${API_BASE}/salons/${offer.salonId}/offers/${offerId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approvalStatus: 'rejected', isActive: false, rejectionReason: reason })
-      });
-      if (res.ok) {
-        dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: { approvalStatus: 'rejected', isActive: false, rejectionReason: reason } } });
-        const fresh = await offers.listAll();
-        if (fresh) dispatch({ type: 'SET_OFFERS', payload: fresh });
-        return clone(getState().offers.find((o) => o.id === offerId));
-      }
-    } catch (e) { console.error(e); }
-    return null;
+    const res = await fetch(`${API_BASE}/offers/${offerId}/status`, {
+      method: 'PUT',
+      headers: offerAdminHeaders(),
+      body: JSON.stringify({ approvalStatus: 'rejected', rejectionReason: reason })
+    });
+    const json = await readOfferJson(res, 'Could not reject offer');
+    dispatch({ type: 'UPDATE_OFFER', payload: { offerId, patch: json.data } });
+    return clone(json.data);
   },
 
   createAdminOffer: async (data) => {
-    const res = await fetch(API_BASE + "/salons/offers/create-admin-offer", {
+    const res = await fetch(`${API_BASE}/offers`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: offerAdminHeaders(),
       body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Failed to create admin offer');
-    return json.data;
-  }
-  ,
-  updateAdminOffer: async (offerId, data) => {
-    const res = await fetch(API_BASE + "/salons/offers/" + offerId + "/update-admin-offer", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to update offer");
-    return json.data;
+    return (await readOfferJson(res, 'Failed to create offer')).data;
   },
-  deleteAdminOffer: async (offerId) => {
-    const res = await fetch(API_BASE + "/salons/offers/" + offerId + "/delete-admin-offer", {
-      method: "DELETE"
+
+  updateAdminOffer: async (offerId, data) => {
+    const res = await fetch(`${API_BASE}/offers/${offerId}`, {
+      method: 'PUT',
+      headers: offerAdminHeaders(),
+      body: JSON.stringify(data)
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || "Failed to delete offer");
-    return json.data;
+    return (await readOfferJson(res, 'Failed to update offer')).data;
+  },
+
+  deleteAdminOffer: async (offerId) => {
+    const res = await fetch(`${API_BASE}/offers/${offerId}`, {
+      method: 'DELETE',
+      headers: offerAdminHeaders()
+    });
+    return (await readOfferJson(res, 'Failed to delete offer')).data;
   }
 };
 
@@ -1761,6 +1865,20 @@ const categories = {
     }
   },
 
+  // Admin: create services in one salon from this category's sub-categories (price per item)
+  addSalonServices: async (categoryId, salonId, items) => {
+    const res = await fetch(`${API_BASE}/categories/${categoryId}/salon-services`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salonId, items })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new ApiError(json.message || 'Could not add services to salon');
+    // Refresh that salon's services in the store
+    await services.listBySalon(salonId).catch(() => {});
+    return json;
+  },
+
   update: async (categoryId, patch) => {
     try {
       const isFormData = patch instanceof FormData;
@@ -2162,6 +2280,7 @@ const landing = {
 
 export const api = {
   categories,
+  categoryRequests,
   promotions,
   salons,
   services,

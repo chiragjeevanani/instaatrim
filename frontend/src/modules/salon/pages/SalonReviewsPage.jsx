@@ -56,7 +56,7 @@ export const SalonReviewsPage = () => {
 
         <div className="flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
           <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-          <span className="text-xs font-bold text-amber-900">{salonProfile.rating || 4.8}</span>
+          <span className="text-xs font-bold text-amber-900">{Number(salonProfile.rating) > 0 ? Number(salonProfile.rating).toFixed(1) : 'New'}</span>
         </div>
       </header>
 
@@ -64,10 +64,14 @@ export const SalonReviewsPage = () => {
         {/* Rating Overview Card */}
         <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-3xl font-extrabold text-stone-900">{salonProfile.rating || 4.8}</span>
+            <span className="text-3xl font-extrabold text-stone-900">{Number(salonProfile.rating) > 0 ? Number(salonProfile.rating).toFixed(1) : 'New'}</span>
             <div className="flex items-center gap-1 mt-1 text-amber-500">
+              {/* Stars filled by the real average rating (all empty when there are no reviews) */}
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <Star
+                  key={i}
+                  className={`w-3.5 h-3.5 ${i < Math.round(Number(salonProfile.rating) || 0) ? 'fill-amber-400 text-amber-400' : 'text-stone-300'}`}
+                />
               ))}
             </div>
             <p className="text-[10px] text-stone-500 mt-1">Based on {reviews.length} customer ratings</p>

@@ -90,7 +90,7 @@ export const PromotedSalonsStrip = () => {
 
                   <span className="flex items-center gap-0.5 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded-md text-[11px] font-bold text-amber-300 border border-amber-400/30 shadow-xs">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span>{salon.rating || 4.8}</span>
+                    <span>{Number(salon.rating) > 0 ? Number(salon.rating).toFixed(1) : 'New'}</span>
                   </span>
                 </div>
 

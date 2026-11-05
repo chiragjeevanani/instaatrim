@@ -7,7 +7,7 @@ import { X, Sparkles, Check, Copy, ArrowRight, ShieldCheck, MapPin } from 'lucid
 export const AdOfferModal = ({ ad, isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
-  const { applyCoupon, showToast } = useCustomer();
+  const { applyCoupon, showToast, currentLocation } = useCustomer();
 
   if (!isOpen || !ad) return null;
 
@@ -131,7 +131,10 @@ export const AdOfferModal = ({ ad, isOpen, onClose }) => {
                 <span>Offer Terms &amp; Assurance</span>
               </div>
               <ul className="text-[10px] text-emerald-800 space-y-0.5 list-disc list-inside">
-                <li>Valid at all verified partner salons in Indore</li>
+                <li>
+                  Valid at all verified partner salons
+                  {currentLocation?.city ? ` in ${currentLocation.city}` : ' near you'}
+                </li>
                 <li>Applied automatically at checkout upon booking</li>
                 <li>Free cancellation up to 1 hour before appointment</li>
               </ul>

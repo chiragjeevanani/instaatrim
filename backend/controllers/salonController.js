@@ -52,12 +52,18 @@ exports.deleteSalon = async (req, res) => {
 exports.registerSalon = async (req, res) => {
     try {
         const {
-            name, ownerName, mobile, email, password, category,
+            name, ownerName, mobile, email, password, category, subcategories,
             city, area, address, openTime, closeTime, totalChairs,
             amenities, coverImage, gstin, shopActLicense, bankName,
             accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb,
-            organizationType, parentBrandName, branchName
+            organizationType, parentBrandName, branchName, pincode, lat, lng
         } = req.body;
+
+        // Real salon coordinates from GPS / place search (GeoJSON is [lng, lat])
+        const latNum = Number(lat);
+        const lngNum = Number(lng);
+        const hasCoords = lat != null && lng != null && Number.isFinite(latNum) && Number.isFinite(lngNum)
+            && Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180 && !(latNum === 0 && lngNum === 0);
 
         // Check if salon already exists
         let salon = await Salon.findOne({ $or: [{ mobile }, { email }] });
@@ -100,12 +106,15 @@ exports.registerSalon = async (req, res) => {
         // Create new salon
         salon = new Salon({
             name, ownerName, mobile, email, password: hashedPassword, category,
+            subcategories: Array.isArray(subcategories) ? subcategories.map((s) => String(s).trim()).filter(Boolean) : [],
             city, area, address, openTime, closeTime, totalChairs,
             amenities, coverImage: finalCoverImage, gstin, shopActLicense, bankName,
             accountNumber, ifscCode, payoutCycle, fcmtoken, fcmtokenweb,
             organizationType: organizationType || 'Independent Salon',
             parentBrandName: parentBrandName || '',
-            branchName: branchName || ''
+            branchName: branchName || '',
+            pincode: pincode || '',
+            ...(hasCoords ? { location: { type: 'Point', coordinates: [lngNum, latNum] } } : {})
         });
 
         await salon.save();

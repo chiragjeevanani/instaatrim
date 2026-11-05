@@ -2,7 +2,8 @@ const Staff = require('../models/Staff');
 
 exports.createStaff = async (req, res) => {
     try {
-        const staff = new Staff({ ...req.body, salonId: req.params.salonId });
+        const { rating, reviewCount, ...safeBody } = req.body; // rating comes only from real reviews
+        const staff = new Staff({ ...safeBody, salonId: req.params.salonId });
         await staff.save();
 
         const staffData = staff.toObject();
@@ -45,7 +46,8 @@ exports.getAllStaff = async (req, res) => {
 
 exports.updateStaff = async (req, res) => {
     try {
-        const staff = await Staff.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const { rating, reviewCount, salonId, ...safeBody } = req.body; // rating comes only from real reviews
+        const staff = await Staff.findByIdAndUpdate(req.params.id, safeBody, { new: true, runValidators: true });
         if (!staff) {
             return res.status(404).json({ success: false, message: 'Staff not found' });
         }

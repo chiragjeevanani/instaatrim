@@ -27,6 +27,9 @@ app.set('trust proxy', 1);
 app.use(helmet({
     contentSecurityPolicy: false, // Allows cross-origin assets for custom frontend/CDN
     crossOriginEmbedderPolicy: false,
+    // Frontend (e.g. localhost:5173 / app domain) loads images from this API origin
+    // (/uploads). Helmet's default 'same-origin' makes browsers block those <img> loads.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
@@ -86,6 +89,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/ads', adRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/category-requests', require('./routes/categoryRequestRoutes'));
+app.use('/api/offers', require('./routes/offerRoutes'));
 app.use('/api/services', serviceRoutes);
 app.use('/api/salons', salonRoutes);
 app.use('/api/stations', require('./routes/stationRoutes'));

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
+import { api } from '../../../shared/services/api';
+import { isOfferLiveNow, offerMatchesService, offerScopeText } from '../../../shared/lib/offers';
 
 export const LiveOffersStrip = () => {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ export const LiveOffersStrip = () => {
   const { state } = useAppData();
 
   const [selectedDealForModal, setSelectedDealForModal] = useState(null);
+  const [loadingDealSalons, setLoadingDealSalons] = useState(false);
 
   const targetCity = (currentLocation?.city || '').toLowerCase().trim();
 
@@ -37,7 +40,8 @@ export const LiveOffersStrip = () => {
 
   // Filter active approved deals
   const liveDeals = (offers || []).filter((offer) => {
-    if (offer.isActive === false || offer.approvalStatus === 'rejected') return false;
+    // Only offers that are live right now (active, approved, not expired, valid today)
+    if (!isOfferLiveNow(offer)) return false;
 
     // 1. If specific salon deal, check if that salon belongs to current city
     if (offer.salonId && offer.salonId !== 'all') {
@@ -59,54 +63,45 @@ export const LiveOffersStrip = () => {
   if (liveDeals.length === 0) return null;
 
   // Matching salons for a deal
-  const getSalonsForDeal = (deal) => {
+  const getSalonsForDeal = (deal, servicesOverride) => {
     if (!deal) return [];
     if (deal.salonId && deal.salonId !== 'all') {
       const found = (state.salons || []).find((s) => s.id === deal.salonId || s._id === deal.salonId);
       return found ? [found] : [];
     }
-    // For global deal, show verified partner salons in this city
-    return (state.salons || []).filter((s) => s.isVerified && isMatchingCity(s));
+    // Global deal: verified salons in this city that actually offer a matching service
+    const citySalons = (state.salons || []).filter((s) => s.isVerified && isMatchingCity(s));
+    const svcs = servicesOverride || state.services || [];
+    return citySalons.filter((s) =>
+      svcs.some((svc) => String(svc.salonId) === String(s.id || s._id) && svc.isActive !== false && offerMatchesService(deal, svc))
+    );
   };
 
-  const handleBookDealClick = (e, deal) => {
-    e.stopPropagation();
-    const salons = getSalonsForDeal(deal);
-
-    // If specific single salon, auto-add to cart right away!
-    if (salons.length === 1) {
-      applyDealToSalonCart(deal, salons[0]);
-    } else {
-      // If multiple salons available for this global deal, open selector modal
-      setSelectedDealForModal(deal);
-    }
-  };
-
-  const applyDealToSalonCart = (deal, targetSalon) => {
-    const finalPrice = deal.originalPrice || deal.price;
-    const originalMrp = deal.price || (finalPrice ? Math.round(finalPrice * 1.3) : 0);
-
-    const dealServiceItem = {
-      id: 'deal-srv-' + (deal.id || deal._id),
-      _id: 'deal-srv-' + (deal.id || deal._id),
-      name: deal.title,
-      title: deal.title,
-      category: deal.category || 'Special Offers',
-      subCategory: deal.subcategory || '',
-      price: finalPrice, // Discounted deal price
-      originalPrice: originalMrp, // Strikethrough MRP
-      discount: deal.discount || `${deal.discountPercent || 25}% OFF`,
-      duration: '45 mins',
-      salonId: targetSalon.id || targetSalon._id,
-      salonName: targetSalon.name,
-      isDealOffer: true,
-      description: deal.description
-    };
-
-    addToCart(dealServiceItem, targetSalon);
+  const openSalonForDeal = (salon) => {
     setSelectedDealForModal(null);
-    showToast(`🎉 "${deal.title}" added with ${deal.discount || 'special discount'} at ${targetSalon.name}!`);
-    setIsCartOpen(true);
+    navigate(`/customer/salons/${salon.id || salon._id}`);
+  };
+
+  // Real-app flow: an offer is a discount on the salon's real services → open the salon page,
+  // where matching services already show the discounted price.
+  const handleBookDealClick = async (e, deal) => {
+    e.stopPropagation();
+    // Single-salon deal → straight to that salon
+    if (deal.salonId && deal.salonId !== 'all') {
+      const salons = getSalonsForDeal(deal);
+      if (salons.length === 1) return openSalonForDeal(salons[0]);
+      return setSelectedDealForModal(deal);
+    }
+    // Global deal → load ALL salons' services from DB, then list salons that really offer it
+    setSelectedDealForModal(deal);
+    setLoadingDealSalons(true);
+    try {
+      const fresh = await api.services.listAll();
+      const salons = getSalonsForDeal(deal, fresh);
+      if (salons.length === 1) openSalonForDeal(salons[0]);
+    } finally {
+      setLoadingDealSalons(false);
+    }
   };
 
   return (
@@ -137,8 +132,6 @@ export const LiveOffersStrip = () => {
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-0.5 w-full">
           {liveDeals.map((deal) => {
             const discountLabel = deal.discount || (deal.discountPercent ? `${deal.discountPercent}% OFF` : 'SPECIAL OFFER');
-            const finalPrice = deal.originalPrice || deal.price;
-            const baseMrp = deal.price;
             const isGlobal = deal.salonId === 'all' || !deal.salonId;
 
             return (
@@ -185,14 +178,10 @@ export const LiveOffersStrip = () => {
 
                 {/* Price & Action Footer */}
                 <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between">
-                  <div>
-                    <span className="text-[9px] text-stone-400 block uppercase font-bold tracking-wider">Deal Price</span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-emerald-400 font-extrabold text-base">₹{finalPrice}</span>
-                      {baseMrp && Number(baseMrp) > Number(finalPrice) && (
-                        <span className="text-stone-400 line-through text-[11px]">₹{baseMrp}</span>
-                      )}
-                    </div>
+                  <div className="min-w-0">
+                    <span className="text-[9px] text-stone-400 block uppercase font-bold tracking-wider">Save on</span>
+                    <span className="text-emerald-400 font-bold text-[11px] line-clamp-1">{offerScopeText(deal)}</span>
+                    {deal.validTill && <span className="text-[9px] text-stone-400 block">Valid till {deal.validTill}</span>}
                   </div>
 
                   <button
@@ -201,7 +190,7 @@ export const LiveOffersStrip = () => {
                     className="flex items-center gap-1 px-3 py-1.5 bg-white text-stone-950 rounded-xl font-bold text-[11px] shadow-xs group-hover:bg-amber-300 active:scale-95 transition-all cursor-pointer"
                   >
                     <Zap className="w-3 h-3 fill-amber-500 text-amber-500" />
-                    <span>Book Deal</span>
+                    <span>View Deal</span>
                     <ChevronRight className="w-3 h-3 stroke-[2.5]" />
                   </button>
                 </div>
@@ -232,7 +221,7 @@ export const LiveOffersStrip = () => {
                     Select Salon for {selectedDealForModal.title}
                   </h3>
                   <p className="text-xs text-stone-500">
-                    Deal Price: <span className="text-emerald-700 font-bold">₹{selectedDealForModal.originalPrice || selectedDealForModal.price}</span> (Original: <span className="line-through">₹{selectedDealForModal.price}</span>)
+                    {selectedDealForModal.discountPercent}% OFF on <span className="font-semibold text-stone-700">{offerScopeText(selectedDealForModal)}</span> — applied automatically at the salon
                   </p>
                 </div>
                 <button
@@ -245,10 +234,10 @@ export const LiveOffersStrip = () => {
 
               {/* Salons List */}
               <div className="flex-1 overflow-y-auto py-3 space-y-2.5">
-                {getSalonsForDeal(selectedDealForModal).map((salon) => (
+                {!loadingDealSalons && getSalonsForDeal(selectedDealForModal).map((salon) => (
                   <div
                     key={salon.id || salon._id}
-                    onClick={() => applyDealToSalonCart(selectedDealForModal, salon)}
+                    onClick={() => openSalonForDeal(salon)}
                     className="p-3.5 rounded-2xl border border-stone-200 hover:border-purple-600 bg-stone-50/60 hover:bg-purple-50/40 transition-all flex items-center justify-between gap-3 cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -265,7 +254,7 @@ export const LiveOffersStrip = () => {
                           <span>•</span>
                           <span className="flex items-center gap-0.5 font-bold text-stone-800">
                             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                            {salon.rating || '4.8'}
+                            {Number(salon.rating) > 0 ? Number(salon.rating).toFixed(1) : 'New'}
                           </span>
                         </div>
                       </div>
@@ -275,14 +264,19 @@ export const LiveOffersStrip = () => {
                       type="button"
                       className="px-3 py-1.5 rounded-xl bg-brand-maroon text-white font-bold text-xs shrink-0 group-hover:bg-purple-700 transition-colors shadow-xs"
                     >
-                      Apply Deal
+                      View Salon
                     </button>
                   </div>
                 ))}
 
-                {getSalonsForDeal(selectedDealForModal).length === 0 && (
-                  <div className="text-center py-8 text-stone-500 text-xs">
-                    No partner salons currently available in this city for this deal.
+                {loadingDealSalons && (
+                  <div className="text-center py-8 text-stone-500 text-xs">Finding salons with this offer…</div>
+                )}
+                {!loadingDealSalons && getSalonsForDeal(selectedDealForModal).length === 0 && (
+                  <div className="text-center py-8 text-stone-500 text-xs leading-relaxed">
+                    No salon {currentLocation?.city ? `in ${currentLocation.city} ` : ''}offers <b>{offerScopeText(selectedDealForModal)}</b> yet.
+                    <br />
+                    The offer applies automatically as soon as a salon adds this service.
                   </div>
                 )}
               </div>

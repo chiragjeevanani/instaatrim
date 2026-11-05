@@ -83,8 +83,12 @@ export const SalonProvider = ({ children }) => {
       fetch(`${apiBase}/stations/salon/${salonId}`)
         .then((res) => res.json())
         .then((json) => {
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            dispatch({ type: 'SET_STATIONS', payload: json.data.map(s => ({ ...s, id: s._id })) });
+          if (json.success && Array.isArray(json.data)) {
+            // Replace this salon's chairs with exactly what DB has (even if empty)
+            dispatch({
+              type: 'REPLACE_SALON_STATIONS',
+              payload: { salonId, stations: json.data.map(s => ({ ...s, id: s._id })) }
+            });
           }
         })
         .catch(console.error);
@@ -95,9 +99,8 @@ export const SalonProvider = ({ children }) => {
       api.reviews.listBySalon(salonId).catch(console.error);
 
       // Fetch offers
-      api.offers.listAll().then(offers => {
-        if (offers) dispatch({ type: 'SET_OFFERS', payload: offers });
-      }).catch(console.error);
+      // This salon's offers + global offers (stored in state by listMine)
+      api.offers.listMine().catch(console.error);
 
       // Fetch platform settings
       api.platformSettings.get().catch(console.error);
@@ -199,6 +202,17 @@ export const SalonProvider = ({ children }) => {
         const mapped = { ...booking, id: booking._id || booking.id };
         dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId: mapped.id, status: mapped.status, patch: mapped } });
       }
+    });
+
+    // Category request approved / rejected by admin → toast + refresh categories from DB
+    socket.on('category_request_updated', (evt) => {
+      if (String(evt?.salonId) !== String(salonId)) return;
+      api.categories.list().catch(() => { });
+      showToast(evt.message || evt.title || 'Category request updated', evt.status === 'approved' ? 'success' : 'error');
+      window.dispatchEvent(new CustomEvent('drimstyle:category-request-updated', { detail: evt }));
+    });
+    socket.on('categories_updated', () => {
+      api.categories.list().catch(() => { });
     });
 
     // 4. Foreground FCM listener
@@ -365,7 +379,11 @@ export const SalonProvider = ({ children }) => {
   );
 
   // ---------------- Offers ----------------
-  const offers = useMemo(() => state.offers.filter((o) => o.salonId === salonId), [state.offers, salonId]);
+  // Offers that apply to this salon: its own + global (All Salons) offers
+  const offers = useMemo(
+    () => state.offers.filter((o) => String(o.salonId) === String(salonId) || o.salonId === 'all' || !o.salonId),
+    [state.offers, salonId]
+  );
 
   const addOffer = useCallback(
     (offerData) => {
@@ -383,9 +401,9 @@ export const SalonProvider = ({ children }) => {
       if (!offer) return;
       const next = !offer.isActive;
       api.offers
-        .update(offerId, { isActive: next })
+        .toggleMine(offerId, next)
         .then(() => showToast(`Offer ${next ? 'activated' : 'paused'}`))
-        .catch(() => showToast('Could not update offer', 'error'));
+        .catch((err) => showToast(err?.message || 'Could not update offer', 'error'));
     },
     [state.offers, showToast]
   );
@@ -414,15 +432,9 @@ export const SalonProvider = ({ children }) => {
       const sSalonId = s.salonId?._id || s.salonId?.id || s.salonId;
       return String(sSalonId || '') === currentIdStr;
     });
-    if (existing.length > 0) return existing;
-    const count = salonProfile?.totalChairs || 4;
-    return Array.from({ length: count }, (_, i) => ({
-      id: `${salonId}-chair-${i + 1}`,
-      salonId,
-      name: `Chair ${i + 1}`,
-      staffId: null
-    }));
-  }, [state.stations, salonId, salonProfile?.totalChairs]);
+    // Only real chairs from DB — no fake placeholder chairs (they could never be deleted)
+    return existing;
+  }, [state.stations, salonId]);
 
   const addStaff = useCallback(
     (data) => {
@@ -459,7 +471,7 @@ export const SalonProvider = ({ children }) => {
       api.stations
         .add(salonId, data)
         .then((st) => showToast(`Station "${st.name}" added successfully`))
-        .catch(() => showToast('Could not add station', 'error'));
+        .catch((err) => showToast(err?.message || 'Could not add station', 'error'));
     },
     [salonId, showToast]
   );
@@ -479,7 +491,7 @@ export const SalonProvider = ({ children }) => {
       api.stations
         .remove(stationId)
         .then(() => showToast('Station removed'))
-        .catch(() => showToast('Could not remove station', 'error'));
+        .catch((err) => showToast(err?.message || 'Could not remove station', 'error'));
     },
     [showToast]
   );

@@ -264,6 +264,17 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Stations ----------------
+    // DB is the source of truth for one salon's chairs: drop that salon's old/deleted
+    // chairs and keep exactly the list the server returned.
+    case 'REPLACE_SALON_STATIONS': {
+      const { salonId, stations = [] } = action.payload || {};
+      const target = String(salonId || '');
+      const others = (state.stations || []).filter((s) => {
+        const sid = s.salonId?._id || s.salonId?.id || s.salonId;
+        return String(sid || '') !== target;
+      });
+      return { ...state, stations: [...others, ...stations] };
+    }
     case 'SET_STATIONS': {
       const incoming = Array.isArray(action.payload) ? action.payload : [];
       if (incoming.length === 0) return { ...state };
@@ -282,6 +293,21 @@ export function appReducer(state, action) {
     }
 
     // ---------------- Services ----------------
+    // DB is the source of truth for one salon's services: drop that salon's cached
+    // (possibly deleted) services and keep exactly what the server returned — even if empty.
+    case 'REPLACE_SALON_SERVICES': {
+      const { salonId, services = [] } = action.payload || {};
+      const target = String(salonId || '');
+      const others = (state.services || []).filter((s) => {
+        const sid = s.salonId?._id || s.salonId?.id || s.salonId;
+        return String(sid || '') !== target;
+      });
+      return { ...state, services: [...others, ...services] };
+    }
+    // Full catalogue from DB replaces the cached one (removes deleted services)
+    case 'REPLACE_ALL_SERVICES': {
+      return { ...state, services: Array.isArray(action.payload) ? action.payload : [] };
+    }
     case 'SET_SERVICES': {
       const incoming = Array.isArray(action.payload) ? action.payload : [];
       if (incoming.length === 0) return { ...state };

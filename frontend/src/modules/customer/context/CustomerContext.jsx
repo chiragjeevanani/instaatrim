@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useMemo, useCallback, useEf
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/store/selectors';
+import { getBestOfferForService } from '../../../shared/lib/offers';
 
 import { io } from 'socket.io-client';
 import { requestFirebaseToken, messaging } from '../../../shared/lib/firebase';
@@ -111,12 +112,8 @@ export const CustomerProvider = ({ children }) => {
       })
       .catch(console.error);
 
-    // Fetch all dynamic offers
-    api.offers.listAll().then(offersList => {
-      if (Array.isArray(offersList)) {
-        dispatch({ type: 'SET_OFFERS', payload: offersList });
-      }
-    }).catch(console.error);
+    // Fetch live offers (approved, not expired) from DB — stored in state by listLive
+    api.offers.listLive().catch(console.error);
 
     // Fetch all coupons
     api.coupons.list().then(data => {
@@ -227,12 +224,13 @@ export const CustomerProvider = ({ children }) => {
     return {
       id: 'loc-default',
       area: 'Detecting Location...',
-      city: 'Indore',
-      landmark: 'Near Railway Station & Regal Circle',
+      // No hardcoded city — filled from live GPS or the customer's chosen location
+      city: '',
+      landmark: '',
       address: 'Detecting your live location...',
-      pincode: '452001',
-      lat: 22.7163,
-      lng: 75.8711,
+      pincode: '',
+      lat: null,
+      lng: null,
       isGPS: true
     };
   });
@@ -242,12 +240,12 @@ export const CustomerProvider = ({ children }) => {
     const cleanLoc = {
       id: loc.id || ('loc-' + Date.now()),
       area: loc.area || loc.city || 'My Location',
-      city: loc.city || 'Indore',
+      city: loc.city || '',
       landmark: loc.landmark || '',
-      address: loc.address || ((loc.area || '') + ', ' + (loc.city || '')),
+      address: loc.address || [loc.area, loc.city].filter(Boolean).join(', '),
       pincode: loc.pincode || '',
-      lat: loc.lat != null ? Number(loc.lat) : 22.7163,
-      lng: loc.lng != null ? Number(loc.lng) : 75.8711,
+      lat: loc.lat != null && loc.lat !== '' ? Number(loc.lat) : null,
+      lng: loc.lng != null && loc.lng !== '' ? Number(loc.lng) : null,
       isCurrent: true,
       isGPS: Boolean(loc.isGPS)
     };
@@ -443,7 +441,24 @@ export const CustomerProvider = ({ children }) => {
   }, []);
 
   const addToCart = useCallback(
-    (service, salon) => {
+    (rawService, salon) => {
+      // Apply the best live DB offer for this salon's real service (price shown = price charged)
+      const offerSalonId = salon ? (salon._id || salon.id) : rawService.salonId;
+      const basePrice = Number(rawService.basePrice ?? rawService.price) || 0;
+      const best = getBestOfferForService({ ...rawService, basePrice }, offerSalonId, state.offers || []);
+      const service = best
+        ? {
+            ...rawService,
+            basePrice,
+            price: best.finalPrice,
+            originalPrice: basePrice,
+            discount: best.label,
+            appliedOfferId: best.offer.id || best.offer._id,
+            appliedOfferTitle: best.offer.title,
+            offerSavings: best.savings
+          }
+        : { ...rawService, basePrice };
+
       setCartItems((prev) => {
         const incomingSalonId = salon ? salon.id : service.salonId;
         const existingSalonId = prev[0]?.salonId;
@@ -476,8 +491,29 @@ export const CustomerProvider = ({ children }) => {
         ];
       });
     },
-    [showToast]
+    [showToast, state.offers]
   );
+
+  // When live offers load / change, re-price items already in the cart so the cart always
+  // matches what the server will charge (server re-checks prices at booking time).
+  useEffect(() => {
+    setCartItems((prev) => {
+      let changed = false;
+      const next = prev.map((item) => {
+        if (item.isDealOffer) return item;
+        const base = Number(item.basePrice ?? item.price) || 0;
+        const best = getBestOfferForService({ ...item, basePrice: base }, item.salonId, state.offers || []);
+        const price = best ? best.finalPrice : base;
+        const offerId = best ? best.offer.id || best.offer._id : undefined;
+        if (price === item.price && offerId === item.appliedOfferId) return item;
+        changed = true;
+        return best
+          ? { ...item, basePrice: base, price, originalPrice: base, discount: best.label, appliedOfferId: offerId, appliedOfferTitle: best.offer.title, offerSavings: best.savings }
+          : { ...item, basePrice: base, price: base, discount: undefined, appliedOfferId: undefined, appliedOfferTitle: undefined, offerSavings: undefined };
+      });
+      return changed ? next : prev;
+    });
+  }, [state.offers]);
 
   const removeFromCart = useCallback(
     (serviceId) => {
@@ -563,9 +599,9 @@ export const CustomerProvider = ({ children }) => {
         customerId: user.id,
         customerName: user.name || 'Customer',
         customerPhone: user.phone,
-        salonId: bookingData.salonId || 'sal-1',
-        salonName: bookingData.salonName || 'Luxe Glow Salon & Spa',
-        address: bookingData.address || currentLocation?.area,
+        salonId: bookingData.salonId,
+        salonName: bookingData.salonName || '',
+        address: bookingData.address || currentLocation?.area || currentLocation?.address || '',
         bookingMode: bookingSlot.type,
         dateKey: bookingSlot.dateKey,
         time: bookingSlot.type === 'Instant' ? 'Within 15 mins' : bookingSlot.time,

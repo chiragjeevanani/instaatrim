@@ -103,7 +103,7 @@ export const BookingConfirmationPage = () => {
               <h2 className="font-bold text-stone-900 text-sm">{booking?.salonName || 'Partner Salon'}</h2>
               <p className="text-[10.5px] text-stone-500 flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3 h-3 text-brand-maroon" />
-                {booking?.address || 'Indore'}
+                {booking?.address || 'Address not available'}
               </p>
             </div>
             <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
+import { CategoryRequestPanel } from '../components/CategoryRequestPanel';
+import { api } from '../../../shared/services/api';
 import {
   ArrowLeft,
   Scissors,
@@ -29,562 +31,75 @@ export const AddServicePage = () => {
   const editingServiceId = location.state?.serviceId;
   const existingService = services.find((s) => (s.id && s.id === editingServiceId) || (s._id && s._id === editingServiceId));
 
-  // Available categories defined by admin
-  const availableCategories = (dynamicCategories && dynamicCategories.length > 0)
-    ? dynamicCategories.map((c) => c.name || c.shortName)
-    : [
-      'Waxing',
-      'Facial',
-      'Spa',
-      'Body Polishing',
-      'Mani-Pedi',
-      'Hair Studio',
-      'Beard',
-      'Grooming',
-      'Makeup',
-      'Mehandi',
-      'Cleanup',
-      'Bleach & D-Tan'
-    ];
+  // ── Categories: 100% from DB (admin-defined). Salon's own onboarding category first. ──
+  const salonIdStr = String(salonProfile?.id || salonProfile?._id || '');
+  const salonCategoryName = String(salonProfile?.categoryName || salonProfile?.category || '').trim();
+  const salonSubcategories = Array.isArray(salonProfile?.subcategories) ? salonProfile.subcategories : [];
 
-  // Preset standard services catalog covering ~95% of all salon services for instant onboarding
-  const STANDARD_TEMPLATES = [
-    // --- 1. Hair: Haircut & Styling ---
-    {
-      name: "Men's Haircut",
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '30 mins',
-      suggestedPrice: 300,
-      description: 'Precision scissor and clipper cut tailored to facial structure with wash and style.',
-      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: "Women's Haircut",
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '45 mins',
-      suggestedPrice: 600,
-      description: 'Customized haircut, layers or bob cut with hair wash, conditioning, and blow-dry finish.',
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: "Kids' Haircut",
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '30 mins',
-      suggestedPrice: 250,
-      description: 'Gentle, patient haircut for boys and girls with gentle grooming.',
-      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Fringe / Trim',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '15 mins',
-      suggestedPrice: 150,
-      description: 'Quick bang / fringe trim and split ends touchup.',
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
-    },
-    // --- Hair Color ---
-    {
-      name: 'Root Touch-up',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '1 hr',
-      suggestedPrice: 1200,
-      description: 'Seamless grey coverage root application with ammonia-free permanent color.',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Global Color',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '2 hrs',
-      suggestedPrice: 3000,
-      description: 'All-over rich uniform hair coloring from root to tip with gloss finish.',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Highlights (per streak/section)',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '1 hr 30 mins',
-      suggestedPrice: 2500,
-      description: 'Foil highlights or babylights to add multidimensional contrast and movement.',
-      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Balayage / Ombre',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '3 hrs',
-      suggestedPrice: 600,
-      description: 'Freehand painted seamless gradient color transition for a sun-kissed, natural look.',
-      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
-    },
-    // --- Hair Treatments ---
-    {
-      name: 'Hair Spa',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '1 hr',
-      suggestedPrice: 1200,
-      description: 'Nourishing botanical hair spa, scalp detox massage, and ozone steam conditioning.',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Keratin',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '3 hrs',
-      suggestedPrice: 6000,
-      description: 'Professional protein infusion smoothing treatment for frizz-free, shiny hair up to 4 months.',
-      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Smoothening / Rebonding',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '4 hrs',
-      suggestedPrice: 7000,
-      description: 'Permanent straight and sleek hair rebonding / smoothening with intense gloss seal.',
-      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Scalp Treatment',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '45 mins',
-      suggestedPrice: 1000,
-      description: 'Anti-dandruff and follicle purifying scalp treatment with therapeutic essential oils.',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80'
-    },
-    // --- Styling ---
-    {
-      name: 'Blow-dry',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '30 mins',
-      suggestedPrice: 400,
-      description: 'Straight, outward, or inward professional volume blow-dry styling.',
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Hair Wash + Blow-dry',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '40 mins',
-      suggestedPrice: 500,
-      description: 'Deep cleansing shampoo, scalp massage, hydrating conditioner, and signature blow-dry.',
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Curls / Straightening',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '45 mins',
-      suggestedPrice: 700,
-      description: 'Ceramic tong curling or flat iron pin-straight heat styling with heat protectant.',
-      image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Party Hairstyle',
-      category: 'Hair Styling',
-      fallbackCategory: 'Hair Studio',
-      duration: '1 hr',
-      suggestedPrice: 1500,
-      description: 'Intricate braids, messy buns, or red-carpet updo hairstyles for special occasions.',
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
-    },
+  const dbCategoryList = useMemo(() => {
+    const own = salonCategoryName.toLowerCase();
+    const visible = (dynamicCategories || []).filter((c) => {
+      if (!c?.name) return false;
+      // Global categories + categories admin assigned to this salon
+      const cs = c.salonId ? String(c.salonId._id || c.salonId.id || c.salonId) : '';
+      return !cs || cs === 'all' || cs === salonIdStr;
+    });
+    return [...visible].sort(
+      (a, b) => Number(b.name.trim().toLowerCase() === own) - Number(a.name.trim().toLowerCase() === own)
+    );
+  }, [dynamicCategories, salonCategoryName, salonIdStr]);
 
-    // --- 2. Men\'s Grooming ---
-    {
-      name: 'Beard Trim',
-      category: 'Beard',
-      fallbackCategory: 'Men\'s Hair & Grooming',
-      duration: '20 mins',
-      suggestedPrice: 200,
-      description: 'Clipper beard trimming, length balancing, and cheek line definition.',
-      image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Beard Styling / Shaping',
-      category: 'Beard',
-      fallbackCategory: 'Men\'s Hair & Grooming',
-      duration: '30 mins',
-      suggestedPrice: 300,
-      description: 'Hot towel steam, razor boundary shaping, fade blend, and beard butter massage.',
-      image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Clean Shave',
-      category: 'Beard',
-      fallbackCategory: 'Men\'s Hair & Grooming',
-      duration: '20 mins',
-      suggestedPrice: 200,
-      description: 'Traditional close straight-razor shave with warm shaving foam and cooling aftershave balm.',
-      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Haircut + Beard',
-      category: 'Men\'s Hair & Grooming',
-      fallbackCategory: 'Grooming',
-      duration: '50 mins',
-      suggestedPrice: 450,
-      description: 'Complete men haircut, wash, razor beard styling and refreshing face mist.',
-      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Haircut + Head Massage',
-      category: 'Men\'s Hair & Grooming',
-      fallbackCategory: 'Grooming',
-      duration: '45 mins',
-      suggestedPrice: 450,
-      description: 'Styling haircut paired with a relaxing 15-minute Ayurvedic cooling oil head massage.',
-      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: "Men's Cleanup",
-      category: 'Facial',
-      fallbackCategory: 'Men\'s Hair & Grooming',
-      duration: '30 mins',
-      suggestedPrice: 600,
-      description: 'Deep pore scrub, blackhead unclogging, and oil-control hydration mask for men.',
-      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: "Men's Facial",
-      category: 'Facial',
-      fallbackCategory: 'Men\'s Hair & Grooming',
-      duration: '45 mins',
-      suggestedPrice: 1000,
-      description: 'Brightening antioxidant facial formulated for rugged skin exposure and pollution defense.',
-      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'De-tan (Men)',
-      category: 'Facial',
-      fallbackCategory: 'Men\'s Hair & Grooming',
-      duration: '30 mins',
-      suggestedPrice: 700,
-      description: 'Kojic and milk protein de-tan pack to remove active sun tan and restore even tone.',
-      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
-    },
+  const availableCategories = dbCategoryList.map((c) => c.name);
+  const findDbCategory = (catName) =>
+    dbCategoryList.find((c) => c.name.trim().toLowerCase() === String(catName || '').trim().toLowerCase());
 
-    // --- 3. Skin & Facial ---
-    {
-      name: 'Basic Cleanup',
-      category: 'Facial',
-      fallbackCategory: 'Facials & Skin Care',
-      duration: '30 mins',
-      suggestedPrice: 600,
-      description: 'Gentle facial cleanse, scrub exfoliation, blackhead extraction and soothing pack.',
-      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Fruit / Hydrating Facial',
-      category: 'Facial',
-      fallbackCategory: 'Facials & Skin Care',
-      duration: '1 hr',
-      suggestedPrice: 1200,
-      description: 'Natural fruit enzyme peel, active vitamin hydration, and lymphatic face massage.',
-      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Anti-Acne Facial',
-      category: 'Facial',
-      fallbackCategory: 'Facials & Skin Care',
-      duration: '1 hr',
-      suggestedPrice: 1800,
-      description: 'Salicylic acid and tea tree clarifying treatment to purify breakouts and regulate sebum.',
-      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Anti-Ageing / Gold Facial',
-      category: 'Facial',
-      fallbackCategory: 'Facials & Skin Care',
-      duration: '1 hr 15 mins',
-      suggestedPrice: 2500,
-      description: '24K gold dust radiance, collagen tightening booster, and youthful glow therapy.',
-      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'De-tan (face/body)',
-      category: 'Facial',
-      fallbackCategory: 'Facials & Skin Care',
-      duration: '30 mins',
-      suggestedPrice: 800,
-      description: 'Intense tan removal treatment with brightening fruit acids and licorice extract.',
-      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Bleach',
-      category: 'Facial',
-      fallbackCategory: 'Facials & Skin Care',
-      duration: '30 mins',
-      suggestedPrice: 500,
-      description: 'Oxy-glow facial bleach to camouflage facial hair and illuminate complexion.',
-      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
-    },
+  // ── Auto-fill suggestions: built from DB (category tags + this salon's onboarding services) ──
+  const DYNAMIC_TEMPLATES = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+    const push = (tag, cat, isOwn) => {
+      const key = `${String(tag).trim().toLowerCase()}|${cat.name.toLowerCase()}`;
+      if (!String(tag).trim() || seen.has(key)) return;
+      seen.add(key);
+      list.push({ name: String(tag).trim(), category: cat.name, description: cat.description || '', isOwn });
+    };
 
-    // --- 4. Waxing & Threading ---
-    {
-      name: 'Full Arms',
-      category: 'Waxing',
-      fallbackCategory: 'Waxing & RICA',
-      duration: '30 mins',
-      suggestedPrice: 400,
-      description: 'Hygienic warm liposoluble waxing for silky smooth arms with soothing post-wax oil.',
-      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Full Legs',
-      category: 'Waxing',
-      fallbackCategory: 'Waxing & RICA',
-      duration: '40 mins',
-      suggestedPrice: 600,
-      description: 'Thorough hair removal from thigh to toes leaving skin flawlessly touchable.',
-      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Underarms',
-      category: 'Waxing',
-      fallbackCategory: 'Waxing & RICA',
-      duration: '15 mins',
-      suggestedPrice: 150,
-      description: 'Gentle, pain-minimized strip or peel-off wax for sensitive underarm skin.',
-      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Full Body',
-      category: 'Waxing',
-      fallbackCategory: 'Waxing & RICA',
-      duration: '1 hr 30 mins',
-      suggestedPrice: 2000,
-      description: 'Complete full body hair removal (arms, legs, back, front, and underarms) with RICA/Honey wax.',
-      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Eyebrows',
-      category: 'Waxing',
-      fallbackCategory: 'Waxing & RICA',
-      duration: '10 mins',
-      suggestedPrice: 60,
-      description: 'Precision cotton thread shaping and arch definition with aloe gel cooling.',
-      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
-    },
+    const ownCat = findDbCategory(salonCategoryName);
+    const ownTagsLower = salonSubcategories.map((s) => String(s).toLowerCase());
 
-    // --- 5. Nails ---
-    {
-      name: 'Classic Manicure',
-      category: 'Nails',
-      fallbackCategory: 'Mani-Pedi',
-      duration: '40 mins',
-      suggestedPrice: 600,
-      description: 'Nail shaping, cuticle soak & care, exfoliating hand scrub, relaxing hand massage and high-gloss polish.',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Classic Pedicure',
-      category: 'Nails',
-      fallbackCategory: 'Mani-Pedi',
-      duration: '50 mins',
-      suggestedPrice: 800,
-      description: 'Aromatherapy foot soak, heel callus buffing, dead skin scrub, invigorating foot massage and salon polish.',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Spa Manicure + Pedicure',
-      category: 'Nails',
-      fallbackCategory: 'Mani-Pedi',
-      duration: '1 hr 30 mins',
-      suggestedPrice: 1800,
-      description: 'Deluxe dual hands and feet spa treatment with crystal scrub, paraffin hydration pack and deep acupressure massage.',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Gel Polish',
-      category: 'Nails',
-      fallbackCategory: 'Mani-Pedi',
-      duration: '45 mins',
-      suggestedPrice: 900,
-      description: 'Chip-resistant UV/LED cured high-shine gel nail polish lasting up to 3 weeks.',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Nail Extensions',
-      category: 'Nails',
-      fallbackCategory: 'Mani-Pedi',
-      duration: '1 hr 30 mins',
-      suggestedPrice: 2500,
-      description: 'Full set acrylic or hard gel extensions with length extension, shape sculpting and base color.',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Nail Art (per nail / full set)',
-      category: 'Nails',
-      fallbackCategory: 'Mani-Pedi',
-      duration: '30 mins',
-      suggestedPrice: 500,
-      description: 'Creative custom nail art, chrome mirror finish, ombré glitter or 3D embellishments.',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80'
-    },
-
-    // --- 6. Makeup ---
-    {
-      name: 'Party Makeup',
-      category: 'Makeup',
-      fallbackCategory: 'Hair Studio',
-      duration: '1 hr',
-      suggestedPrice: 3000,
-      description: 'Glamorous event makeup with HD foundation, contouring, dramatic eye makeup and false eyelashes.',
-      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Saree Draping',
-      category: 'Makeup',
-      fallbackCategory: 'Hair Studio',
-      duration: '30 mins',
-      suggestedPrice: 800,
-      description: 'Professional precision saree draping in traditional, modern, or can-can mermaid styles.',
-      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Bridal Makeup',
-      category: 'Makeup',
-      fallbackCategory: 'Hair Studio',
-      duration: '2 hrs 30 mins',
-      suggestedPrice: 15000,
-      description: 'Luxury airbrush / HD bridal makeup, jewellery setting, dupatta styling, lash extension and premium touchup kit.',
-      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Engagement / Reception Makeup',
-      category: 'Makeup',
-      fallbackCategory: 'Hair Studio',
-      duration: '2 hrs',
-      suggestedPrice: 8000,
-      description: 'Radiant celebration makeup tailored to ring ceremony, sangeet or evening wedding reception.',
-      image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Pre-bridal Package',
-      category: 'Makeup',
-      fallbackCategory: 'Spa',
-      duration: '2 hrs',
-      suggestedPrice: 12000,
-      description: 'Multi-session head-to-toe beauty ritual: gold facial, full body polish, Rica wax, spa mani-pedi & hair spa.',
-      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
-    },
-
-    // --- 7. Spa & Massage ---
-    {
-      name: 'Head Massage',
-      category: 'Spa',
-      fallbackCategory: 'Spa & Body Massage',
-      duration: '20 mins',
-      suggestedPrice: 300,
-      description: 'Traditional warm Ayurvedic oil champi, pressure point neck and shoulder stress relief.',
-      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Foot Reflexology',
-      category: 'Spa',
-      fallbackCategory: 'Spa & Body Massage',
-      duration: '30 mins',
-      suggestedPrice: 600,
-      description: 'Targeted pressure point sole and calf massage to boost circulation and relieve fatigue.',
-      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Full Body Massage (Swedish / Deep Tissue)',
-      category: 'Spa',
-      fallbackCategory: 'Spa & Body Massage',
-      duration: '1 hr',
-      suggestedPrice: 2000,
-      description: 'Full body tension dissolving massage with warm organic aromatherapy oils and steam shower.',
-      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Body Polishing',
-      category: 'Spa',
-      fallbackCategory: 'Body Polishing',
-      duration: '1 hr',
-      suggestedPrice: 2500,
-      description: 'Full body botanical scrub exfoliation, dead cell removal, hydrating butter wrap and luminous glow finish.',
-      image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80'
-    },
-
-    // --- 8. Packages (DrimStyle-curated combos) ---
-    {
-      name: 'Groom Package',
-      category: 'Men\'s Hair & Grooming',
-      fallbackCategory: 'Grooming',
-      duration: '1 hr 30 mins',
-      suggestedPrice: 1999,
-      description: 'Complete groom prep: Styling haircut, luxury beard craft, anti-pollution cleanup and relaxing head massage.',
-      image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Bridal Glow Package',
-      category: 'Makeup',
-      fallbackCategory: 'Facial',
-      duration: '2 hrs',
-      suggestedPrice: 4999,
-      description: '24K gold facial, full arms & legs waxing, spa mani-pedi and hair spa with keratin gloss.',
-      image: 'https://images.unsplash.com/photo-1512290900672-1f02e6584285?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Monthly Grooming Pass',
-      category: 'Men\'s Hair & Grooming',
-      fallbackCategory: 'Grooming',
-      duration: '1 hr',
-      suggestedPrice: 999,
-      description: 'Essential monthly hygiene pack: Haircut, beard shape, D-tan cleanup and quick scalp massage.',
-      image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=600&q=80'
-    },
-    {
-      name: 'Pamper Day Combo',
-      category: 'Spa',
-      fallbackCategory: 'Facial',
-      duration: '2 hrs',
-      suggestedPrice: 2799,
-      description: 'Full body restorative massage, hydrating organic facial and deluxe foot reflexology.',
-      image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80'
-    }
-  ];
-
-  // Merge Admin Database Categories + Sub-services with Standard Templates dynamically
-  const DYNAMIC_TEMPLATES = React.useMemo(() => {
-    const list = [...STANDARD_TEMPLATES];
-
-    // If Admin added categories in DB with sub-service tags, dynamically turn them into autofill templates
-    if (dynamicCategories && dynamicCategories.length > 0) {
-      dynamicCategories.forEach((cat) => {
-        const catName = cat.name || cat.shortName;
-        const subList = Array.isArray(cat.serviceCategories) ? cat.serviceCategories : [];
-        subList.forEach((subName) => {
-          if (!list.some((item) => item.name.toLowerCase() === subName.toLowerCase())) {
-            list.push({
-              name: subName,
-              category: catName,
-              fallbackCategory: catName,
-              duration: '45 mins',
-              suggestedPrice: cat.price || 499,
-              description: cat.description || `Professional ${subName} treatment tailored to perfection.`,
-              image: cat.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
-            });
-          }
-        });
-      });
-    }
-
+    // 1) Services the salon selected at onboarding
+    salonSubcategories.forEach((sub) => {
+      const cat =
+        dbCategoryList.find((c) => (c.serviceCategories || []).some((t) => String(t).toLowerCase() === String(sub).toLowerCase())) ||
+        ownCat;
+      if (cat) push(sub, cat, true);
+    });
+    // 2) Every admin category's sub-services (salon's own category first — list is pre-sorted)
+    dbCategoryList.forEach((cat) => {
+      (Array.isArray(cat.serviceCategories) ? cat.serviceCategories : []).forEach((tag) =>
+        push(tag, cat, ownTagsLower.includes(String(tag).toLowerCase()))
+      );
+    });
     return list;
-  }, [dynamicCategories]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbCategoryList, salonCategoryName, salonSubcategories.join('|')]);
+
+  // ── Duration helpers (backend stores minutes) ──
+  const formatDuration = (mins) => {
+    const m = Number(mins);
+    if (!m || isNaN(m)) return '';
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    const hPart = h ? `${h} ${h === 1 ? 'hr' : 'hrs'}` : '';
+    const mPart = r ? `${r} mins` : '';
+    return [hPart, mPart].filter(Boolean).join(' ');
+  };
+  const BASE_DURATIONS = [15, 20, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 300, 360].map(formatDuration);
+  const normalizeDuration = (d) => (typeof d === 'number' ? formatDuration(d) : d || '');
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState(availableCategories[0] || 'Waxing');
+  const [category, setCategory] = useState(availableCategories[0] || '');
+  const [subcategory, setSubcategory] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('45 mins');
   const [price, setPrice] = useState('');
@@ -592,83 +107,88 @@ export const AddServicePage = () => {
   const [image, setImage] = useState(null);
   const [showAutofillSuggestions, setShowAutofillSuggestions] = useState(false);
 
-  // Salon enters their price, and customer display price directly matches it
-  const computedOriginalPrice = price && Number(price) > 0 ? Number(price) : 0;
+  const durations = BASE_DURATIONS.includes(duration) || !duration ? BASE_DURATIONS : [...BASE_DURATIONS, duration];
 
   useEffect(() => {
     if (existingService) {
-      setName(existingService.name || '');
-      setCategory(existingService.category || availableCategories[0] || 'Waxing');
+      setName(existingService.name || existingService.title || '');
+      setCategory(existingService.category || availableCategories[0] || '');
+      setSubcategory(existingService.subcategory || '');
       setDescription(existingService.description || '');
-      setDuration(existingService.duration || '45 mins');
+      setDuration(normalizeDuration(existingService.duration) || '45 mins');
       setPrice(existingService.price || '');
       setIsInstantEligible(existingService.isInstantEligible ?? true);
       setImage(existingService.image || null);
-    } else if (availableCategories.length > 0 && !category) {
-      setCategory(availableCategories[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingService?.id]);
 
-  const durations = [
-    '20 mins',
-    '30 mins',
-    '45 mins',
-    '1 hr',
-    '1 hr 15 mins',
-    '1 hr 30 mins',
-    '2 hrs'
-  ];
+  // Always pull the latest admin categories from DB when the page opens
+  useEffect(() => {
+    api.categories.list().catch(() => {});
+  }, []);
+
+  // DB categories load async — default to the salon's own category once they arrive
+  useEffect(() => {
+    if (!existingService && !category && availableCategories.length > 0) {
+      setCategory(availableCategories[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableCategories.join('|')]);
+
+  // Sub-services of the selected category (DB) — used for manual entry chips
+  const selectedCategoryTags = findDbCategory(category)?.serviceCategories || [];
 
   // Track currently applied template if any
   const [appliedTemplateName, setAppliedTemplateName] = useState('');
 
-  // Auto-fill selected template handler
+  // Auto-fill: title + category + sub-category (+ category description if empty).
+  // Price, duration & photo are the salon's own — never auto-filled.
   const handleApplyTemplate = (tmpl) => {
     setName(tmpl.name);
     setAppliedTemplateName(tmpl.name);
-    // Find matching category from availableCategories
-    const matchedCategory = availableCategories.find(
-      (c) => c.toLowerCase() === tmpl.category.toLowerCase() || c.toLowerCase() === tmpl.fallbackCategory?.toLowerCase()
-    );
-    if (matchedCategory) {
-      setCategory(matchedCategory);
-    }
-    if (tmpl.duration) setDuration(tmpl.duration);
-    else setDuration(tmpl.duration || '45 mins');
-    setDescription(tmpl.description || '');
-    // Price mapping
-    if (tmpl.price !== undefined) {
-      setPrice(tmpl.price);
-    } else if (tmpl.suggestedPrice !== undefined) {
-      setPrice(tmpl.suggestedPrice);
-    }
-    if (tmpl.image) {
-      setImage(tmpl.image);
-    }
+    setCategory(tmpl.category);
+    setSubcategory(tmpl.name);
+    if (!description.trim() && tmpl.description) setDescription(tmpl.description);
     setShowAutofillSuggestions(false);
-    showToast(`Autofilled details for "${tmpl.name}"`);
+    showToast(`Autofilled "${tmpl.name}" — now add your price & duration`);
+  };
+
+  // Manual: pick a sub-service chip of the chosen category
+  const handlePickSubcategory = (tag) => {
+    if (subcategory === tag) {
+      setSubcategory('');
+      return;
+    }
+    setSubcategory(tag);
+    if (!name.trim()) setName(tag);
   };
 
   // Clear / remove applied template details
   const handleClearTemplate = () => {
     setName('');
     setAppliedTemplateName('');
-    setCategory(availableCategories[0] || 'Waxing');
-    setDuration('45 mins');
+    setCategory(availableCategories[0] || '');
+    setSubcategory('');
     setDescription('');
+    setDuration('45 mins');
     setPrice('');
     setImage(null);
     setShowAutofillSuggestions(false);
-    showToast('Template cleared. Form reset.');
+    showToast('Form reset.');
   };
 
-  // Filter templates matching current input query
-  const matchingTemplates = DYNAMIC_TEMPLATES.filter((t) => {
+  // Filter suggestions matching current input (title, category, or word match)
+  const matchingTemplates = useMemo(() => {
     const q = name.trim().toLowerCase();
-    if (!q) return false;
-    return t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
-  });
+    if (!q) return DYNAMIC_TEMPLATES;
+    const tokens = q.split(/[\s,/&+-]+/).filter((t) => t.length > 1);
+    return DYNAMIC_TEMPLATES.filter((t) => {
+      const n = t.name.toLowerCase();
+      const c = t.category.toLowerCase();
+      return n.includes(q) || c.includes(q) || tokens.some((tok) => n.includes(tok) || c.includes(tok));
+    });
+  }, [name, DYNAMIC_TEMPLATES]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -677,22 +197,24 @@ export const AddServicePage = () => {
       return;
     }
     if (!name.trim() || !price) return;
+    if (!category) {
+      showToast('Please select a category', 'error');
+      return;
+    }
 
     const basePrice = Number(price);
-    const finalOriginalPrice = basePrice;
 
     const servicePayload = {
       name: name.trim(),
       category,
+      subcategory: subcategory || '',
       description: description.trim(),
       duration,
       price: basePrice,
-      originalPrice: finalOriginalPrice,
+      originalPrice: basePrice,
       isInstantEligible,
-      image:
-        image ||
-        existingService?.image ||
-        'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80'
+      // Salon's own photo only — no stock image fallback
+      image: image || existingService?.image || ''
     };
 
     if (existingService) {
@@ -935,7 +457,7 @@ export const AddServicePage = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Lotus Crystal Radiance Facial or start typing..."
+                  placeholder="Pick from catalog or type your own service name..."
                   value={name}
                   onFocus={() => setShowAutofillSuggestions(true)}
                   onChange={(e) => {
@@ -961,7 +483,7 @@ export const AddServicePage = () => {
                 <div className="mt-2 bg-gradient-to-b from-purple-50/60 to-white border border-purple-200/80 rounded-2xl p-2.5 shadow-sm space-y-1.5 animate-in fade-in duration-150">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-[10px] font-bold text-rose-950 uppercase tracking-wider flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-rose-900" /> Auto-fill from Catalog Template
+                      <Sparkles className="w-3 h-3 text-rose-900" /> Auto-fill from DrimStyle Catalog
                     </span>
                     <button
                       type="button"
@@ -972,7 +494,14 @@ export const AddServicePage = () => {
                     </button>
                   </div>
                   <div className="max-h-48 overflow-y-auto space-y-1 pr-1 divide-y divide-purple-100/50">
-                    {(matchingTemplates.length > 0 ? matchingTemplates : DYNAMIC_TEMPLATES).map((tmpl, idx) => (
+                    {matchingTemplates.length === 0 && (
+                      <p className="text-[10.5px] text-stone-500 px-1 py-2 leading-snug">
+                        {DYNAMIC_TEMPLATES.length === 0
+                          ? 'No catalog services yet — type your service title manually.'
+                          : `No catalog match for "${name}". Continue typing to add it manually.`}
+                      </p>
+                    )}
+                    {matchingTemplates.map((tmpl, idx) => (
                       <button
                         type="button"
                         key={idx}
@@ -980,19 +509,13 @@ export const AddServicePage = () => {
                         className="w-full text-left p-2 rounded-xl hover:bg-purple-100/60 active:scale-[0.99] transition-all flex items-center justify-between group cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          {tmpl.image && (
-                            <img
-                              src={tmpl.image}
-                              alt=""
-                              className="w-8 h-8 rounded-lg object-cover shrink-0 border border-purple-100"
-                            />
-                          )}
                           <div className="min-w-0">
                             <p className="text-[11px] font-bold text-stone-900 group-hover:text-rose-950 truncate">
                               {tmpl.name}
                             </p>
                             <p className="text-[9.5px] text-stone-500 truncate">
-                              {tmpl.category} • {tmpl.duration}
+                              {tmpl.category}
+                              {tmpl.isOwn && <span className="text-emerald-700 font-semibold"> • Your menu</span>}
                             </p>
                           </div>
                         </div>
@@ -1016,25 +539,74 @@ export const AddServicePage = () => {
                 </label>
                 <span className="text-[10px] font-semibold text-rose-900">{category}</span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {availableCategories.map((cat) => {
-                  const isSelected = category === cat;
-                  return (
-                    <button
-                      type="button"
-                      key={cat}
-                      onClick={() => setCategory(cat)}
-                      className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${isSelected
-                        ? 'bg-rose-900 text-white border-rose-900 shadow-2xs scale-[1.02]'
-                        : 'bg-[#faf7fc] text-stone-600 border-purple-100 hover:bg-stone-100'
-                        }`}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
+              {availableCategories.length === 0 ? (
+                <p className="text-[10.5px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  No categories available yet. Please ask DrimStyle admin to add service categories.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {availableCategories.map((cat) => {
+                    const isSelected = category === cat;
+                    const isOwn = cat.trim().toLowerCase() === salonCategoryName.toLowerCase();
+                    return (
+                      <button
+                        type="button"
+                        key={cat}
+                        onClick={() => {
+                          if (cat !== category) setSubcategory('');
+                          setCategory(cat);
+                        }}
+                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${isSelected
+                          ? 'bg-rose-900 text-white border-rose-900 shadow-2xs scale-[1.02]'
+                          : 'bg-[#faf7fc] text-stone-600 border-purple-100 hover:bg-stone-100'
+                          }`}
+                      >
+                        {cat}
+                        {isOwn && <span className={isSelected ? 'text-rose-200' : 'text-emerald-700'}> ★</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+
+            {/* Sub-service chips of the selected category (DB) — optional */}
+            {selectedCategoryTags.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider">
+                    Sub-category <span className="text-stone-400 normal-case font-medium">(optional)</span>
+                  </label>
+                  {subcategory && <span className="text-[10px] font-semibold text-rose-900">{subcategory}</span>}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCategoryTags.map((tag) => {
+                    const isSelected = subcategory === tag;
+                    return (
+                      <button
+                        type="button"
+                        key={tag}
+                        onClick={() => handlePickSubcategory(tag)}
+                        className={`text-[10.5px] font-medium px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${isSelected
+                          ? 'bg-purple-700 text-white border-purple-700'
+                          : 'bg-white text-stone-600 border-purple-100 hover:border-purple-300'
+                          }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Missing category / sub-category → request admin (DB, real-time status) */}
+            <CategoryRequestPanel
+              categories={dbCategoryList}
+              currentCategory={category}
+              suggestedName={!appliedTemplateName && matchingTemplates.length === 0 ? name.trim() : ''}
+              showToast={showToast}
+            />
 
             {/* Estimated Duration */}
             <div>

@@ -81,7 +81,7 @@ export const AdminEditorialPage = () => {
       title: '',
       subtitle: '',
       description: '',
-      tag: 'Hot in Indore',
+      tag: 'Trending Now',
       category: activeTab === 'skincare' ? 'Cleanser' : 'Facial',
       price: '',
       originalPrice: '',

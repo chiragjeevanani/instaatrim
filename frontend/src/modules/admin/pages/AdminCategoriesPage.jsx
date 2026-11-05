@@ -18,7 +18,10 @@ import {
   Users
 } from 'lucide-react';
 import { AdminTopBar } from '../components/AdminTopBar';
+import { AdminCategoryRequests } from '../components/AdminCategoryRequests';
+import { api } from '../../../shared/services/api';
 import { useAdmin } from '../context/AdminContext';
+import { getCategorySuggestions } from '../../../shared/data/categoryCatalog';
 
 export const AdminCategoriesPage = () => {
   const {
@@ -29,6 +32,7 @@ export const AdminCategoriesPage = () => {
     updateCategory,
     deleteCategory,
     toggleCategoryActive,
+    showToast,
     theme
   } = useAdmin();
 
@@ -104,6 +108,12 @@ export const AdminCategoriesPage = () => {
   }, [modalOpen, editingCategory, formData]);
 
   const [formError, setFormError] = useState('');
+  // Per sub-category { checked, price, duration } for creating services in a specific salon
+  const [menuRows, setMenuRows] = useState({});
+  const menuTags = useMemo(
+    () => Array.from(new Set(String(formData.serviceCategoriesText || '').split(',').map((s) => s.trim()).filter(Boolean))),
+    [formData.serviceCategoriesText]
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -178,162 +188,15 @@ export const AdminCategoriesPage = () => {
     });
     setFormError('');
     setShowSuggestions(false);
+    setMenuRows({});
     setModalOpen(true);
   };
 
-  // Standard catalog dictionary for smart autocomplete recommendations
-  const CATALOG_SUGGESTIONS = useMemo(() => [
-    {
-      name: 'Hair',
-      shortName: 'Hair',
-      slug: 'hair',
-      gender: 'unisex',
-      tags: [
-        "Men's Haircut",
-        "Women's Haircut",
-        "Kids' Haircut",
-        'Fringe / Trim',
-        'Root Touch-up',
-        'Global Color',
-        'Highlights',
-        'Balayage / Ombre',
-        'Hair Spa',
-        'Keratin',
-        'Smoothening / Rebonding',
-        'Scalp Treatment',
-        'Blow-dry',
-        'Hair Wash + Blow-dry',
-        'Curls / Straightening',
-        'Party Hairstyle'
-      ],
-      description: 'Professional haircuts, blow dries, and styling treatments.'
-    },
-    {
-      name: 'Hair Coloring & Treatments',
-      shortName: 'Hair Color',
-      slug: 'hair-color-treatments',
-      gender: 'unisex',
-      tags: [
-        'Root Touch-up',
-        'Global Color',
-        'Highlights (per streak/section)',
-        'Balayage / Ombre',
-        'Hair Spa',
-        'Keratin',
-        'Smoothening / Rebonding',
-        'Scalp Treatment'
-      ],
-      description: 'Rich vibrant hair coloring, highlights, and specialized keratin treatments.'
-    },
-    {
-      name: "Men's Grooming",
-      shortName: "Men's Grooming",
-      slug: 'mens-grooming',
-      gender: 'men',
-      tags: ['Beard Trim', 'Beard Styling / Shaping', 'Clean Shave', 'Haircut + Beard', 'Haircut + Head Massage', "Men's Cleanup", "Men's Facial", 'De-tan'],
-      description: "Precision beard sculpting, grooming combos, and men's revitalizing cleanups."
-    },
-    {
-      name: 'Skin & Facial',
-      shortName: 'Facials',
-      slug: 'skin-facial',
-      gender: 'unisex',
-      tags: ['Basic Cleanup', 'Fruit / Hydrating Facial', 'Anti-Acne Facial', 'Anti-Ageing / Gold Facial', 'De-tan (face/body)', 'Bleach'],
-      description: 'Deep cleansing facials, peels, and brightening skin treatments.'
-    },
-    {
-      name: 'Waxing & Threading',
-      shortName: 'Waxing',
-      slug: 'waxing-threading',
-      gender: 'women',
-      tags: ['Full Arms', 'Full Legs', 'Underarms', 'Full Body', 'Eyebrows', 'Upper Lip', 'Full Face'],
-      description: 'Gentle waxing, hair removal, and precision threading.'
-    },
-    {
-      name: 'Nails',
-      shortName: 'Nails',
-      slug: 'nails',
-      gender: 'women',
-      tags: ['Classic Manicure', 'Classic Pedicure', 'Spa Manicure + Pedicure', 'Gel Polish', 'Nail Extensions', 'Nail Art (per nail / full set)'],
-      description: 'Full set acrylic nail extensions, long-lasting gel art and pedi-care.'
-    },
-    {
-      name: 'Spa & Massage',
-      shortName: 'Spa',
-      slug: 'spa-massage',
-      gender: 'unisex',
-      tags: ['Head Massage', 'Foot Reflexology', 'Full Body Massage (Swedish / Deep Tissue)', 'Swedish Massage', 'Deep Tissue Massage', 'Body Polishing', 'Aromatherapy Massage', 'Body Spa'],
-      description: 'Rejuvenating body massages, head champi, and wellness therapies.'
-    },
-    {
-      name: 'Bridal & Party Makeup',
-      shortName: 'Makeup',
-      slug: 'bridal-makeup',
-      gender: 'women',
-      tags: ['Party Makeup', 'Saree Draping', 'Bridal Makeup', 'Engagement / Reception Makeup', 'Pre-bridal Package', 'Eye Makeup', 'HD Makeup'],
-      description: 'Exquisite bridal makeovers, saree draping, party glam, and pre-wedding beauty rituals.'
-    },
-    {
-      name: 'Packages & Combos',
-      shortName: 'Packages',
-      slug: 'curated-packages',
-      gender: 'unisex',
-      tags: ['Groom Package', 'Bridal Glow Package', 'Monthly Grooming Pass', 'Pamper Day Combo', 'Bridal Package', 'Pre-bridal Package', 'Full Body Polishing Combo'],
-      description: 'DrimStyle-curated value packages and full-body combo rituals.'
-    },
-    {
-      name: 'Beard & Shave Lounge',
-      shortName: 'Beard Care',
-      slug: 'beard-shave',
-      gender: 'men',
-      tags: ['Beard Shape & Trim', 'Royal Shave', 'Beard Spa', 'Mustache Styling'],
-      description: 'Precision beard shaping, hot towel shaves, and grooming.'
-    }
-  ], []);
-
-  // Compute active autocomplete suggestions matching typed input (searches category name, tags, description, and keywords)
-  const autocompleteSuggestions = useMemo(() => {
-    const rawQuery = (formData.name || '').trim().toLowerCase();
-    if (!rawQuery || rawQuery.length < 1) {
-      return [...CATALOG_SUGGESTIONS].slice(0, 8);
-    }
-
-    // Clean tokens to match even typos or individual words like 'head', 'massage'
-    const queryTokens = rawQuery.split(/[\s-]+/).filter(Boolean);
-
-    // Collect from standard dictionary + existing database categories
-    const combined = [...CATALOG_SUGGESTIONS];
-    categories.forEach((cat) => {
-      if (cat.name && !combined.some((c) => c.name.toLowerCase() === cat.name.toLowerCase())) {
-        combined.push({
-          name: cat.name,
-          shortName: cat.shortName || cat.name,
-          slug: cat.slug,
-          gender: cat.gender || 'unisex',
-          tags: Array.isArray(cat.serviceCategories) ? cat.serviceCategories : [],
-          description: cat.description || ''
-        });
-      }
-    });
-
-    return combined
-      .filter((item) => {
-        const catName = (item.name || '').toLowerCase();
-        const short = (item.shortName || '').toLowerCase();
-        const tags = (item.tags || []).map((t) => t.toLowerCase());
-        const desc = (item.description || '').toLowerCase();
-
-        // 1. Direct includes
-        if (catName.includes(rawQuery) || short.includes(rawQuery)) return true;
-        if (tags.some((t) => t.includes(rawQuery) || rawQuery.includes(t))) return true;
-
-        // 2. Token match (e.g. typing 'head' or 'massage' matches 'Head Massage' in tags or 'Spa & Massage')
-        return queryTokens.some((tok) => 
-          catName.includes(tok) || tags.some((t) => t.includes(tok)) || desc.includes(tok)
-        );
-      })
-      .slice(0, 6);
-  }, [formData.name, CATALOG_SUGGESTIONS, categories]);
+  // Smart autocomplete (shared with Salon Onboarding): catalog + DB categories
+  const autocompleteSuggestions = useMemo(
+    () => getCategorySuggestions(formData.name, categories),
+    [formData.name, categories]
+  );
 
   // Open Edit Modal
   const handleOpenEdit = (category) => {
@@ -357,6 +220,7 @@ export const AdminCategoriesPage = () => {
     });
     setFormError('');
     setShowSuggestions(false);
+    setMenuRows({});
     setModalOpen(true);
   };
 
@@ -467,12 +331,36 @@ export const AdminCategoriesPage = () => {
         payload.append('image', formData.image.trim());
     }
 
+    // Ticked sub-categories (with a valid price) → services to create in the chosen salon
+    const menuItems =
+      formData.salonId && formData.salonId !== 'all'
+        ? serviceCategories
+            .filter((t) => menuRows[t]?.checked)
+            .map((t) => ({ name: t, price: Number(menuRows[t].price), duration: Number(menuRows[t].duration) || 30 }))
+        : [];
+    const missingPrice = menuItems.filter((it) => !(it.price > 0));
+    if (missingPrice.length > 0) {
+      setFormError(`Please enter a price for: ${missingPrice.map((it) => it.name).join(', ')}`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      let saved;
       if (editingCategory) {
-        await updateCategory(editingCategory.id, payload);
+        saved = await updateCategory(editingCategory.id, payload);
       } else {
-        await createCategory(payload);
+        saved = await createCategory(payload);
+      }
+
+      if (menuItems.length > 0) {
+        const catId = saved?.id || saved?._id || editingCategory?.id;
+        try {
+          const result = await api.categories.addSalonServices(catId, formData.salonId, menuItems);
+          showToast(result.message || 'Services added to salon', 'success');
+        } catch (menuErr) {
+          showToast(menuErr.message || 'Category saved, but services could not be added', 'error');
+        }
       }
       setModalOpen(false);
     } catch (err) {
@@ -563,6 +451,9 @@ export const AdminCategoriesPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Salon partners' category / sub-category requests (DB) */}
+        <AdminCategoryRequests />
 
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
@@ -1007,6 +898,81 @@ export const AdminCategoriesPage = () => {
                   Salon partners can match these specific treatment tags under this umbrella category.
                 </p>
               </div>
+
+              {/* Specific salon chosen → optionally create that salon's services (price per sub-category) */}
+              {formData.salonId && formData.salonId !== 'all' && menuTags.length > 0 && (
+                <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[11px] font-bold text-purple-300 uppercase tracking-wider">
+                        Add these services to {formData.salonName || 'this salon'}
+                      </p>
+                      <p className="text-[10px] text-stone-400">
+                        Tick a sub-category, set its price &amp; time — it is created as a live service in this salon. Salon can edit it later.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMenuRows((prev) => {
+                          const allOn = menuTags.every((t) => prev[t]?.checked);
+                          const next = { ...prev };
+                          menuTags.forEach((t) => {
+                            next[t] = { duration: 30, ...(prev[t] || {}), checked: !allOn };
+                          });
+                          return next;
+                        })
+                      }
+                      className="text-[10px] font-semibold text-purple-300 hover:text-white shrink-0"
+                    >
+                      {menuTags.every((t) => menuRows[t]?.checked) ? 'Unselect all' : 'Select all'}
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    {menuTags.map((tag) => {
+                      const row = menuRows[tag] || {};
+                      const setRow = (patch) =>
+                        setMenuRows((prev) => ({ ...prev, [tag]: { duration: 30, ...(prev[tag] || {}), ...patch } }));
+                      return (
+                        <div key={tag} className="grid grid-cols-12 gap-2 items-center">
+                          <label className="col-span-6 flex items-center gap-2 text-[11.5px] text-stone-200 cursor-pointer min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={!!row.checked}
+                              onChange={(e) => setRow({ checked: e.target.checked })}
+                              className="accent-purple-500"
+                            />
+                            <span className="truncate">{tag}</span>
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="Price ₹"
+                            value={row.price ?? ''}
+                            onChange={(e) => setRow({ price: e.target.value, checked: true })}
+                            className="col-span-3 bg-[#101018] border border-[#2d2d42] rounded-lg px-2 py-1.5 text-[11.5px] text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
+                          />
+                          <select
+                            value={row.duration ?? 30}
+                            onChange={(e) => setRow({ duration: Number(e.target.value) })}
+                            className="col-span-3 bg-[#101018] border border-[#2d2d42] rounded-lg px-1.5 py-1.5 text-[11.5px] text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                          >
+                            {[15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300, 360].map((m) => (
+                              <option key={m} value={m}>
+                                {m < 60 ? `${m} min` : `${Math.floor(m / 60)} hr${m % 60 ? ` ${m % 60}m` : ''}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-stone-500">
+                    Services that already exist in this salon are skipped (salon's own price is kept).
+                  </p>
+                </div>
+              )}
 
               {/* Image File & Preset Selection */}
               <div>

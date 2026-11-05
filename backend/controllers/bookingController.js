@@ -48,9 +48,81 @@ const notifyBookingFCM = async ({ salonId, title, body, data }) => {
     }
 };
 
+// Recalculate the bill from DB (service price + live offers + coupon) and compare with
+// what the customer's app sent. Rejects any booking that tries to pay less than allowed.
+const verifyBookingPrices = async (data) => {
+    const mongoose = require('mongoose');
+    const Service = require('../models/Service');
+    const Coupon = require('../models/Coupon');
+    const { loadLiveOffersForSalon, priceWithBestOffer } = require('../utils/offerPricing');
+    const REFRESH = 'Prices have changed. Please refresh your cart and try again.';
+    const TOL = 1; // ₹1 rounding tolerance
+
+    const items = Array.isArray(data.services) ? data.services : [];
+    if (!data.salonId || !mongoose.Types.ObjectId.isValid(String(data.salonId))) {
+        return { ok: false, message: 'Invalid salon for this booking.' };
+    }
+    if (items.length === 0) return { ok: false, message: 'Your cart is empty.' };
+
+    const offers = await loadLiveOffersForSalon(String(data.salonId));
+
+    // 1) Every service: real DB price (+ best live offer) must match what the app sent
+    let subtotal = 0;
+    for (const item of items) {
+        const qty = Math.max(1, Math.min(10, Math.round(Number(item.quantity) || 1)));
+        if (!mongoose.Types.ObjectId.isValid(String(item.id))) {
+            return { ok: false, message: `"${item.name || 'A service'}" is no longer available. ${REFRESH}` };
+        }
+        const svc = await Service.findById(item.id).lean();
+        if (!svc || String(svc.salonId) !== String(data.salonId) || svc.isActive === false) {
+            return { ok: false, message: `"${item.name || 'A service'}" is no longer available. ${REFRESH}` };
+        }
+        const serverPrice = priceWithBestOffer(svc, offers);
+        if (Math.abs(Number(item.price) - serverPrice) > TOL) {
+            return { ok: false, message: `Price of "${svc.title}" is ₹${serverPrice} now. ${REFRESH}` };
+        }
+        subtotal += serverPrice * qty;
+    }
+
+    // 2) Bill total must match the server's total
+    if (Math.abs(Number(data.totalAmount) - subtotal) > TOL) {
+        return { ok: false, message: REFRESH };
+    }
+
+    // 3) Coupon: must be real & active, and discount can't exceed what it allows
+    const discount = Math.max(0, Number(data.discountAmount) || 0);
+    let allowedDiscount = 0;
+    if (data.couponApplied) {
+        const code = String(data.couponApplied).trim();
+        const coupon = await Coupon.findOne({ code: { $regex: `^${code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } }).lean();
+        if (!coupon || coupon.isActive === false || subtotal < (Number(coupon.minOrder) || 0)) {
+            return { ok: false, message: 'This coupon is not valid for your cart. Please remove it and try again.' };
+        }
+        // same formula as the customer app (selectors.computeDiscount)
+        if (coupon.discountPercent) allowedDiscount = (subtotal * Number(coupon.discountPercent)) / 100;
+        else if (coupon.flatDiscount) allowedDiscount = Math.min(Number(coupon.flatDiscount), subtotal);
+    }
+    if (discount > allowedDiscount + TOL) {
+        return { ok: false, message: 'Discount is not valid for this booking. Please refresh and try again.' };
+    }
+
+    // 4) Amount paid can't be lower than (total − allowed discount); tax / fees only add on top
+    if (Number(data.finalPaid) < subtotal - allowedDiscount - TOL) {
+        return { ok: false, message: REFRESH };
+    }
+
+    return { ok: true };
+};
+
 exports.createBooking = async (req, res) => {
     try {
         const bookingData = req.body;
+
+        // ── Server-side price check: never trust prices sent by the customer's app ──
+        const priceCheck = await verifyBookingPrices(bookingData);
+        if (!priceCheck.ok) {
+            return res.status(409).json({ success: false, code: 'PRICE_MISMATCH', message: priceCheck.message });
+        }
 
         // Custom ID generation for "IT-XXXXXX"
         const count = await Booking.countDocuments();

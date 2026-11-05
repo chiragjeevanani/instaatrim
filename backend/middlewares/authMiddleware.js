@@ -55,4 +55,41 @@ const protectAdmin = async (req, res, next) => {
     }
 };
 
-module.exports = { protectCustomer, protectAdmin };
+// Middleware: salon partner OR admin.
+// - Admin (mock admin token) → req.isAdmin = true
+// - Salon partner JWT ({ id, role: 'salon' }) → req.salon = Salon document
+const protectSalonOrAdmin = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'Not authorized. Please login again.' });
+        }
+        const token = authHeader.split(' ')[1];
+
+        if (token === 'mock-jwt-token-7a8b9c0d1e2f3g4h5i6j') {
+            req.isAdmin = true;
+            return next();
+        }
+
+        // Same secret/fallback used when the salon token is signed (salonController login)
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+        if (decoded.role !== 'salon' || !decoded.id) {
+            return res.status(403).json({ success: false, message: 'Only salon partners can do this. Please login as a salon partner.' });
+        }
+
+        const Salon = require('../models/Salon');
+        const salon = await Salon.findById(decoded.id).select('_id name isVerified verificationStatus');
+        if (!salon) {
+            return res.status(401).json({ success: false, message: 'Salon not found. Please login again.' });
+        }
+        req.salon = salon;
+        next();
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ success: false, message: 'Session expired. Please login again.' });
+        }
+        return res.status(401).json({ success: false, message: 'Invalid token. Please login again.' });
+    }
+};
+
+module.exports = { protectCustomer, protectAdmin, protectSalonOrAdmin };

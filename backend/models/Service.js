@@ -16,6 +16,12 @@ const serviceSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    // Sub-category / treatment tag from the admin category (e.g. "Beard Trim")
+    subcategory: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     price: {
         type: Number,
         required: true,

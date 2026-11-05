@@ -16,8 +16,9 @@ export const CategoryGrid = ({ genderFilter = 'all' }) => {
   const visibleCategories = useMemo(() => {
     let cats = state.categories || [];
     
-    // Only show active categories
-    cats = cats.filter(c => c.isActive !== false);
+    // Only show active, global categories (a category assigned to one salon
+    // shows only inside that salon's page, not on everyone's home grid)
+    cats = cats.filter(c => c.isActive !== false && !c.salonId);
 
     if (genderFilter === 'men') {
       return cats.filter(c => c.gender === 'men' || c.gender === 'unisex');

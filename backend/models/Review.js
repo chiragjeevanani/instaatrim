@@ -10,6 +10,9 @@ const reviewSchema = new mongoose.Schema({
     reply: { type: String },
     verifiedBooking: { type: Boolean, default: false },
     bookingId: { type: String },
+    // Stylist & chair who served this booking (from the booking) → staff rating
+    staffId: { type: String, default: '' },
+    stationId: { type: String, default: '' },
     isFlagged: { type: Boolean, default: false },
     // Detailed Customer Feedback Fields
     serviceQuality: { type: String, enum: ['Excellent', 'Good', 'Average', 'Poor'], default: 'Excellent' },

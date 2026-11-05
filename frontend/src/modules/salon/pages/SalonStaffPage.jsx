@@ -108,15 +108,24 @@ export const SalonStaffPage = () => {
   const [stationStaffId, setStationStaffId] = useState('');
   
   // Helper to get rating for staff directly from database or staff profile
+  // Real values only — no fake rating / review count. No reviews yet → "New".
   const getStaffRating = (staffObj) => {
     if (!staffObj) return null;
-    return staffObj.rating || 4.8;
+    const r = Number(staffObj.rating);
+    return r > 0 ? r.toFixed(1) : 'New';
   };
 
   const getStaffReviews = (staffObj) => {
     if (!staffObj) return null;
-    return staffObj.reviewCount || 42;
+    const c = Number(staffObj.reviewCount);
+    return c > 0 ? c : null;
   };
+
+  // Salon rating = real average of customer reviews (auto-calculated in DB)
+  const salonReviewCount = Number(salonProfile.reviewsCount) || 0;
+  const salonRatingLabel = Number(salonProfile.rating) > 0
+    ? `${Number(salonProfile.rating).toFixed(1)}${salonReviewCount ? ` (${salonReviewCount})` : ''}`
+    : 'New';
   
   const handleOpenAddStation = () => {
     setEditingStation(null);
@@ -172,7 +181,7 @@ export const SalonStaffPage = () => {
               <p className="text-[10px] text-stone-500 font-medium">{salonProfile.name}</p>
               <div className="inline-flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
-                <span>Salon: {salonProfile.rating ? Number(salonProfile.rating).toFixed(1) : '4.8'}</span>
+                <span>Salon: {salonRatingLabel}</span>
               </div>
             </div>
           </div>
@@ -344,7 +353,7 @@ export const SalonStaffPage = () => {
                             {/* Salon Rating Badge */}
                             <div className="inline-flex items-center gap-1 bg-purple-50 text-purple-900 border border-purple-200/80 px-1.5 py-0.5 rounded-full text-[10px] font-bold" title="Salon Overall Rating">
                               <Star className="w-2.5 h-2.5 fill-purple-500 text-purple-600" />
-                              <span>Salon {salonProfile.rating ? Number(salonProfile.rating).toFixed(1) : '4.8'}</span>
+                              <span>Salon {salonRatingLabel}</span>
                             </div>
 
                             {/* Staff Specialist Rating Badge */}

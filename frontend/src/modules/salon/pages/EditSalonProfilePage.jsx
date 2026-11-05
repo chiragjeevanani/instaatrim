@@ -24,7 +24,7 @@ export const EditSalonProfilePage = () => {
   const [ownerName, setOwnerName] = useState(salonProfile.ownerName || '');
   const [category, setCategory] = useState(salonProfile.category || 'Premium');
   const [address, setAddress] = useState(salonProfile.address || '');
-  const [city, setCity] = useState(salonProfile.city || 'Indore');
+  const [city, setCity] = useState(salonProfile.city || '');
   const [openHours, setOpenHours] = useState(salonProfile.openHours || '09:00 AM - 09:00 PM');
   const [mobile, setMobile] = useState(salonProfile.mobile || '');
   const [email, setEmail] = useState(salonProfile.email || '');

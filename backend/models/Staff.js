@@ -5,8 +5,9 @@ const staffSchema = new mongoose.Schema({
     name: { type: String, required: true },
     role: { type: String, required: true },
     serviceCategories: [{ type: String }],
-    rating: { type: Number, default: 4.8 },
-    reviewCount: { type: Number, default: 42 },
+    // Real values only (0 = no reviews yet → UI shows "New"). Never set by salon.
+    rating: { type: Number, default: 0 },
+    reviewCount: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

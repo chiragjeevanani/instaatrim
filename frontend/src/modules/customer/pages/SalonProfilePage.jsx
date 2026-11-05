@@ -5,6 +5,8 @@ import { useCustomer } from '../context/CustomerContext';
 import { api } from '../../../shared/services/api';
 import { SlotPickerModal } from '../components/SlotPickerModal';
 import { BookingFlowModal } from '../components/BookingFlowModal';
+import { SalonTeamSection } from '../components/SalonTeamSection';
+import { getBestOfferForService, liveOffersForSalon, offerScopeText } from '../../../shared/lib/offers';
 import { reviewSummary, salonHoursLabel, salonPhone, formatDuration } from '../../../shared/store/selectors';
 import { parseHoursRange, nowMinutesOfDay } from '../../../shared/lib/time';
 import {
@@ -60,6 +62,7 @@ export const SalonProfilePage = () => {
     if (salon?.id) {
       api.services.listBySalon(salon.id).catch(console.error);
       api.reviews.listBySalon(salon.id).catch(console.error);
+      api.offers.listLive().catch(console.error); // latest live offers from DB
     }
   }, [salon?.id]);
 
@@ -131,7 +134,7 @@ export const SalonProfilePage = () => {
           <div className="flex items-center gap-2.5 mt-1.5 lg:mt-3 text-[11px] lg:text-[13px]">
             <div className="flex items-center gap-1 bg-amber-400 text-stone-950 px-1.5 py-0.5 rounded font-extrabold shadow-xs text-[10px]">
               <Star className="w-3 h-3 fill-stone-950" />
-              <span>{salon.rating}</span>
+              <span>{Number(salon.rating) > 0 ? Number(salon.rating).toFixed(1) : 'New'}</span>
               {salon.reviewsCount > 0 && <span className="font-normal">({salon.reviewsCount})</span>}
             </div>
             <span className="text-stone-300">{salon.distanceKm != null ? `${salon.distanceKm.toFixed(1)} km` : ''}</span>
@@ -259,6 +262,28 @@ export const SalonProfilePage = () => {
       </aside>
 
       <div className="lg:order-1 lg:col-span-2 lg:space-y-6 min-w-0">
+      {/* Live offers for this salon (DB) — applied automatically on the matching services below */}
+      {liveOffersForSalon(salon._id || salon.id, state.offers || []).length > 0 && (
+        <section className="mt-2 lg:mt-0 mb-2 lg:mb-4 bg-gradient-to-r from-emerald-50 to-white border border-emerald-200 rounded-none lg:rounded-2xl px-3.5 lg:px-5 py-3 space-y-1.5">
+          <h2 className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">🏷️ Offers at this salon</h2>
+          {liveOffersForSalon(salon._id || salon.id, state.offers || []).map((o) => (
+            <div key={o.id || o._id} className="flex items-start gap-2">
+              <span className="shrink-0 text-[10px] font-extrabold text-white bg-emerald-600 px-1.5 py-0.5 rounded">
+                {o.discountPercent}% OFF
+              </span>
+              <p className="text-[11.5px] text-stone-700 leading-snug">
+                <span className="font-bold text-stone-900">{o.title}</span> — on {offerScopeText(o)}
+                {o.validTill && <span className="text-stone-400"> • till {o.validTill}</span>}
+                {Array.isArray(o.applicableDays) && o.applicableDays.length > 0 && o.applicableDays.length < 7 && (
+                  <span className="text-stone-400"> • {o.applicableDays.join(', ')}</span>
+                )}
+              </p>
+            </div>
+          ))}
+          <p className="text-[10px] text-stone-500">Discount is applied automatically when you add the service.</p>
+        </section>
+      )}
+
       {/* Service Menu */}
       <section className="mt-2 lg:mt-0 bg-white pt-2.5 lg:pt-5 border-b lg:border lg:rounded-2xl lg:overflow-hidden border-stone-200/70">
         <div className="px-3.5 lg:px-5 mb-2 lg:mb-3 flex items-center justify-between">
@@ -290,6 +315,8 @@ export const SalonProfilePage = () => {
           )}
           {filteredServices.map((service) => {
             const isInCart = cartItems.some((item) => item.id === service.id);
+            // Best live DB offer on this real service (same calculation as cart/checkout)
+            const deal = getBestOfferForService(service, salon._id || salon.id, state.offers || []);
 
             return (
               <article
@@ -308,12 +335,20 @@ export const SalonProfilePage = () => {
                       {formatDuration(service.duration)}
                     </span>
                     <span className="text-stone-300">•</span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-extrabold text-xs text-stone-900">₹{service.price}</span>
-                      {service.originalPrice && (
-                        <span className="text-[10px] text-stone-400 line-through">₹{service.originalPrice}</span>
-                      )}
-                    </div>
+                    {deal ? (
+                      <div className="flex items-baseline gap-1 flex-wrap">
+                        <span className="font-extrabold text-xs text-emerald-700">₹{deal.finalPrice}</span>
+                        <span className="text-[10px] text-stone-400 line-through">₹{deal.basePrice}</span>
+                        <span className="text-[9px] font-extrabold text-white bg-emerald-600 px-1.5 py-0.5 rounded">{deal.label}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-extrabold text-xs text-stone-900">₹{service.price}</span>
+                        {Number(service.originalPrice) > Number(service.price) && (
+                          <span className="text-[10px] text-stone-400 line-through">₹{service.originalPrice}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -348,6 +383,9 @@ export const SalonProfilePage = () => {
           })}
         </div>
       </section>
+
+      {/* Salon's real stylists + their chair + real rating (DB) */}
+      <SalonTeamSection salonId={salon._id || salon.id} />
 
       {/* Reviews — SRS §6.5 / §10.4 gap fix: customers could previously
           write a review but never read one for any salon. */}

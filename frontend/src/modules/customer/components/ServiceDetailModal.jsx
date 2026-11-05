@@ -99,10 +99,10 @@ export const ServiceDetailModal = () => {
       state.salons.find((s) => s.id === activeDetailService.salonId) || {
         id: activeDetailService.salonId || 'sal-1',
         name: activeDetailService.salonName || 'DrimStyle Partner Salon',
-        area: 'South Tukoganj, Indore',
+        area: activeDetailService.salonArea || activeDetailService.area || '',
         rating: 4.8,
         reviewsCount: 168,
-        distanceKm: 1.2,
+        distanceKm: null,
         hasInstantBooking: true,
         instantWaitMinutes: 15
       }
@@ -234,7 +234,7 @@ export const ServiceDetailModal = () => {
                       {activeDetailService.title || activeDetailService.name}
                     </h3>
                     <p className="text-[10px] text-stone-500 font-medium truncate">
-                      {salon.name} • {salon.area}
+                      {salon.name}{salon.area ? ` • ${salon.area}` : ''}
                     </p>
                   </div>
 
@@ -299,7 +299,7 @@ export const ServiceDetailModal = () => {
               {/* Hero Image Card */}
               <div className="relative w-full aspect-16/10 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200/80 shadow-xs shrink-0">
                 <img
-                  src={activeDetailService.image}
+                  src={activeDetailService.image || undefined}
                   alt={activeDetailService.title || activeDetailService.name}
                   className="w-full h-full object-cover"
                 />

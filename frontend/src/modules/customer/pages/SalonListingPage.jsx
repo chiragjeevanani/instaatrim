@@ -197,8 +197,12 @@ export const SalonListingPage = () => {
       {/* Top Bar with Search */}
       <header className="sticky top-0 lg:static z-30 bg-[#f8f4fb]/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none px-3.5 lg:px-0 pt-2 lg:pt-8 pb-2 lg:pb-4 border-b border-purple-100">
         <div className="flex items-center gap-2 mb-2 lg:mb-4">
-          <button onClick={() => navigate(-1)} aria-label="Go back" className="w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center text-stone-700 hover:bg-white/80 active:scale-95 cursor-pointer lg:hidden">
-            <ArrowLeft className="w-4 h-4 stroke-[2]" />
+          <button
+            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/customer'))}
+            aria-label="Go back"
+            className="w-9 h-9 lg:w-10 lg:h-10 -ml-1.5 lg:ml-0 rounded-full flex items-center justify-center text-stone-700 hover:bg-white/80 lg:bg-white lg:border lg:border-purple-100 lg:shadow-xs active:scale-95 cursor-pointer shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 lg:w-5 lg:h-5 stroke-[2]" />
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-[15px] lg:text-[26px] lg:leading-snug lg:tracking-tight font-bold text-stone-900 truncate">

@@ -72,7 +72,12 @@ export const isFirstBookingForCustomer = (state, customerId) =>
 // Resolves a booking's assigned station + staff into the display label the
 // salon panel used to hardcode as a literal string ("Chair 1 (Pooja)").
 export const stationLabelFor = (booking, stations, staff) => {
-  if (!booking.stationId) return 'Unassigned';
+  if (!booking.stationId) {
+    // customer picked a stylist at checkout → show that stylist's name
+    const picked = booking.staffId && staff.find((s) => s.id === booking.staffId || s._id === booking.staffId);
+    const name = picked?.name || booking.staffName;
+    return name ? `Stylist: ${name}` : 'Unassigned';
+  }
   const station = stations.find((s) => s.id === booking.stationId);
   if (!station) return 'Unassigned';
   const staffMember = staff.find((s) => s.id === station.staffId);
@@ -103,4 +108,14 @@ export const formatDuration = (d) => {
   const h = Math.floor(n / 60);
   const m = n % 60;
   return h ? `${h} hr${m ? ` ${m} min` : ''}` : `${m} min`;
+};
+
+// Salon's "category" is Men / Women / Unisex for new salons; very old salons saved a category DB id.
+// Never show a raw id — resolve it to the category name (DB), else show nothing.
+export const salonCategoryLabel = (salon, categories = []) => {
+  const raw = String(salon?.category || '').trim();
+  if (!raw) return '';
+  if (!/^[a-f0-9]{24}$/i.test(raw)) return raw;
+  const cat = (categories || []).find((c) => String(c.id || c._id) === raw);
+  return cat?.name || '';
 };

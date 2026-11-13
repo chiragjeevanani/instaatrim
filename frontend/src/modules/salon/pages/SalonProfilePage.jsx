@@ -25,10 +25,12 @@ import {
 import { motion } from 'framer-motion';
 import { SalonSupportModal } from '../components/SalonSupportModal';
 import { SalonNotificationSheet } from '../components/SalonNotificationSheet';
+import { salonCategoryLabel } from '../../../shared/store/selectors';
 
 export const SalonProfilePage = () => {
   const navigate = useNavigate();
-  const { salonProfile, metrics, logout, notifications = [] } = useSalon();
+  const { salonProfile, metrics, logout, notifications = [], categories: salonCats = [] } = useSalon();
+  const categoryLabel = salonCategoryLabel(salonProfile, salonCats);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
   const [isSupportInfoOpen, setIsSupportInfoOpen] = useState(false);
@@ -101,7 +103,7 @@ export const SalonProfilePage = () => {
             </div>
             <div className="min-w-0">
               <span className="text-[11px] font-bold text-rose-200 block leading-tight truncate">{salonProfile.name}</span>
-              <p className="text-[9.5px] text-stone-300 leading-tight">{salonProfile.verificationStatus} • {salonProfile.category} Salon</p>
+              <p className="text-[9.5px] text-stone-300 leading-tight">{salonProfile.verificationStatus}{categoryLabel ? ` • ${categoryLabel} Salon` : ''}</p>
             </div>
           </div>
           <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />

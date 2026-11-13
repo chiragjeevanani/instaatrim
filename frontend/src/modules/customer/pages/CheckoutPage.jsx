@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { StylistPicker } from '../components/StylistPicker';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
@@ -43,6 +44,10 @@ export const CheckoutPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [showLoginRequired, setShowLoginRequired] = useState(false); // shown only after a guest taps Confirm
+  // Real logged-in DB customer (not a demo / fallback record)
+  const isRealCustomer = Boolean(
+    user?.isLoggedIn && /^[a-f0-9]{24}$/i.test(String(user?.id || '')) && localStorage.getItem('instaatrim_token')
+  );
   const [holdExpired, setHoldExpired] = useState(false);
   const [showSuccessTick, setShowSuccessTick] = useState(false);
 
@@ -51,19 +56,17 @@ export const CheckoutPage = () => {
   // Customer Visible Discount = 40% of bill value
   // Instant Discount = 50% of visible discount (i.e. 20% of bill value)
   // Wallet Cashback Issued = 50% of visible discount (i.e. 20% of bill value)
+  // All amounts come from cartSummary (admin Platform Settings in DB) — same as cart & booking
   const billValue = cartSummary.subtotal || 0;
-  const visibleDiscount = Math.round(billValue * 0.40);
-  const instantDiscount = Math.round(visibleDiscount * 0.50);
-  const walletCashbackIssued = Math.round(visibleDiscount * 0.50);
-
-  // Wallet Redeemed: 50% of available wallet balance can be redeemed
-  const walletBalance = Number(user?.wallet_balance) || 0;
+  const instantDiscount = cartSummary.instantDiscount || 0;
+  const walletCashbackIssued = cartSummary.walletCashback || 0;
+  const walletBalance = cartSummary.walletBalance || 0;
   const couponDiscount = cartSummary.discount || 0;
   const convenienceFee = cartSummary.convenienceFee || 0;
-  const walletRedeemed = Math.min(Math.round(walletBalance * 0.50), Math.max(0, billValue - instantDiscount - couponDiscount));
+  const walletRedeemed = cartSummary.walletRedeemed || 0;
   const walletCashbackLeft = Math.max(0, walletBalance - walletRedeemed);
   const totalDirectDiscount = instantDiscount + walletRedeemed + couponDiscount;
-  const calculatedPayable = Math.max(0, billValue - instantDiscount - couponDiscount - walletRedeemed + convenienceFee);
+  const calculatedPayable = cartSummary.payableBeforeTax || 0;
   const newEndingWalletBalance = walletCashbackLeft + walletCashbackIssued;
 
   if (showSuccessTick) {
@@ -130,7 +133,8 @@ export const CheckoutPage = () => {
         paymentStatus,
         transactionId,
         holdId: bookingSlot.holdId,
-        staffId: bookingSlot.staffId,
+        staffId: bookingSlot.staffId || null,
+        staffName: bookingSlot.staffName || null,
         finalPaid: calculatedPayable + (cartSummary.taxAmount || 0)
       });
 
@@ -154,8 +158,9 @@ export const CheckoutPage = () => {
   const handlePayAndConfirm = async () => {
     setPaymentError(null);
 
-    // Guest → show validation next to the button (must login / sign up first)
-    if (!user?.isLoggedIn) {
+    // Guest / demo record → show validation next to the button (must login / sign up first).
+    // Checked BEFORE payment so money is never taken for a booking that can't be saved.
+    if (!isRealCustomer) {
       setShowLoginRequired(true);
       return;
     }
@@ -354,6 +359,9 @@ export const CheckoutPage = () => {
           </div>
         </div>
 
+        {/* Choose Stylist — salon's staff from DB */}
+        <StylistPicker cartItem={cartItems[0]} />
+
         {/* Payment Method Selector */}
         <div className="bg-white rounded-2xl p-3 border border-stone-200 shadow-xs space-y-2">
           <span className="text-[10.5px] font-bold text-stone-400 uppercase tracking-wider block">
@@ -415,7 +423,7 @@ export const CheckoutPage = () => {
           </div>
 
           <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
-            <span>Instant Discount (50% of Promo)</span>
+            <span>Instant Discount ({cartSummary.instantDiscountPercent}%)</span>
             <span>-₹{instantDiscount}</span>
           </div>
 
@@ -460,20 +468,31 @@ export const CheckoutPage = () => {
           <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2.5 mt-2 space-y-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-amber-900 font-bold flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-600" /> Wallet Cashback Earned:
+                <Sparkles className="w-3 h-3 text-amber-600" /> Wallet Cashback (after service):
               </span>
               <span className="font-black text-amber-700">+₹{walletCashbackIssued}</span>
             </div>
             <div className="flex items-center justify-between text-[10px] text-amber-800 pt-0.5 border-t border-amber-200/60">
-              <span>Remaining Wallet Balance after booking:</span>
-              <span className="font-bold">₹{newEndingWalletBalance}</span>
+              <span>Wallet balance after booking:</span>
+              <span className="font-bold">₹{walletCashbackLeft}</span>
             </div>
+            {walletCashbackIssued > 0 && (
+              <div className="flex items-center justify-between text-[10px] text-amber-800">
+                <span>Wallet balance after service is completed:</span>
+                <span className="font-bold">₹{newEndingWalletBalance}</span>
+              </div>
+            )}
+            {walletCashbackIssued > 0 && (
+              <p className="text-[9.5px] text-amber-700/90 leading-snug">
+                Cashback is added to your wallet once the salon marks your service as completed. Not given if the booking is cancelled.
+              </p>
+            )}
           </div>
         </div>
 
         {/* Pay action: fixed bottom bar on mobile, inline under the price summary on desktop */}
         <div className="fixed lg:static bottom-0 left-0 right-0 w-full max-w-[480px] lg:max-w-none mx-auto px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:p-0 bg-white/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t lg:border-0 border-stone-200 z-40 shadow-soft-up lg:shadow-none box-border">
-          {showLoginRequired && !user?.isLoggedIn && (
+          {showLoginRequired && !isRealCustomer && (
             <p className="mb-2 text-[11.5px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-center">
               Please{' '}
               <button

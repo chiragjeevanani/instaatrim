@@ -153,9 +153,16 @@ export const AdminCategoryRequests = () => {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[12px] font-bold text-white">
-                    {r.type === 'subcategory' ? 'New sub-category' : 'New category'}:{' '}
+                    {r.type === 'subcategory' ? 'Missing service' : 'New category'}:{' '}
                     <span className="text-purple-300">{r.requestedName}</span>
-                    {r.type === 'subcategory' && <span className="text-stone-400 font-normal"> in {r.categoryName}</span>}
+                    {r.type === 'subcategory' && (
+                      <span className="text-stone-400 font-normal">
+                        {' '}in {r.categoryName}
+                        {r.groupName ? ` › ${r.groupName}` : ''}
+                        {Number(r.duration) > 0 ? ` • ${r.duration} min` : ''}
+                        {Number(r.price) > 0 ? ` • ₹${r.price}` : ''}
+                      </span>
+                    )}
                   </p>
                   <p className="text-[10.5px] text-stone-400 flex items-center gap-1 mt-0.5">
                     <Store className="w-3 h-3" /> {r.salonName || 'Salon'} • {new Date(r.createdAt).toLocaleString()}

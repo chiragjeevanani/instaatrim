@@ -6,16 +6,21 @@ import { Clock, Plus, Check, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SafeImage } from '../../../shared/components/SafeImage';
 import { formatDuration } from '../../../shared/store/selectors';
+import { categoriesForHomeSection, serviceInHomeSection } from '../../../shared/lib/homeSections';
 
 export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
   const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail, currentLocation } = useCustomer();
   const { state } = useAppData();
   const navigate = useNavigate();
 
+  // Categories the admin marked "Featured Service Packages" (DB)
+  const featuredCategories = categoriesForHomeSection(state.categories, 'featured');
+
   // Curate highlighted service packages & treatments
   const featuredServices = (state.services || [])
     .filter((s) => {
       if (!s.isActive) return false;
+      if (!serviceInHomeSection(s, featuredCategories)) return false;
       const salon = state.salons.find((sal) => sal.id === s.salonId);
       if (!salon?.isVerified || salon?.verificationStatus !== 'Live') return false;
 

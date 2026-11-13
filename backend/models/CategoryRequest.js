@@ -12,8 +12,12 @@ const categoryRequestSchema = new mongoose.Schema({
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
     categoryName: { type: String, default: '' },
 
-    // Requested sub-category name, or new category name
+    // Requested service name (type 'subcategory'), or new category name (type 'category')
     requestedName: { type: String, required: true, trim: true },
+    // For a missing service: which sub-category it belongs to (e.g. "Haircut") + suggested time & price
+    groupName: { type: String, default: '', trim: true },
+    duration: { type: Number, default: null },  // minutes
+    price: { type: Number, default: 0 },
     // For type 'category': initial sub-services the salon suggests
     tags: [{ type: String, trim: true }],
     gender: { type: String, enum: ['men', 'women', 'unisex'], default: 'unisex' },

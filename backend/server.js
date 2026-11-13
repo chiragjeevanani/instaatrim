@@ -126,6 +126,22 @@ const mongoose = require('mongoose');
 let serverInstance;
 
 connectDB().then(() => {
+    // One-time: load the DrimStyle Master Service Catalog (category → sub-category → services)
+    // into DB if no category has it yet. Never overwrites once present; admin data stays.
+    (async () => {
+        try {
+            const Category = require('./models/Category');
+            const hasCatalog = await Category.exists({ 'subcategoryGroups.0': { $exists: true } });
+            if (!hasCatalog) {
+                const { run } = require('./scripts/seedServiceCatalog');
+                const r = await run({ apply: true, quiet: true });
+                logger.info(`Master service catalog loaded into DB (updated ${r.updated}, created ${r.created} categories)`);
+            }
+        } catch (e) {
+            logger.error({ err: e.message }, 'Master service catalog auto-load failed');
+        }
+    })();
+
     const server = http.createServer(app);
     serverInstance = server;
     

@@ -164,6 +164,101 @@ export const AddServicePage = () => {
     if (!name.trim()) setName(tag);
   };
 
+  // ── Master catalog picker (DB): category → sub-category → services (suggested time & price) ──
+  const [pickerCatName, setPickerCatName] = useState('');
+  const [pickerGroupName, setPickerGroupName] = useState('');
+  // Every DB category is searchable. Categories without sub-categories show their tags as
+  // services under one implicit "Services" group (no suggested time / price).
+  const catalogCategories = useMemo(
+    () =>
+      dbCategoryList.map((c) => {
+        if (Array.isArray(c.subcategoryGroups) && c.subcategoryGroups.length > 0) return c;
+        const tags = Array.isArray(c.serviceCategories) ? c.serviceCategories.filter(Boolean) : [];
+        return {
+          ...c,
+          subcategoryGroups: tags.length
+            ? [{ name: 'Services', isFallback: true, services: tags.map((n) => ({ name: n, duration: null, price: 0 })) }]
+            : []
+        };
+      }),
+    [dbCategoryList]
+  );
+
+  // Search the catalog while typing the title:
+  //  "hair"      → Hair (shows its sub-categories)
+  //  "haircut"   → Hair → Haircut (shows its services)
+  //  "keratin"   → Hair → Hair Treatments (service highlighted)
+  useEffect(() => {
+    const q = name.trim().toLowerCase();
+    // Title cleared → hide the sub-category / services picker
+    if (!q) {
+      if (pickerCatName) setPickerCatName('');
+      if (pickerGroupName) setPickerGroupName('');
+      return;
+    }
+    if (q.length < 2) return;
+    const labels = (c) => [c.name, c.shortName].filter(Boolean).map((n) => n.trim().toLowerCase());
+    const open = (catName, groupName = '') => {
+      // only one group (e.g. tags-only category) → open it directly
+      const groups = catalogCategories.find((c) => c.name === catName)?.subcategoryGroups || [];
+      const g = groupName || (groups.length === 1 ? groups[0].name : '');
+      if (catName !== pickerCatName) setPickerCatName(catName);
+      if (g !== pickerGroupName) setPickerGroupName(g);
+    };
+
+    // 1) category name
+    const cat =
+      catalogCategories.find((c) => labels(c).includes(q)) ||
+      catalogCategories.find((c) => labels(c).some((n) => n.startsWith(q)));
+    if (cat) return open(cat.name);
+    if (q.length < 3) return;
+
+    // 2) sub-category name
+    for (const c of catalogCategories) {
+      const g = c.subcategoryGroups.find((x) => x.name.toLowerCase().startsWith(q));
+      if (g) return open(c.name, g.name);
+    }
+    // 3) service name — exact first, then partial
+    for (const exact of [true, false]) {
+      for (const c of catalogCategories) {
+        for (const g of c.subcategoryGroups) {
+          if (g.services.some((s) => (exact ? s.name.toLowerCase() === q : s.name.toLowerCase().includes(q)))) {
+            return open(c.name, g.name);
+          }
+        }
+      }
+    }
+    // no catalog match → manual entry; keep whatever picker was open
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, catalogCategories]);
+
+  // Category chips are removed — the service's category follows the catalog category the partner searched
+  useEffect(() => {
+    if (pickerCatName && pickerCatName !== category) {
+      setCategory(pickerCatName);
+      setSubcategory('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickerCatName]);
+
+  const pickerCat = catalogCategories.find((c) => c.name === pickerCatName) || null;
+  const pickerGroup = pickerCat?.subcategoryGroups.find((g) => g.name === pickerGroupName) || null;
+
+  // Select a catalog service → fills title, category, sub-category, duration & price (all editable)
+  const handlePickCatalogService = (svc) => {
+    if (!pickerCat || !pickerGroup) return;
+    setName(svc.name);
+    setAppliedTemplateName(svc.name);
+    setCategory(pickerCat.name);
+    // tags-only category: the tag itself is the sub-category
+    setSubcategory(pickerGroup.isFallback ? svc.name : pickerGroup.name);
+    if (Number(svc.duration) > 0) setDuration(formatDuration(svc.duration));
+    if (Number(svc.price) > 0) setPrice(String(svc.price));
+    if (!description.trim() && pickerCat.description) setDescription(pickerCat.description);
+    setShowAutofillSuggestions(false);
+    showToast(`"${svc.name}" selected — you can change price & time below`);
+  };
+
   // Clear / remove applied template details
   const handleClearTemplate = () => {
     setName('');
@@ -175,6 +270,8 @@ export const AddServicePage = () => {
     setPrice('');
     setImage(null);
     setShowAutofillSuggestions(false);
+    setPickerCatName('');
+    setPickerGroupName('');
     showToast('Form reset.');
   };
 
@@ -442,14 +539,6 @@ export const AddServicePage = () => {
                       <span>Clear / Reset</span>
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setShowAutofillSuggestions((v) => !v)}
-                    className="text-[10px] font-semibold text-rose-900 hover:text-rose-950 flex items-center gap-1 cursor-pointer bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-full transition-colors"
-                  >
-                    <Sparkles className="w-2.5 h-2.5 text-rose-900" />
-                    <span>{showAutofillSuggestions ? 'Hide Templates' : '⚡ Auto-fill Templates'}</span>
-                  </button>
                 </div>
               </div>
 
@@ -478,100 +567,92 @@ export const AddServicePage = () => {
                 )}
               </div>
 
-              {/* Auto-fill Dropdown / Recommendation Chips */}
-              {showAutofillSuggestions && (
-                <div className="mt-2 bg-gradient-to-b from-purple-50/60 to-white border border-purple-200/80 rounded-2xl p-2.5 shadow-sm space-y-1.5 animate-in fade-in duration-150">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-bold text-rose-950 uppercase tracking-wider flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-rose-900" /> Auto-fill from DrimStyle Catalog
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowAutofillSuggestions(false)}
-                      className="text-[10px] text-stone-400 hover:text-stone-700"
-                    >
-                      Close
-                    </button>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1 divide-y divide-purple-100/50">
-                    {matchingTemplates.length === 0 && (
-                      <p className="text-[10.5px] text-stone-500 px-1 py-2 leading-snug">
-                        {DYNAMIC_TEMPLATES.length === 0
-                          ? 'No catalog services yet — type your service title manually.'
-                          : `No catalog match for "${name}". Continue typing to add it manually.`}
-                      </p>
-                    )}
-                    {matchingTemplates.map((tmpl, idx) => (
-                      <button
-                        type="button"
-                        key={idx}
-                        onClick={() => handleApplyTemplate(tmpl)}
-                        className="w-full text-left p-2 rounded-xl hover:bg-purple-100/60 active:scale-[0.99] transition-all flex items-center justify-between group cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-stone-900 group-hover:text-rose-950 truncate">
-                              {tmpl.name}
-                            </p>
-                            <p className="text-[9.5px] text-stone-500 truncate">
-                              {tmpl.category}
-                              {tmpl.isOwn && <span className="text-emerald-700 font-semibold"> • Your menu</span>}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0 pl-2">
-                          <span className="text-[10px] font-bold text-rose-900 bg-white border border-rose-200 px-2 py-0.5 rounded-md shadow-2xs group-hover:bg-rose-900 group-hover:text-white transition-colors">
-                            Apply
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Category Pills Selector */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider">
-                  Category <span className="text-rose-600">*</span>
-                </label>
-                <span className="text-[10px] font-semibold text-rose-900">{category}</span>
-              </div>
-              {availableCategories.length === 0 ? (
-                <p className="text-[10.5px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                  No categories available yet. Please ask DrimStyle admin to add service categories.
-                </p>
-              ) : (
+            {/* Master catalog picker (DB): sub-categories → services of the typed category */}
+            {pickerCat && (
+              <div className="rounded-2xl border border-purple-200/80 bg-purple-50/40 p-3 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10.5px] font-bold text-rose-950 uppercase tracking-wider">
+                    {pickerCat.name}
+                    {pickerCat.subcategoryGroups.length > 1 || (pickerCat.subcategoryGroups[0] && !pickerCat.subcategoryGroups[0].isFallback)
+                      ? ' — choose a sub-category'
+                      : ' — services'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickerCatName('');
+                      setPickerGroupName('');
+                    }}
+                    className="text-[10px] text-stone-400 hover:text-stone-700 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+
                 <div className="flex flex-wrap gap-1.5">
-                  {availableCategories.map((cat) => {
-                    const isSelected = category === cat;
-                    const isOwn = cat.trim().toLowerCase() === salonCategoryName.toLowerCase();
+                  {pickerCat.subcategoryGroups.length === 0 && (
+                    <p className="text-[10.5px] text-stone-500">No services listed in this category yet — type your service name above.</p>
+                  )}
+                  {pickerCat.subcategoryGroups.length > 1 && pickerCat.subcategoryGroups.map((g) => {
+                    const isSel = pickerGroupName === g.name;
                     return (
                       <button
                         type="button"
-                        key={cat}
-                        onClick={() => {
-                          if (cat !== category) setSubcategory('');
-                          setCategory(cat);
-                        }}
-                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${isSelected
-                          ? 'bg-rose-900 text-white border-rose-900 shadow-2xs scale-[1.02]'
-                          : 'bg-[#faf7fc] text-stone-600 border-purple-100 hover:bg-stone-100'
+                        key={g.name}
+                        onClick={() => setPickerGroupName(isSel ? '' : g.name)}
+                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${isSel
+                          ? 'bg-rose-900 text-white border-rose-900 shadow-2xs'
+                          : 'bg-white text-stone-700 border-purple-200 hover:border-purple-400'
                           }`}
                       >
-                        {cat}
-                        {isOwn && <span className={isSelected ? 'text-rose-200' : 'text-emerald-700'}> ★</span>}
+                        {g.name} <span className={isSel ? 'text-rose-200' : 'text-stone-400'}>({g.services.length})</span>
                       </button>
                     );
                   })}
                 </div>
-              )}
-            </div>
 
-            {/* Sub-service chips of the selected category (DB) — optional */}
-            {selectedCategoryTags.length > 0 && (
+                {pickerGroup && (
+                  <div className="bg-white rounded-xl border border-purple-100 divide-y divide-purple-50">
+                    {pickerGroup.services.map((svc) => {
+                      const q = name.trim().toLowerCase();
+                      const isPicked = q === svc.name.toLowerCase();
+                      const isSearchHit = !isPicked && q.length >= 3 && svc.name.toLowerCase().includes(q);
+                      return (
+                        <div key={svc.name} className={`flex items-center justify-between gap-2 px-3 py-2 ${isSearchHit ? 'bg-amber-50' : ''}`}>
+                          <div className="min-w-0">
+                            <p className="text-[11.5px] font-bold text-stone-900 truncate">{svc.name}</p>
+                            <p className="text-[10px] text-stone-500">
+                              {Number(svc.duration) > 0 ? formatDuration(svc.duration) : pickerGroup.isFallback ? 'Set your own time & price' : 'Multi-session'}
+                              {Number(svc.price) > 0 && <> • ₹{Number(svc.price).toLocaleString('en-IN')}</>}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handlePickCatalogService(svc)}
+                            className={`shrink-0 text-[10.5px] font-bold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${isPicked
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-white text-rose-900 border-rose-200 hover:bg-rose-900 hover:text-white'
+                              }`}
+                          >
+                            {isPicked ? 'Selected' : 'Select'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <p className="text-[9.5px] text-stone-500">
+                  Time &amp; price are DrimStyle suggestions — you can change them below. You can also type your own service name.
+                </p>
+              </div>
+            )}
+
+            {/* Sub-service chips of the selected category (DB) — only for categories without the
+                catalog hierarchy (those use the sub-category → services picker above) */}
+            {selectedCategoryTags.length > 0 && !catalogCategories.some((c) => c.name === category) && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider">

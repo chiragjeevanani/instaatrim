@@ -28,7 +28,6 @@ import { api } from '../../../shared/services/api';
 import { requestCurrentPosition, reverseGeocode, searchPlaces } from '../../../shared/lib/geo';
 import { requestFirebaseToken } from '../../../shared/lib/firebase';
 import { AuthBrandPanel } from '../../../shared/components/AuthBrandPanel';
-import { getCategorySuggestions, findCategoryByName } from '../../../shared/data/categoryCatalog';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -98,82 +97,12 @@ export const SalonRegistrationPage = () => {
     };
   });
 
-  // Smart autocomplete — exactly the same source & matching as Admin → Categories
-  // (shared catalog + live DB categories; DB wins when names match)
-  const categorySuggestions = useMemo(
-    () => getCategorySuggestions(formData.category, dbCategories),
-    [formData.category, dbCategories]
-  );
-
-  // Category (catalog or DB) whose name / short name / slug exactly matches the typed text
-  const selectedCategoryObj = useMemo(
-    () => findCategoryByName(formData.category, dbCategories),
-    [formData.category, dbCategories]
-  );
-
-  // Subcategory chips = tags of the matched category + any custom ones the partner added
-  const availableSubcategories = useMemo(() => {
-    const base = selectedCategoryObj?.tags || [];
-    const custom = (formData.subcategories || []).filter((s) => !base.includes(s));
-    return [...base, ...custom];
-  }, [selectedCategoryObj, formData.subcategories]);
-
-  const [customSubInput, setCustomSubInput] = useState('');
-
-  // Click a suggestion → auto-fill category + all its subcategories (same as admin "Apply")
-  const selectCategorySuggestion = (sug) => {
-    setFormData((prev) => ({
-      ...prev,
-      category: sug.name,
-      subcategories: [...(sug.tags || [])]
-    }));
-    setShowCategorySuggestions(false);
-    if (error) setError(null);
-  };
-
-  // Typing = manual entry. If text exactly matches a known category, its subcategories auto-load;
-  // if the text is changed away / cleared, those subcategories go away too.
-  const handleCategoryChange = (value) => {
-    setShowCategorySuggestions(true);
-    const match = findCategoryByName(value, dbCategories);
-    setFormData((prev) => {
-      if (!value.trim()) return { ...prev, category: value, subcategories: [] };
-      const prevMatch = findCategoryByName(prev.category, dbCategories);
-      let subs = prev.subcategories || [];
-      if (match && match.name !== prevMatch?.name) subs = [...(match.tags || [])];
-      else if (!match && prevMatch) subs = subs.filter((s) => !(prevMatch.tags || []).includes(s));
-      return { ...prev, category: value, subcategories: subs };
-    });
-    if (error) setError(null);
-  };
-
-  const addCustomSubcategories = () => {
-    const parts = customSubInput.split(',').map((s) => s.trim()).filter(Boolean);
-    if (!parts.length) return;
-    setFormData((prev) => {
-      const current = prev.subcategories || [];
-      const lower = current.map((s) => s.toLowerCase());
-      const fresh = parts.filter((p) => !lower.includes(p.toLowerCase()));
-      return { ...prev, subcategories: [...current, ...fresh] };
-    });
-    setCustomSubInput('');
-  };
-
+  // Salon is for: Men / Women / Unisex (saved as salon.category — used by the customer app's gender filter)
+  const SALON_FOR_OPTIONS = ['Men', 'Women', 'Unisex'];
   useEffect(() => {
-    api.categories.list({ onlyActive: true }).then((res) => {
-      // Only global categories (not ones assigned to a specific salon) are offered at onboarding
-      const cats = (res || []).filter((c) => !c.salonId || c.salonId === 'all');
-      setDbCategories(cats);
-      setFormData((prev) => {
-        // Drop the old hardcoded 'Unisex' default
-        if (prev.category === 'Unisex') return { ...prev, category: '', subcategories: [] };
-        const match = findCategoryByName(prev.category, cats);
-        if (match && !(prev.subcategories || []).length) {
-          return { ...prev, category: match.name, subcategories: [...(match.tags || [])] };
-        }
-        return prev;
-      });
-    });
+    // Old saved drafts may hold a business-category name → reset to empty so the partner picks again
+    setFormData((prev) => (SALON_FOR_OPTIONS.includes(prev.category) ? prev : { ...prev, category: '', subcategories: [] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -313,7 +242,7 @@ export const SalonRegistrationPage = () => {
       if (step === 1) {
         setError(
           !(formData.category || '').trim()
-            ? 'Please select or enter your business category.'
+            ? 'Please select whether your salon is for Men, Women or Unisex.'
             : 'Please fill all required partner contact details (10-digit mobile & 6+ char password).'
         );
       }
@@ -354,7 +283,7 @@ export const SalonRegistrationPage = () => {
         email: formData.email.trim(),
         password: formData.password,
         category: formData.category,
-        subcategories: formData.subcategories || [],
+        subcategories: [],
         city: formData.city,
         area: formData.area.trim(),
         address: formData.address.trim(),
@@ -577,171 +506,21 @@ export const SalonRegistrationPage = () => {
                       )}
                     </div>
 
-                    {/* Business Category — Smart Autocomplete (same as Admin → Categories) */}
+                    {/* Salon For — Men / Women / Unisex */}
                     <div>
-                      <div className="relative">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="text-[11px] font-bold text-stone-700">
-                            Business Category <span className="text-rose-600">*</span>
-                          </label>
-                          <span className="text-[10px] text-purple-700 font-semibold flex items-center gap-1 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-                            <Sparkles className="w-2.5 h-2.5 text-purple-600" /> Smart Autocomplete
-                          </span>
-                        </div>
-                        <div className="relative flex items-center">
-                          <input
-                            type="text"
-                            placeholder="e.g. Hair, Nails, Facial, Spa..."
-                            value={formData.category || ''}
-                            onFocus={() => setShowCategorySuggestions(true)}
-                            onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
-                            onChange={(e) => handleCategoryChange(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                setShowCategorySuggestions(false);
-                              }
-                            }}
-                            className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl pl-3.5 pr-8 py-2.5 text-stone-900 placeholder-stone-400 font-medium text-xs transition-all outline-none"
-                          />
-                          {formData.category && (
-                            <button
-                              type="button"
-                              onClick={() => handleCategoryChange('')}
-                              className="absolute right-2.5 text-stone-400 hover:text-stone-600"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Autocomplete Suggestions Dropdown */}
-                        {showCategorySuggestions && categorySuggestions.length > 0 && (
-                          <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white border border-stone-200 rounded-xl shadow-xl overflow-hidden divide-y divide-stone-100 max-h-60 overflow-y-auto">
-                            <div className="px-3 py-1.5 bg-stone-50 text-[10px] uppercase tracking-wider font-bold text-purple-700 flex items-center justify-between">
-                              <span>Related Suggestions</span>
-                              <span className="text-stone-400 font-normal">Click to auto-fill</span>
-                            </div>
-                            {categorySuggestions.map((sug, i) => (
-                              <div
-                                key={`${sug.slug || sug.name}-${i}`}
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  selectCategorySuggestion(sug);
-                                }}
-                                className="w-full text-left p-2.5 hover:bg-purple-50/70 transition-colors flex items-center justify-between group cursor-pointer"
-                              >
-                                <div className="min-w-0">
-                                  <div className="font-bold text-stone-900 group-hover:text-brand-maroon text-[12px] flex items-center gap-1.5">
-                                    <span className="truncate">{sug.name}</span>
-                                    {sug.slug && (
-                                      <span className="text-[9px] px-1.5 rounded-md bg-stone-100 text-stone-500 font-mono shrink-0">
-                                        /{sug.slug}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {sug.tags?.length > 0 && (
-                                    <p className="text-[10.5px] text-stone-500 mt-0.5 line-clamp-1">
-                                      {sug.tags.slice(0, 4).join(', ')}
-                                    </p>
-                                  )}
-                                </div>
-                                <span className="text-[10px] text-purple-700 opacity-0 group-hover:opacity-100 font-medium px-2 py-0.5 rounded bg-purple-100 transition-all shrink-0 ml-2">
-                                  Apply
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Subcategories: auto-filled from the selected category + custom additions */}
-                      {(formData.category || '').trim() && (
-                        <div className="p-2.5 rounded-xl bg-purple-50/50 border border-purple-200/70 space-y-2 mt-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-purple-900 flex items-center gap-1">
-                              <Tag className="w-2.5 h-2.5 text-purple-600" />
-                              Subcategories / Treatments Offered
-                            </span>
-                            {availableSubcategories.length > 0 && (
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => updateField('subcategories', [...availableSubcategories])}
-                                  className="text-[9px] text-brand-maroon hover:underline font-bold"
-                                >
-                                  Select All
-                                </button>
-                                <span className="text-stone-300">|</span>
-                                <button
-                                  type="button"
-                                  onClick={() => updateField('subcategories', [])}
-                                  className="text-[9px] text-stone-500 hover:underline font-medium"
-                                >
-                                  Clear
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          {availableSubcategories.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {availableSubcategories.map((sub) => {
-                                const isChecked = (formData.subcategories || []).includes(sub);
-                                return (
-                                  <button
-                                    key={sub}
-                                    type="button"
-                                    onClick={() => toggleSubcategory(sub)}
-                                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${isChecked
-                                      ? 'bg-brand-maroon text-white shadow-xs font-bold ring-1 ring-brand-maroon'
-                                      : 'bg-white text-stone-700 border border-purple-200/80 hover:border-purple-400'
-                                      }`}
-                                  >
-                                    <div
-                                      className={`w-3 h-3 rounded flex items-center justify-center text-[8px] ${isChecked ? 'bg-white text-brand-maroon' : 'border border-stone-300'
-                                        }`}
-                                    >
-                                      {isChecked && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                                    </div>
-                                    <span>{sub}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-[10px] text-stone-500">New category — add the treatments you offer below.</p>
-                          )}
-
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="text"
-                              placeholder="Add more (comma separated), e.g. Hair Spa, Keratin"
-                              value={customSubInput}
-                              onChange={(e) => setCustomSubInput(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  addCustomSubcategories();
-                                }
-                              }}
-                              className="flex-1 min-w-0 border border-purple-200 focus:border-brand-maroon bg-white rounded-lg px-2.5 py-1.5 text-stone-900 text-[10.5px] placeholder-stone-400 outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={addCustomSubcategories}
-                              disabled={!customSubInput.trim()}
-                              className="px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold bg-brand-maroon text-white disabled:opacity-40 shrink-0"
-                            >
-                              Add
-                            </button>
-                          </div>
-
-                          <p className="text-[9px] text-stone-400">
-                            Selected: {(formData.subcategories || []).length} of {availableSubcategories.length} subcategories
-                          </p>
-                        </div>
-                      )}
+                      <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                        Salon For <span className="text-rose-600">*</span>
+                      </label>
+                      <select
+                        value={formData.category || ''}
+                        onChange={(e) => updateField('category', e.target.value)}
+                        className="w-full border border-stone-300 focus:border-brand-maroon focus:ring-1 focus:ring-brand-maroon bg-white/95 rounded-xl px-3.5 py-2.5 text-stone-900 font-medium text-xs transition-all outline-none cursor-pointer"
+                      >
+                        <option value="" disabled>Select: Men / Women / Unisex</option>
+                        {SALON_FOR_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* Owner + Mobile */}

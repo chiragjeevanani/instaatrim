@@ -21,6 +21,7 @@ import { SalonStaffPage } from '../pages/SalonStaffPage';
 import { SalonReviewsPage } from '../pages/SalonReviewsPage';
 import { AppLegalPage } from '../../landing/AppLegalPage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../../../shared/services/api';
 
 // Routes reachable without a partner session — login and registration/onboarding, privacy policy
 const PUBLIC_PATHS = ['/salon/login', '/salon/onboarding', '/salon/register', '/salon/privacy-policy', '/salon/privacy', '/salon/terms'];
@@ -30,6 +31,36 @@ export const SalonRoutes = () => {
   const { toast, isAuthenticated, salonProfile } = useSalon();
 
   const isPublicPath = PUBLIC_PATHS.some((p) => location.pathname.startsWith(p));
+
+  // Partner logged in earlier (token saved) but the session is missing (refresh, closed tab,
+  // or another tab overwrote the shared store) → restore it from DB before deciding.
+  const hasSavedLogin = Boolean(
+    localStorage.getItem('instaatrim_partner_token') || localStorage.getItem('instaatrim_partner_refresh_token')
+  );
+  const [restoring, setRestoring] = React.useState(!isAuthenticated && hasSavedLogin);
+  React.useEffect(() => {
+    if (isAuthenticated || !hasSavedLogin) {
+      setRestoring(false);
+      return;
+    }
+    let alive = true;
+    setRestoring(true);
+    api.salons.restoreSession().finally(() => {
+      if (alive) setRestoring(false);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  if (restoring && !isPublicPath) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f4fb] font-sans w-full">
+        <div className="w-8 h-8 rounded-full border-2 border-purple-200 border-t-purple-600 animate-spin" />
+      </div>
+    );
+  }
 
   // The actual auth gate — previously every /salon/* route was reachable
   // by anyone with no credential check at all. An unauthenticated visitor

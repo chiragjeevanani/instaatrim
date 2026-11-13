@@ -5,26 +5,21 @@ import { Clock, Check, Sparkles, Plus, Minus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SafeImage } from '../../../shared/components/SafeImage';
 import { formatDuration } from '../../../shared/store/selectors';
+import { categoriesForHomeSection, serviceInHomeSection } from '../../../shared/lib/homeSections';
 
 export const TrendingServices = ({ genderFilter = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
   const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail, currentLocation } = useCustomer();
   const { state } = useAppData();
 
-  const filterTabs = useMemo(() => {
-    if (genderFilter === 'men') {
-      return ['All', 'Hair Studio', 'Beard', 'Grooming', 'Spa', 'Facial'];
-    }
-    if (genderFilter === 'women') {
-      return ['All', 'Hair Studio', 'Facial', 'Spa', 'Waxing', 'Mani-Pedi'];
-    }
-    return ['All', 'Hair Studio', 'Beard & Grooming', 'Facial', 'Spa', 'Waxing'];
-  }, [genderFilter]);
+  // Categories the admin marked "Trending Near You" (DB)
+  const trendingCategories = useMemo(() => categoriesForHomeSection(state.categories, 'trending'), [state.categories]);
 
   const trendingServices = useMemo(() => {
     return state.services
       .filter((s) => {
         if (!s.isActive) return false;
+        if (!serviceInHomeSection(s, trendingCategories)) return false;
         const salon = state.salons.find((sal) => sal.id === s.salonId);
         if (!salon?.isVerified || salon?.verificationStatus !== 'Live') return false;
 
@@ -82,14 +77,17 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
         if (a.isBoosted && b.isBoosted) return a.boostRank - b.boostRank;
         return 0;
       });
-  }, [state.services, state.salons, genderFilter, currentLocation]);
+  }, [state.services, state.salons, genderFilter, currentLocation, trendingCategories]);
+
+  // Filter tabs = the trending categories that actually have services here (DB)
+  const filterTabs = useMemo(
+    () => ['All', ...new Set(trendingServices.map((s) => s.category).filter(Boolean))],
+    [trendingServices]
+  );
 
   const filteredServices = trendingServices.filter((srv) => {
-    if (selectedFilter === 'All') return true;
-    if (selectedFilter === 'Beard & Grooming') {
-      return srv.category === 'Beard' || srv.category === 'Grooming';
-    }
-    return srv.category.toLowerCase().includes(selectedFilter.toLowerCase());
+    if (selectedFilter === 'All' || !filterTabs.includes(selectedFilter)) return true;
+    return srv.category === selectedFilter;
   });
 
   return (

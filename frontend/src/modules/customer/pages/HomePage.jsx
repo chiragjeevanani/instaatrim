@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TopBar } from '../components/TopBar';
+import { api } from '../../../shared/services/api';
 import { AudienceToggle } from '../components/AudienceToggle';
 import { TopAdCarousel } from '../components/TopAdCarousel';
 import { LiveOffersStrip } from '../components/LiveOffersStrip';
-import { CategoryGrid } from '../components/CategoryGrid';
 import { TrendingServices } from '../components/TrendingServices';
 import { FeaturedServicesShowcase } from '../components/FeaturedServicesShowcase';
 import { PromotedSalonsStrip } from '../components/PromotedSalonsStrip';
@@ -23,6 +23,11 @@ export const HomePage = () => {
 
   const navigate = useNavigate();
   const { applyCoupon, showToast } = useCustomer();
+
+  // Latest categories from DB → admin's "Trending Near You" / "Featured Service Packages" picks
+  useEffect(() => {
+    api.categories.list().catch(() => {});
+  }, []);
 
   const handleOpenAd = (ad) => {
     setSelectedAd(ad);
@@ -70,9 +75,6 @@ export const HomePage = () => {
             <HeroCarousel initialIndex={1} />
           </div>
         </div>
-
-        {/* 4. Core Categories (Immediate 1-tap entry point, filtered by active audience) */}
-        <CategoryGrid genderFilter={genderFilter} />
 
         {/* 4.5. Live Promotional Deals from Admin */}
         <LiveOffersStrip />

@@ -129,7 +129,15 @@ export function appReducer(state, action) {
       const incoming = Array.isArray(action.payload) ? action.payload : [];
       if (incoming.length === 0) return state;
 
-      const existing = [...(state.bookings || [])];
+      // drop duplicates already sitting in the store (same booking id twice)
+      const seen = new Set();
+      const existing = (state.bookings || []).filter((b) => {
+        const key = b.id || b._id;
+        if (!key) return true;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       for (const item of incoming) {
         const id = item.id || item._id;
         const idx = existing.findIndex((b) => (b.id && b.id === id) || (b._id && b._id === id));
@@ -142,7 +150,11 @@ export function appReducer(state, action) {
       return { ...state, bookings: existing };
     }
     case 'ADD_BOOKING': {
-      return { ...state, bookings: [action.payload, ...state.bookings] };
+      // Same booking can arrive twice (API response + socket 'booking_created' from the
+      // salon/admin tab) → replace the old copy instead of adding a duplicate.
+      const id = action.payload?.id || action.payload?._id;
+      const rest = id ? state.bookings.filter((b) => (b.id || b._id) !== id) : state.bookings;
+      return { ...state, bookings: [action.payload, ...rest] };
     }
     case 'UPDATE_BOOKING_STATUS': {
       const { bookingId, status, extra = {}, force = false } = action.payload;

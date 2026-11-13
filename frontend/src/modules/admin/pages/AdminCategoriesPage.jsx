@@ -81,9 +81,11 @@ export const AdminCategoriesPage = () => {
       shortName: '',
       slug: '',
       gender: 'unisex',
+      homeSection: '',
       salonId: 'all',
       salonName: 'All Salons (Global)',
       serviceCategoriesText: '',
+      subcategoryGroups: [],
       image: '',
       description: '',
       price: 0,
@@ -176,9 +178,11 @@ export const AdminCategoriesPage = () => {
       shortName: '',
       slug: '',
       gender: 'unisex',
+      homeSection: '',
       salonId: 'all',
       salonName: 'All Salons (Global)',
       serviceCategoriesText: '',
+      subcategoryGroups: [],
       image: '',
       description: '',
       price: 0,
@@ -206,8 +210,10 @@ export const AdminCategoriesPage = () => {
       shortName: category.shortName || category.name || '',
       slug: category.slug || '',
       gender: category.gender || 'unisex',
+      homeSection: category.homeSection || '',
       salonId: category.salonId ? (category.salonId._id || category.salonId.id || category.salonId) : 'all',
       salonName: category.salonName || 'All Salons (Global)',
+      subcategoryGroups: Array.isArray(category.subcategoryGroups) ? category.subcategoryGroups : [],
       serviceCategoriesText: Array.isArray(category.serviceCategories)
         ? category.serviceCategories.join(', ')
         : category.serviceCategories || '',
@@ -282,6 +288,7 @@ export const AdminCategoriesPage = () => {
   // Submit Modal
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const formEl = e.currentTarget;
     if (!formData.name.trim()) {
       setFormError('Category name is required.');
       return;
@@ -313,11 +320,23 @@ export const AdminCategoriesPage = () => {
 
     payload.append('slug', slug);
     payload.append('gender', formData.gender);
+    payload.append('homeSection', formData.homeSection || '');
     payload.append('salonId', formData.salonId || 'all');
     payload.append('salonName', formData.salonName || 'All Salons (Global)');
     
     const serviceCategories = rawServices.length ? rawServices : [formData.name.trim()];
     payload.append('serviceCategories', JSON.stringify(serviceCategories));
+
+    // Sub-category → services (catalog for salons' Add / Edit Service). Empty rows are dropped.
+    const cleanGroups = (formData.subcategoryGroups || [])
+      .map((g) => ({
+        name: String(g.name || '').trim(),
+        services: (g.services || [])
+          .map((sv) => ({ name: String(sv.name || '').trim(), duration: Number(sv.duration) || null, price: Number(sv.price) || 0 }))
+          .filter((sv) => sv.name)
+      }))
+      .filter((g) => g.name);
+    payload.append('subcategoryGroups', JSON.stringify(cleanGroups));
     
     payload.append('description', formData.description.trim());
     payload.append('price', formData.price || 0);
@@ -365,6 +384,8 @@ export const AdminCategoriesPage = () => {
       setModalOpen(false);
     } catch (err) {
       setFormError(err.message || 'An error occurred while saving.');
+      // show the message (e.g. "already added") at the top of the form
+      formEl?.scrollTo?.({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSubmitting(false);
     }
@@ -882,6 +903,25 @@ export const AdminCategoriesPage = () => {
                 </div>
               </div>
 
+              {/* Customer home page section (DB) */}
+              <div>
+                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
+                  Show on Customer Home Page
+                </label>
+                <select
+                  value={formData.homeSection || ''}
+                  onChange={(e) => setFormData({ ...formData, homeSection: e.target.value })}
+                  className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-purple-500"
+                >
+                  <option value="">None (don't show on home page)</option>
+                  <option value="trending">Trending Near You</option>
+                  <option value="featured">Featured Service Packages</option>
+                </select>
+                <p className="text-[10.5px] text-stone-500 mt-1">
+                  This category's services appear in the selected home section — in all salons, or only in the salon chosen above.
+                </p>
+              </div>
+
               {/* Service Taxonomies Mapping */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
@@ -897,6 +937,109 @@ export const AdminCategoriesPage = () => {
                 <p className="text-[10px] text-stone-500 mt-1">
                   Salon partners can match these specific treatment tags under this umbrella category.
                 </p>
+              </div>
+
+              {/* Sub-categories → services (name, time, price) — shown to salons in Add / Edit Service */}
+              <div className="rounded-xl border border-[#2d2d42] bg-[#101018] p-3 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[11px] font-bold text-stone-300 uppercase tracking-wider">Sub-categories &amp; Services</p>
+                    <p className="text-[10px] text-stone-500">e.g. Haircut → Men&apos;s Haircut (30 min, ₹300). Salons pick these in Add / Edit Service.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        subcategoryGroups: [...(prev.subcategoryGroups || []), { name: '', services: [{ name: '', duration: 30, price: '' }] }]
+                      }))
+                    }
+                    className="shrink-0 text-[10.5px] font-bold text-purple-300 hover:text-white border border-purple-500/40 px-2.5 py-1 rounded-lg cursor-pointer"
+                  >
+                    + Add sub-category
+                  </button>
+                </div>
+
+                {(formData.subcategoryGroups || []).length === 0 && (
+                  <p className="text-[10.5px] text-stone-500">No sub-categories yet. Salons will see this category&apos;s tags as services.</p>
+                )}
+
+                {(formData.subcategoryGroups || []).map((g, gi) => {
+                  const setGroups = (fn) =>
+                    setFormData((prev) => ({ ...prev, subcategoryGroups: fn([...(prev.subcategoryGroups || [])]) }));
+                  const updateGroup = (patch) => setGroups((arr) => { arr[gi] = { ...arr[gi], ...patch }; return arr; });
+                  const updateService = (si, patch) =>
+                    updateGroup({ services: (g.services || []).map((sv, i) => (i === si ? { ...sv, ...patch } : sv)) });
+                  return (
+                    <div key={gi} className="rounded-lg border border-[#262638] p-2.5 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Sub-category name (e.g. Haircut)"
+                          value={g.name || ''}
+                          onChange={(e) => updateGroup({ name: e.target.value })}
+                          className="flex-1 bg-[#14141e] border border-[#2d2d42] rounded-lg px-2.5 py-1.5 text-[11.5px] text-white font-semibold placeholder-stone-600 focus:outline-none focus:border-purple-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setGroups((arr) => arr.filter((_, i) => i !== gi))}
+                          className="text-[10.5px] text-red-400 hover:text-red-300 px-2 cursor-pointer"
+                          title="Remove sub-category"
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-1.5 text-[9.5px] text-stone-500 uppercase tracking-wider px-0.5">
+                        <span className="col-span-6">Service</span>
+                        <span className="col-span-2">Min</span>
+                        <span className="col-span-3">Price ₹</span>
+                      </div>
+                      {(g.services || []).map((sv, si) => (
+                        <div key={si} className="grid grid-cols-12 gap-1.5 items-center">
+                          <input
+                            type="text"
+                            placeholder="e.g. Men's Haircut"
+                            value={sv.name || ''}
+                            onChange={(e) => updateService(si, { name: e.target.value })}
+                            className="col-span-6 bg-[#14141e] border border-[#2d2d42] rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
+                          />
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="30"
+                            value={sv.duration ?? ''}
+                            onChange={(e) => updateService(si, { duration: e.target.value })}
+                            className="col-span-2 bg-[#14141e] border border-[#2d2d42] rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="300"
+                            value={sv.price ?? ''}
+                            onChange={(e) => updateService(si, { price: e.target.value })}
+                            className="col-span-3 bg-[#14141e] border border-[#2d2d42] rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-stone-600 focus:outline-none focus:border-purple-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateGroup({ services: (g.services || []).filter((_, i) => i !== si) })}
+                            className="col-span-1 text-stone-500 hover:text-red-400 text-sm cursor-pointer"
+                            title="Remove service"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => updateGroup({ services: [...(g.services || []), { name: '', duration: 30, price: '' }] })}
+                        className="text-[10.5px] font-semibold text-purple-300 hover:text-white cursor-pointer"
+                      >
+                        + Add service
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Specific salon chosen → optionally create that salon's services (price per sub-category) */}

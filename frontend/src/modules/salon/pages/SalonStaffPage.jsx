@@ -474,8 +474,12 @@ export const SalonStaffPage = () => {
                   <label className="block text-stone-600 font-semibold mb-1.5">
                     Skills &amp; Service Categories
                   </label>
+                  {categories.length === 0 && (
+                    <p className="text-[10.5px] text-stone-500">No categories yet — DrimStyle admin will add them soon.</p>
+                  )}
                   <div className="flex flex-wrap gap-1.5">
-                    {(categories.length > 0 ? categories.map(c => c.name) : ['Hair Studio', 'Nails']).map(
+                    {/* Only DB categories — no hardcoded fallback names */}
+                    {categories.map((c) => c.name).filter(Boolean).map(
                       (cat) => {
                         const isSelected = formData.serviceCategories.includes(cat);
                         return (

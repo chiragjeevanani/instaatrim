@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Send
 } from 'lucide-react';
+import { salonCategoryLabel } from '../../../shared/store/selectors';
 
 // The salon's public-facing listing — what a customer sees on the
 // customer app's SalonProfilePage. Reachable from the owner's Account
@@ -26,7 +27,7 @@ import {
 // SalonProfilePage.jsx, the actual owner account hub).
 export const SalonBusinessProfilePage = () => {
   const navigate = useNavigate();
-  const { salonProfile, salonId, setSalonProfile, showToast } = useSalon();
+  const { salonProfile, salonId, setSalonProfile, showToast, categories: salonCats = [] } = useSalon();
   const { state } = useAppData();
 
   const [isEditingHours, setIsEditingHours] = useState(false);
@@ -107,7 +108,7 @@ export const SalonBusinessProfilePage = () => {
                   {salonProfile.name}
                 </h2>
                 <p className="text-[10.5px] text-stone-400 mt-0.5 font-normal">
-                  Owner: {salonProfile.ownerName} • {salonProfile.category} Salon
+                  Owner: {salonProfile.ownerName}{salonCategoryLabel(salonProfile, salonCats) ? ` • ${salonCategoryLabel(salonProfile, salonCats)} Salon` : ''}
                 </p>
               </div>
 

@@ -156,6 +156,47 @@ export const BookingConfirmationPage = () => {
             </div>
           )}
 
+          {/* Bill breakdown (from the saved booking) — explains service price vs amount paid */}
+          {booking && (() => {
+            const total = Number(booking.totalAmount) || 0;
+            const coupon = Number(booking.discountAmount) || 0;
+            const instant = Number(booking.instantDiscount) || 0;
+            const wallet = Number(booking.walletRedeemed) || 0;
+            const paid = Number(booking.finalPaid ?? total) || 0;
+            const taxesFees = Math.max(0, Math.round(paid - (total - coupon - instant - wallet)));
+            const rows = [
+              { label: 'Service total', value: `₹${total}` },
+              instant > 0 && { label: 'Instant discount', value: `−₹${instant}`, green: true },
+              coupon > 0 && { label: `Coupon${booking.couponApplied ? ` (${booking.couponApplied})` : ''}`, value: `−₹${Math.round(coupon)}`, green: true },
+              wallet > 0 && { label: 'Wallet used', value: `−₹${wallet}`, green: true },
+              taxesFees > 0 && { label: 'Taxes & fees', value: `+₹${taxesFees}` }
+            ].filter(Boolean);
+            if (rows.length < 2) return null;
+            return (
+              <div className="pt-2 border-t border-stone-100 space-y-1">
+                {rows.map((r) => (
+                  <div key={r.label} className={`flex justify-between text-[11px] ${r.green ? 'text-emerald-700' : 'text-stone-600'}`}>
+                    <span>{r.label}</span>
+                    <span className="font-semibold">{r.value}</span>
+                  </div>
+                ))}
+                {Number(booking.walletCashback) > 0 && (
+                  <div className="flex justify-between text-[11px] text-amber-700">
+                    <span>
+                      Wallet cashback{' '}
+                      {booking.cashbackCredited
+                        ? '(credited ✓)'
+                        : booking.status === 'Cancelled' || booking.status === 'No-Show' || booking.status === 'No Show'
+                        ? '(not applicable — booking cancelled)'
+                        : '(added after service is completed)'}
+                    </span>
+                    <span className="font-semibold">+₹{booking.walletCashback}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Paid Summary */}
           <div className="pt-2 border-t border-stone-100 flex justify-between items-center text-xs">
             <div>

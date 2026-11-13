@@ -38,6 +38,9 @@ export const AdminPlatformSettingsPage = () => {
     referralBonusReferee: 100,
     minPayoutThreshold: 1000,
     cancellationFreeHours: 1,
+    instantDiscountPercent: 20,
+    walletCashbackPercent: 20,
+    walletRedeemPercent: 50,
     supportPhone: '1800-200-8811',
     supportEmail: 'support@drimstyle.com',
     supportTopics: [],
@@ -88,7 +91,10 @@ export const AdminPlatformSettingsPage = () => {
       referralBonusCustomer: Number(settingsForm.referralBonusCustomer),
       referralBonusReferee: Number(settingsForm.referralBonusReferee),
       minPayoutThreshold: Number(settingsForm.minPayoutThreshold),
-      cancellationFreeHours: Number(settingsForm.cancellationFreeHours)
+      cancellationFreeHours: Number(settingsForm.cancellationFreeHours),
+      instantDiscountPercent: Math.min(90, Math.max(0, Number(settingsForm.instantDiscountPercent) || 0)),
+      walletCashbackPercent: Math.min(90, Math.max(0, Number(settingsForm.walletCashbackPercent) || 0)),
+      walletRedeemPercent: Math.min(100, Math.max(0, Number(settingsForm.walletRedeemPercent) || 0))
     });
     setIsSavingSettings(false);
   };
@@ -209,6 +215,31 @@ export const AdminPlatformSettingsPage = () => {
                   />
                   <span className="text-[10px] text-stone-500 mt-0.5 block">Statutory tax charged to client (Set 0 for Zero Tax)</span>
                 </div>
+              </div>
+
+              {/* Customer booking rewards — used by cart, checkout & booking (set 0 to switch off) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { key: 'instantDiscountPercent', label: 'Instant Discount (% of bill)', max: 90, hint: 'Cut from the bill at checkout (0 = off)' },
+                  { key: 'walletCashbackPercent', label: 'Wallet Cashback (% of bill)', max: 90, hint: 'Credited to wallet after booking (0 = off)' },
+                  { key: 'walletRedeemPercent', label: 'Wallet Use Limit (% of balance)', max: 100, hint: 'Max wallet balance usable per booking' }
+                ].map((f) => (
+                  <div key={f.key}>
+                    <label className="block text-stone-400 font-semibold mb-1">{f.label}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={f.max}
+                      placeholder="0"
+                      value={settingsForm[f.key] ?? ''}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, [f.key]: e.target.value })}
+                      className={`w-full p-2.5 rounded-xl border outline-none font-bold ${
+                        isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
+                      }`}
+                    />
+                    <span className="text-[10px] text-stone-500 mt-0.5 block">{f.hint}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

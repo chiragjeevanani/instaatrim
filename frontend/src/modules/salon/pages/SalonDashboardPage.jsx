@@ -49,19 +49,27 @@ export const SalonDashboardPage = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [yieldAlert, setYieldAlert] = useState(null);
 
+  // Live empty-chair alert, calculated by the server from today's bookings + stations.
+  // Re-checked whenever this salon's bookings change, and every 10 minutes.
+  const bookingsKey = bookings.map((b) => `${b.id}:${b.status}:${b.dateKey}:${b.time}`).join('|');
   React.useEffect(() => {
-    if (salonProfile?.id) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+    if (!salonProfile?.id) return;
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
+    let alive = true;
+    const load = () =>
       fetch(`${apiBase}/salons/${salonProfile.id}/yield-alert`)
-        .then(res => res.json())
-        .then(json => {
-          if (json.success && json.data) {
-            setYieldAlert(json.data);
-          }
+        .then((res) => res.json())
+        .then((json) => {
+          if (alive && json.success) setYieldAlert(json.data || null);
         })
         .catch(console.error);
-    }
-  }, [salonProfile?.id]);
+    load();
+    const timer = setInterval(load, 10 * 60 * 1000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [salonProfile?.id, bookingsKey]);
 
   // Active bookings for today
   const activeBookings = bookings.filter(
@@ -246,11 +254,13 @@ export const SalonDashboardPage = () => {
                       Empty-Chair Yield Alert
                     </span>
                     <span className="text-[9px] bg-white/10 text-amber-300 font-bold px-1.5 py-0.5 rounded tracking-wider uppercase">
-                      AI Forecast
+                      Live
                     </span>
                   </div>
                   <p className="text-[11px] text-stone-300 font-normal leading-relaxed mt-1">
-                    Low walk-in traffic predicted from <span className="text-white font-medium">{yieldAlert.timeWindow}</span> today. {yieldAlert.idleStations} stations will sit idle.
+                    Few bookings from <span className="text-white font-medium">{yieldAlert.timeWindow}</span> today —{' '}
+                    {yieldAlert.idleStations}
+                    {yieldAlert.totalStations ? ` of ${yieldAlert.totalStations}` : ''} stations are still free. Fill them with a deal.
                   </p>
                 </div>
               </div>

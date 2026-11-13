@@ -17,6 +17,7 @@ import {
   Power
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { salonCategoryLabel } from '../../../shared/store/selectors';
 
 export const SalonTopBar = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export const SalonTopBar = () => {
     setInstantWaitMinutes,
     showToast
   } = useSalon();
+  const { categories: salonCats = [] } = useSalon();
 
   const isApproved = Boolean(salonProfile?.isVerified && salonProfile?.verificationStatus === 'Live');
 
@@ -159,7 +161,7 @@ export const SalonTopBar = () => {
                       {salonProfile.name}
                     </h2>
                     <p className="text-[10px] text-stone-500 truncate">
-                      {salonProfile.ownerName || 'Partner'} • {salonProfile.category}
+                      {salonProfile.ownerName || 'Partner'}{salonCategoryLabel(salonProfile, salonCats) ? ` • ${salonCategoryLabel(salonProfile, salonCats)}` : ''}
                     </p>
                     <div className="flex items-center gap-1 mt-0.5 text-[9.5px] font-semibold text-emerald-700">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

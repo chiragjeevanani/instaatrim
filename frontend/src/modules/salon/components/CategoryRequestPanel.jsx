@@ -15,12 +15,21 @@ const STATUS_STYLE = {
  */
 export const CategoryRequestPanel = ({ categories = [], currentCategory = '', suggestedName = '', showToast }) => {
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState('subcategory');
+  // Only "Request a new category" is offered now
+  const [type, setType] = useState('category');
   const [categoryId, setCategoryId] = useState('');
   const [requestedName, setRequestedName] = useState('');
   const [tags, setTags] = useState('');
   const [gender, setGender] = useState('unisex');
   const [note, setNote] = useState('');
+  // missing service: sub-category (existing / new) + suggested time & price
+  const [groupChoice, setGroupChoice] = useState('');
+  const [newGroupName, setNewGroupName] = useState('');
+  const [duration, setDuration] = useState('');
+  const [price, setPrice] = useState('');
+
+  const selectedCat = categories.find((c) => String(c.id || c._id) === String(categoryId)) || null;
+  const groupNames = (selectedCat?.subcategoryGroups || []).map((g) => g.name).filter(Boolean);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [myRequests, setMyRequests] = useState([]);
@@ -40,6 +49,10 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
     const cur = categories.find((c) => c.name === currentCategory) || categories[0];
     setCategoryId(cur ? String(cur.id || cur._id) : '');
     setRequestedName(suggestedName || '');
+    setGroupChoice('');
+    setNewGroupName('');
+    setDuration('');
+    setPrice('');
     setError('');
     setOpen(true);
   };
@@ -57,12 +70,20 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
       setError('Please choose the category.');
       return;
     }
+    const groupName = groupChoice === '__new' ? newGroupName.trim() : groupChoice;
+    if (type === 'subcategory' && groupChoice === '__new' && groupName.length < 2) {
+      setError('Please type the new sub-category name.');
+      return;
+    }
     setSubmitting(true);
     try {
       await api.categoryRequests.create({
         type,
         categoryId: type === 'subcategory' ? categoryId : undefined,
         requestedName: name,
+        groupName: type === 'subcategory' ? groupName : undefined,
+        duration: type === 'subcategory' ? Number(duration) || undefined : undefined,
+        price: type === 'subcategory' ? Number(price) || undefined : undefined,
         tags: type === 'category' ? tags : undefined,
         gender,
         note
@@ -70,6 +91,10 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
       showToast?.('Request sent to DrimStyle admin. You will be notified once reviewed.');
       setOpen(false);
       setRequestedName('');
+      setGroupChoice('');
+      setNewGroupName('');
+      setDuration('');
+      setPrice('');
       setTags('');
       setNote('');
       loadMine();
@@ -104,16 +129,20 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
       {open && (
         <div className="rounded-2xl border border-purple-200 bg-purple-50/40 p-3 space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold text-rose-950 uppercase tracking-wider">Request from DrimStyle Admin</span>
+            <span className="text-[10.5px] font-bold text-rose-950 uppercase tracking-wider">Service not in the list?</span>
             <button type="button" onClick={() => setOpen(false)} className="text-stone-400 hover:text-stone-700 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5">
+          <p className="text-[10.5px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 leading-snug">
+            ✅ You can add any service right now — just type its name in <b>Service Title</b> above and save.
+            Need a whole new category? Request it from DrimStyle below.
+          </p>
+
+          <div className="grid grid-cols-1 gap-1.5">
             {[
-              { val: 'subcategory', label: 'New sub-category', hint: 'e.g. Pedicure in Nails' },
-              { val: 'category', label: 'New category', hint: 'e.g. Tattoo & Piercing' }
+              { val: 'category', label: 'Request a new category', hint: 'e.g. Tattoo & Piercing' }
             ].map((opt) => (
               <button
                 key={opt.val}
@@ -132,8 +161,16 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
 
           {type === 'subcategory' && (
             <div>
-              <label className="text-[10px] font-semibold text-stone-700 block mb-1">Add it under category</label>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputCls}>
+              <label className="text-[10px] font-semibold text-stone-700 block mb-1">Category</label>
+              <select
+                value={categoryId}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setGroupChoice('');
+                  setNewGroupName('');
+                }}
+                className={inputCls}
+              >
                 {categories.map((c) => (
                   <option key={c.id || c._id} value={c.id || c._id}>
                     {c.name}
@@ -143,19 +180,55 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
             </div>
           )}
 
+          {type === 'subcategory' && groupNames.length > 0 && (
+            <div>
+              <label className="text-[10px] font-semibold text-stone-700 block mb-1">Sub-category</label>
+              <select value={groupChoice} onChange={(e) => setGroupChoice(e.target.value)} className={inputCls}>
+                <option value="">Not sure (admin will decide)</option>
+                {groupNames.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+                <option value="__new">+ New sub-category…</option>
+              </select>
+              {groupChoice === '__new' && (
+                <input
+                  type="text"
+                  maxLength={60}
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  placeholder="New sub-category name (e.g. Hair Extensions)"
+                  className={`${inputCls} mt-1.5`}
+                />
+              )}
+            </div>
+          )}
+
           <div>
             <label className="text-[10px] font-semibold text-stone-700 block mb-1">
-              {type === 'subcategory' ? 'Sub-category / service name' : 'Category name'} <span className="text-rose-600">*</span>
+              {type === 'subcategory' ? 'Service name' : 'Category name'} <span className="text-rose-600">*</span>
             </label>
             <input
               type="text"
               maxLength={60}
               value={requestedName}
               onChange={(e) => setRequestedName(e.target.value)}
-              placeholder={type === 'subcategory' ? 'e.g. Pedicure' : 'e.g. Tattoo & Piercing'}
+              placeholder={type === 'subcategory' ? 'e.g. Beard Color' : 'e.g. Tattoo & Piercing'}
               className={inputCls}
             />
           </div>
+
+          {type === 'subcategory' && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-semibold text-stone-700 block mb-1">Time (minutes, optional)</label>
+                <input type="number" min="5" max="720" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 30" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-stone-700 block mb-1">Price ₹ (optional)</label>
+                <input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. 400" className={inputCls} />
+              </div>
+            </div>
+          )}
 
           {type === 'category' && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -218,7 +291,7 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
                   <p className="text-[10.5px] font-semibold text-stone-800 truncate">
                     {r.requestedName}
                     <span className="text-stone-400 font-normal">
-                      {r.type === 'subcategory' ? ` in ${r.categoryName}` : ' (new category)'}
+                      {r.type === 'subcategory' ? ` in ${r.categoryName}${r.groupName ? ` › ${r.groupName}` : ''}` : ' (new category)'}
                     </span>
                   </p>
                   {r.adminNote && <p className="text-[9.5px] text-stone-500 truncate">Admin: {r.adminNote}</p>}

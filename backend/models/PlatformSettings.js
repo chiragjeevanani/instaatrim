@@ -8,6 +8,10 @@ const platformSettingsSchema = new mongoose.Schema({
     referralBonusReferee: { type: Number, default: 100 },
     minPayoutThreshold: { type: Number, default: 1000 },
     cancellationFreeHours: { type: Number, default: 1 },
+    // Customer booking rewards (admin-controlled; set 0 to switch off)
+    instantDiscountPercent: { type: Number, default: 20, min: 0, max: 90 }, // % of bill cut at checkout
+    walletCashbackPercent: { type: Number, default: 20, min: 0, max: 90 },  // % of bill credited to wallet after booking
+    walletRedeemPercent: { type: Number, default: 50, min: 0, max: 100 },   // max % of wallet balance usable per booking
     supportPhone: { type: String, default: '1800-200-8811' },
     supportEmail: { type: String, default: 'support@drimstyle.com' },
     supportTopics: { 

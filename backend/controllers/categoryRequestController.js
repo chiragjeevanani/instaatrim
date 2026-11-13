@@ -117,6 +117,10 @@ exports.createRequest = async (req, res) => {
             if ((cat.serviceCategories || []).some((t) => norm(t) === norm(requestedName))) {
                 return res.status(409).json({ success: false, message: `"${requestedName}" already exists in ${cat.name}. You can select it directly.` });
             }
+            const inGroups = (cat.subcategoryGroups || []).some((g) => (g.services || []).some((sv) => norm(sv.name) === norm(requestedName)));
+            if (inGroups) {
+                return res.status(409).json({ success: false, message: `"${requestedName}" already exists in ${cat.name}. You can select it directly.` });
+            }
             categoryId = cat._id;
             categoryName = cat.name;
         } else {
@@ -146,6 +150,10 @@ exports.createRequest = async (req, res) => {
             categoryId,
             categoryName,
             requestedName,
+            // missing service: sub-category + suggested time & price (optional)
+            groupName: type === 'subcategory' ? cleanName(req.body.groupName).slice(0, 60) : '',
+            duration: type === 'subcategory' && Number(req.body.duration) > 0 ? Math.min(720, Math.round(Number(req.body.duration))) : null,
+            price: type === 'subcategory' && Number(req.body.price) > 0 ? Math.round(Number(req.body.price)) : 0,
             tags,
             gender,
             note
@@ -207,8 +215,24 @@ exports.approveRequest = async (req, res) => {
             const exists = (resultCategory.serviceCategories || []).some((t) => norm(t) === norm(finalName));
             if (!exists) {
                 resultCategory.serviceCategories = [...(resultCategory.serviceCategories || []), finalName];
-                await resultCategory.save();
             }
+            // Also put it into the sub-category (so it shows in the salon's catalog picker).
+            // Category with sub-categories → requested sub-category, or "Other" if none was chosen.
+            const groups = (resultCategory.subcategoryGroups || []).map((g) => (g.toObject ? g.toObject() : g));
+            const wantedGroup = cleanName(req.body.groupName) || request.groupName || (groups.length ? 'Other' : '');
+            if (wantedGroup) {
+                let g = groups.find((x) => norm(x.name) === norm(wantedGroup));
+                if (!g) {
+                    g = { name: wantedGroup, services: [] };
+                    groups.push(g);
+                }
+                if (!(g.services || []).some((sv) => norm(sv.name) === norm(finalName))) {
+                    g.services = [...(g.services || []), { name: finalName, duration: request.duration || null, price: request.price || 0 }];
+                }
+                resultCategory.subcategoryGroups = groups;
+                resultCategory.markModified('subcategoryGroups');
+            }
+            await resultCategory.save();
         } else {
             const scope = req.body.scope === 'salon' ? 'salon' : 'global';
             const tags = parseTags(req.body.tags !== undefined ? req.body.tags : request.tags);

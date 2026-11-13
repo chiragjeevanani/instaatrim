@@ -22,6 +22,14 @@ const bookingSchema = new mongoose.Schema({
   ],
   totalAmount: { type: Number, required: true },
   discountAmount: { type: Number, default: 0 },
+  // Booking rewards (from Platform Settings at booking time)
+  instantDiscount: { type: Number, default: 0 },
+  walletRedeemed: { type: Number, default: 0 },
+  walletCashback: { type: Number, default: 0 },
+  // Cashback is credited only once the service is Completed; wallet used is refunded on Cancel / No-Show
+  cashbackPending: { type: Boolean, default: false }, // true = waiting for Completed (old bookings got it at booking time)
+  cashbackCredited: { type: Boolean, default: false },
+  walletRefunded: { type: Boolean, default: false },
   finalPaid: { type: Number, required: true },
   couponApplied: { type: String },
   preferredProduct: { type: String },
@@ -29,6 +37,7 @@ const bookingSchema = new mongoose.Schema({
   paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Failed', 'Successful'], default: 'Pending' },
   transactionId: { type: String },
   staffId: { type: String },
+  staffName: { type: String }, // stylist the customer picked at checkout
   stationId: { type: String },
   status: { type: String, enum: ['Confirmed', 'Active', 'Completed', 'Cancelled', 'No-Show'], default: 'Confirmed' },
   cancelReason: { type: String }

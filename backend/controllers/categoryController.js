@@ -21,10 +21,76 @@ const upload = multer({ storage: storage });
 
 exports.uploadCategoryMiddleware = upload.single('image');
 
+// Sub-category → services (name, duration in minutes, price) sent as JSON string (FormData) or array.
+// Returns a clean array, or undefined when not sent.
+const parseSubcategoryGroups = (raw) => {
+    if (raw === undefined || raw === null || raw === '') return undefined;
+    let data = raw;
+    if (typeof raw === 'string') {
+        try { data = JSON.parse(raw); } catch (e) { return undefined; }
+    }
+    if (!Array.isArray(data)) return undefined;
+    const clean = (v) => String(v || '').replace(/\s+/g, ' ').trim();
+    const groups = [];
+    for (const g of data.slice(0, 50)) {
+        const name = clean(g && g.name);
+        if (!name) continue;
+        const seen = new Set();
+        const services = [];
+        for (const sv of (Array.isArray(g.services) ? g.services : []).slice(0, 100)) {
+            const sName = clean(sv && sv.name);
+            if (!sName || seen.has(sName.toLowerCase())) continue;
+            seen.add(sName.toLowerCase());
+            const dur = Number(sv.duration);
+            const price = Number(sv.price);
+            services.push({
+                name: sName,
+                duration: Number.isFinite(dur) && dur > 0 ? Math.round(dur) : null,
+                price: Number.isFinite(price) && price > 0 ? Math.round(price) : 0
+            });
+        }
+        groups.push({ name, services });
+    }
+    return groups;
+};
+
+// Keep the flat tag list in sync: every catalog service name is also a tag (offers / matching use tags)
+const withGroupServiceTags = (tags, groups) => {
+    const out = Array.isArray(tags) ? [...tags] : [];
+    const lower = new Set(out.map((t) => String(t).toLowerCase()));
+    (groups || []).forEach((g) => g.services.forEach((sv) => {
+        if (!lower.has(sv.name.toLowerCase())) { lower.add(sv.name.toLowerCase()); out.push(sv.name); }
+    }));
+    return out;
+};
+
+// Same category name can't be added twice for the same salon (or again when it's already global).
+// Returns a friendly message if it's a duplicate, else null.
+const findDuplicateCategory = async ({ name, slug, salonId, excludeId }) => {
+    const clean = String(name || '').trim();
+    const sid = salonId && salonId !== 'all' && salonId !== 'null' ? String(salonId) : null;
+    const notSelf = excludeId ? { _id: { $ne: excludeId } } : {};
+    if (clean) {
+        const esc = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const sameName = await Category.find({ ...notSelf, name: { $regex: `^\\s*${esc}\\s*$`, $options: 'i' } }).select('salonId salonName').lean();
+        const global = sameName.find((c) => !c.salonId);
+        if (global) return `"${clean}" category is already added for All Salons.`;
+        const sameSalon = sid && sameName.find((c) => String(c.salonId) === sid);
+        if (sameSalon) return `"${clean}" category is already added for ${sameSalon.salonName || 'this salon'}.`;
+    }
+    if (slug && (await Category.exists({ ...notSelf, slug: String(slug).trim() }))) {
+        return `Slug "${String(slug).trim()}" is already used by another category. Please use a different slug.`;
+    }
+    return null;
+};
+
 exports.createCategory = async (req, res) => {
     try {
         const { name, shortName, slug, gender, serviceCategories, description, isActive, colSpan, price, discount, originalPrice, salonId, salonName } = req.body;
-        
+
+        const duplicate = await findDuplicateCategory({ name, slug, salonId });
+        if (duplicate) return res.status(409).json({ success: false, code: 'DUPLICATE', message: duplicate });
+
         let imageUrl = '';
         if (req.file) {
             const baseUrl = req.protocol + '://' + req.get('host');
@@ -51,11 +117,16 @@ exports.createCategory = async (req, res) => {
             parsedServiceCategories = [name];
         }
 
+        const subcategoryGroups = parseSubcategoryGroups(req.body.subcategoryGroups) || [];
+        parsedServiceCategories = withGroupServiceTags(parsedServiceCategories, subcategoryGroups);
+
         const category = new Category({
             name,
+            subcategoryGroups,
             shortName: shortName || name,
             slug,
             gender: gender || 'unisex',
+            homeSection: ['trending', 'featured'].includes(req.body.homeSection) ? req.body.homeSection : '',
             serviceCategories: parsedServiceCategories,
             description,
             isActive: isActive === 'true' || isActive === true,
@@ -104,6 +175,10 @@ exports.updateCategory = async (req, res) => {
             discount: discount !== undefined ? Number(discount) : 0,
             originalPrice: originalPrice !== undefined ? Number(originalPrice) : (price ? Number(price) : 0),
         };
+        // Home page section (only when the form sends it)
+        if (req.body.homeSection !== undefined) {
+            updateData.homeSection = ['trending', 'featured'].includes(req.body.homeSection) ? req.body.homeSection : '';
+        }
 
         if (serviceCategories) {
              if (typeof serviceCategories === 'string') {
@@ -117,10 +192,19 @@ exports.updateCategory = async (req, res) => {
             }
         }
 
+        const groups = parseSubcategoryGroups(req.body.subcategoryGroups);
+        if (groups !== undefined) {
+            updateData.subcategoryGroups = groups;
+            if (updateData.serviceCategories) updateData.serviceCategories = withGroupServiceTags(updateData.serviceCategories, groups);
+        }
+
         if (req.file) {
             const baseUrl = req.protocol + '://' + req.get('host');
             updateData.image = `${baseUrl}/uploads/categories/${req.file.filename}`;
         }
+
+        const duplicate = await findDuplicateCategory({ name, slug, salonId, excludeId: req.params.id });
+        if (duplicate) return res.status(409).json({ success: false, code: 'DUPLICATE', message: duplicate });
 
         const category = await Category.findByIdAndUpdate(req.params.id, updateData, { new: true });
         if (!category) return res.status(404).json({ success: false, message: 'Category not found' });

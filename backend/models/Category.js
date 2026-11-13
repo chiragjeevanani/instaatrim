@@ -5,7 +5,21 @@ const categorySchema = new mongoose.Schema({
     shortName: { type: String },
     slug: { type: String, required: true, unique: true },
     gender: { type: String, enum: ['men', 'women', 'unisex'], default: 'unisex' },
+    // Customer home page section for this category's services ('' = not shown there)
+    homeSection: { type: String, enum: ['', 'trending', 'featured'], default: '' },
     serviceCategories: [{ type: String }],
+    // Master catalog hierarchy: sub-category → services (suggested duration & base price).
+    // e.g. Hair → Haircut → Men's Haircut (30 min, ₹300)
+    subcategoryGroups: [{
+        _id: false,
+        name: { type: String, required: true },
+        services: [{
+            _id: false,
+            name: { type: String, required: true },
+            duration: { type: Number, default: null }, // minutes (null = multi-session / varies)
+            price: { type: Number, default: 0 }
+        }]
+    }],
     image: { type: String },
     price: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },

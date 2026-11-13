@@ -3,6 +3,7 @@ import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
 import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/store/selectors';
 import { getBestOfferForService } from '../../../shared/lib/offers';
+import { dateKey } from '../../../shared/lib/time';
 
 import { io } from 'socket.io-client';
 import { requestFirebaseToken, messaging } from '../../../shared/lib/firebase';
@@ -115,6 +116,9 @@ export const CustomerProvider = ({ children }) => {
     // Fetch live offers (approved, not expired) from DB — stored in state by listLive
     api.offers.listLive().catch(console.error);
 
+    // Keep the customer logged in: restore the session from the saved login token (DB profile)
+    api.customers.restoreSession().catch(() => {});
+
     // Fetch all coupons
     api.coupons.list().then(data => {
       if (Array.isArray(data)) {
@@ -185,6 +189,14 @@ export const CustomerProvider = ({ children }) => {
           role: 'customer'
         });
       }
+    });
+
+    // Salon updated one of MY bookings (Completed / Cancelled / No Show …) → show the new status
+    // and refresh the wallet right away (cashback credited / wallet used refunded on the server).
+    socket.on('booking_updated', (b) => {
+      if (!b || !user?.id || String(b.customerId) !== String(user.id)) return;
+      dispatch({ type: 'SET_BOOKINGS', payload: [{ ...b, id: b._id || b.id }] });
+      if (localStorage.getItem('instaatrim_token')) api.customers.fetchMyProfile().catch(() => {});
     });
 
     let unsubscribeFCM = null;
@@ -330,21 +342,19 @@ export const CustomerProvider = ({ children }) => {
   });
 
   const [bookingSlot, setBookingSlot] = useState(() => {
+    // Default slot "Tomorrow" must carry tomorrow's real date (otherwise the booking is saved without a date)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultSlot = { type: 'Scheduled', dateKey: dateKey(tomorrow), date: 'Tomorrow', time: '11:00 AM' };
     try {
       const saved = localStorage.getItem('instaatrim_booking_slot');
-      return saved ? JSON.parse(saved) : {
-        type: 'Scheduled',
-        dateKey: null,
-        date: 'Tomorrow',
-        time: '11:00 AM'
-      };
+      if (!saved) return defaultSlot;
+      const parsed = JSON.parse(saved);
+      // Old saved slot without a real date, or a date already in the past → use the default
+      if (parsed.type !== 'Instant' && (!parsed.dateKey || parsed.dateKey < dateKey(new Date()))) return defaultSlot;
+      return parsed;
     } catch {
-      return {
-        type: 'Scheduled',
-        dateKey: null,
-        date: 'Tomorrow',
-        time: '11:00 AM'
-      };
+      return defaultSlot;
     }
   });
 
@@ -494,6 +504,18 @@ export const CustomerProvider = ({ children }) => {
     [showToast, state.offers]
   );
 
+  // Admin / salon / other tabs share the same browser store and can overwrite the logged-in
+  // customer. If a valid login token exists but the customer looks logged out, restore from DB.
+  const restoringSessionRef = useRef(false);
+  useEffect(() => {
+    if (user?.isLoggedIn && /^[a-f0-9]{24}$/i.test(String(user?.id || ''))) return;
+    if (!localStorage.getItem('instaatrim_token') || restoringSessionRef.current) return;
+    restoringSessionRef.current = true;
+    api.customers.restoreSession().finally(() => {
+      restoringSessionRef.current = false;
+    });
+  }, [user?.isLoggedIn, user?.id]);
+
   // When live offers load / change, re-price items already in the cart so the cart always
   // matches what the server will charge (server re-checks prices at booking time).
   useEffect(() => {
@@ -583,18 +605,41 @@ export const CustomerProvider = ({ children }) => {
     const taxableAmount = Math.max(0, subtotal - discount);
     const taxAmount = Math.round((taxableAmount * taxRatePercent) / 100);
 
-    const finalAmount = taxableAmount + taxAmount + convenienceFee;
+    // Booking rewards — % set by admin in Platform Settings (0 = off). Same rules as the backend.
+    const pct = (v, d) => (v === undefined || v === null || Number.isNaN(Number(v)) ? d : Math.max(0, Number(v)));
+    const instantDiscountPercent = pct(settings.instantDiscountPercent, 20);
+    const walletCashbackPercent = pct(settings.walletCashbackPercent, 20);
+    const walletRedeemPercent = pct(settings.walletRedeemPercent, 50);
+    const instantDiscount = Math.round((subtotal * instantDiscountPercent) / 100);
+    const walletCashback = Math.round((subtotal * walletCashbackPercent) / 100);
+    const walletBalance = Number(user?.wallet_balance) || 0;
+    const walletRedeemed = Math.min(
+      Math.round((walletBalance * walletRedeemPercent) / 100),
+      Math.max(0, subtotal - instantDiscount - discount)
+    );
+
+    // What the customer actually pays (same everywhere: cart, checkout, booking)
+    const payableBeforeTax = Math.max(0, subtotal - instantDiscount - discount - walletRedeemed + convenienceFee);
+    const finalAmount = payableBeforeTax + taxAmount;
     const totalSavings = originalSubtotal - taxableAmount;
-    
-    return { subtotal, originalSubtotal, discount, taxAmount, taxRatePercent, convenienceFee, finalAmount, totalSavings };
-  }, [cartItems, appliedCoupon, state.platformSettings, user?.is_elite]);
+
+    return {
+      subtotal, originalSubtotal, discount, taxAmount, taxRatePercent, convenienceFee, finalAmount, totalSavings,
+      instantDiscount, instantDiscountPercent, walletCashback, walletCashbackPercent,
+      walletBalance, walletRedeemed, walletRedeemPercent, payableBeforeTax
+    };
+  }, [cartItems, appliedCoupon, state.platformSettings, user?.is_elite, user?.wallet_balance]);
 
   // ---------------- Bookings (shared store) ----------------
   const bookings = useMemo(() => user ? state.bookings.filter((b) => b.customerId === user.id) : [], [state.bookings, user?.id]);
 
   const createBooking = useCallback(
     async (bookingData) => {
-      if (!user) throw new Error('Not logged in');
+      // Must be a real logged-in customer from DB (not a demo / fallback record),
+      // otherwise the booking and wallet cashback go to the wrong account.
+      if (!user?.isLoggedIn || !/^[a-f0-9]{24}$/i.test(String(user?.id || '')) || !localStorage.getItem('instaatrim_token')) {
+        throw new Error('Please login or sign up first to confirm your booking');
+      }
       const booking = await api.bookings.create({
         customerId: user.id,
         customerName: user.name || 'Customer',
@@ -608,6 +653,9 @@ export const CustomerProvider = ({ children }) => {
         services: cartItems.length > 0 ? cartItems.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity || 1, duration: i.duration })) : bookingData.items || [],
         totalAmount: cartSummary.subtotal,
         discountAmount: cartSummary.discount,
+        instantDiscount: cartSummary.instantDiscount,
+        walletRedeemed: cartSummary.walletRedeemed,
+        walletCashback: cartSummary.walletCashback,
         finalPaid: cartSummary.finalAmount,
         couponApplied: appliedCoupon ? appliedCoupon.code : null,
         preferredProduct: preferredProduct || bookingData.preferredProduct || null,
@@ -616,9 +664,12 @@ export const CustomerProvider = ({ children }) => {
         transactionId: bookingData.transactionId || null,
         holdId: bookingData.holdId || null,
         stationId: bookingData.stationId || null,
-        staffId: bookingData.staffId || null
+        staffId: bookingData.staffId || null,
+        staffName: bookingData.staffName || null
       });
       clearCart();
+      // Wallet changed on the server (wallet used + cashback earned) → pull the fresh balance
+      api.customers.fetchMyProfile().catch(() => {});
       return booking;
     },
     [user?.id, user?.name, user?.phone, currentLocation, bookingSlot, cartItems, cartSummary, appliedCoupon, preferredProduct, clearCart]

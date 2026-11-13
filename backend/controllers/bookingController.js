@@ -106,12 +106,33 @@ const verifyBookingPrices = async (data) => {
         return { ok: false, message: 'Discount is not valid for this booking. Please refresh and try again.' };
     }
 
-    // 4) Amount paid can't be lower than (total − allowed discount); tax / fees only add on top
-    if (Number(data.finalPaid) < subtotal - allowedDiscount - TOL) {
+    // 4) Booking rewards from Platform Settings (admin-controlled; 0 = off)
+    const PlatformSettings = require('../models/PlatformSettings');
+    const Customer = require('../models/Customer');
+    const s = (await PlatformSettings.findOne().lean()) || {};
+    const pct = (v, d) => (v === undefined || v === null || Number.isNaN(Number(v)) ? d : Math.max(0, Number(v)));
+    const instantPct = pct(s.instantDiscountPercent, 20);
+    const cashbackPct = pct(s.walletCashbackPercent, 20);
+    const redeemPct = pct(s.walletRedeemPercent, 50);
+    const instantDiscount = Math.round((subtotal * instantPct) / 100);
+    const walletCashback = Math.round((subtotal * cashbackPct) / 100);
+    // Booking must belong to a real customer in DB (so wallet / cashback reach the right account)
+    const cust = mongoose.Types.ObjectId.isValid(String(data.customerId))
+        ? await Customer.findById(data.customerId).select('wallet_balance').lean()
+        : null;
+    if (!cust) {
+        return { ok: false, message: 'Please login or sign up first to confirm your booking.' };
+    }
+    const walletBalance = Number(cust.wallet_balance) || 0;
+    const maxRedeem = Math.min(Math.round((walletBalance * redeemPct) / 100), Math.max(0, subtotal - instantDiscount - allowedDiscount));
+    const walletRedeemed = Math.max(0, Math.min(Number(data.walletRedeemed) || 0, maxRedeem));
+
+    // 5) Amount paid can't be lower than (total − coupon − instant discount − wallet used); tax / fees only add on top
+    if (Number(data.finalPaid) < subtotal - allowedDiscount - instantDiscount - walletRedeemed - TOL) {
         return { ok: false, message: REFRESH };
     }
 
-    return { ok: true };
+    return { ok: true, rewards: { instantDiscount, walletRedeemed, walletCashback } };
 };
 
 exports.createBooking = async (req, res) => {
@@ -128,34 +149,43 @@ exports.createBooking = async (req, res) => {
         const count = await Booking.countDocuments();
         const customId = `IT-${220000 + count + 1}`; // Start from 220001
 
+        // Stylist picked at checkout: must be an active staff of THIS salon; name always from DB
+        let staffId = null;
+        let staffName = null;
+        if (bookingData.staffId && require('mongoose').Types.ObjectId.isValid(String(bookingData.staffId))) {
+            const Staff = require('../models/Staff');
+            const st = await Staff.findOne({ _id: bookingData.staffId, salonId: bookingData.salonId, isActive: { $ne: false } }).select('name').lean();
+            if (st) {
+                staffId = String(st._id);
+                staffName = st.name;
+            }
+        }
+
+        const rewards = priceCheck.rewards || { instantDiscount: 0, walletRedeemed: 0, walletCashback: 0 };
         const booking = new Booking({
             ...bookingData,
+            staffId,
+            staffName,
+            // server-calculated rewards (never trusted from the app)
+            instantDiscount: rewards.instantDiscount,
+            walletRedeemed: rewards.walletRedeemed,
+            walletCashback: rewards.walletCashback,
+            cashbackPending: rewards.walletCashback > 0,
+            cashbackCredited: false,
+            walletRefunded: false,
             _id: customId // Optional: Use this as _id or keep standard ObjectId and add a custom id field
         });
 
         const savedBooking = await booking.save();
 
-        // Update Customer Wallet Balance strictly as per commercial model:
-        // Visible Discount = totalAmount * 0.40
-        // Instant Discount = Visible Discount * 0.50
-        // Wallet Cashback Issued = Visible Discount * 0.50
-        // Wallet Redeemed = Math.max(0, (totalAmount - finalPaid) - Instant Discount)
-        // Net New Wallet Balance = prev_wallet - Wallet Redeemed + Wallet Cashback Issued
-        if (savedBooking.customerId) {
+        // Wallet: only the wallet amount used on this booking is deducted now.
+        // Cashback stays pending and is credited when the salon marks the service Completed.
+        if (savedBooking.customerId && rewards.walletRedeemed > 0) {
             try {
-                const billValue = savedBooking.totalAmount || 0;
-                const finalPaid = savedBooking.finalPaid !== undefined ? savedBooking.finalPaid : billValue;
-                const customerVisibleDiscount = billValue * 0.40;
-                const instantDiscount = customerVisibleDiscount * 0.50;
-                const walletCashbackIssued = customerVisibleDiscount * 0.50;
-                const walletRedeemed = Math.max(0, (billValue - finalPaid) - instantDiscount);
-
                 const Customer = require('../models/Customer');
                 const customerDoc = await Customer.findById(savedBooking.customerId);
                 if (customerDoc) {
-                    const currentBal = customerDoc.wallet_balance || 0;
-                    const updatedBal = Math.max(0, currentBal - walletRedeemed) + walletCashbackIssued;
-                    customerDoc.wallet_balance = updatedBal;
+                    customerDoc.wallet_balance = Math.max(0, (customerDoc.wallet_balance || 0) - rewards.walletRedeemed);
                     await customerDoc.save();
                 }
             } catch (walletErr) {
@@ -245,6 +275,41 @@ exports.updateBookingStatus = async (req, res) => {
 
         if (!booking) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        // Wallet settlement (each happens only once per booking — flag is set atomically first)
+        try {
+            const Customer = require('../models/Customer');
+            if (status === 'Completed' && Number(booking.walletCashback) > 0 && booking.customerId) {
+                const claimed = await Booking.findOneAndUpdate(
+                    { _id: id, cashbackPending: true, cashbackCredited: { $ne: true } },
+                    { cashbackCredited: true, cashbackPending: false },
+                    { new: true }
+                );
+                if (claimed) {
+                    await Customer.updateOne({ _id: booking.customerId }, { $inc: { wallet_balance: Number(booking.walletCashback) } });
+                    booking.cashbackCredited = true;
+                    booking.cashbackPending = false;
+                }
+            }
+            if ((status === 'Cancelled' || status === 'No-Show' || status === 'No Show') && booking.cashbackPending) {
+                // service not taken → pending cashback is dropped
+                await Booking.updateOne({ _id: id }, { cashbackPending: false });
+                booking.cashbackPending = false;
+            }
+            if ((status === 'Cancelled' || status === 'No-Show' || status === 'No Show') && Number(booking.walletRedeemed) > 0 && booking.customerId) {
+                const claimed = await Booking.findOneAndUpdate(
+                    { _id: id, walletRefunded: { $ne: true } },
+                    { walletRefunded: true },
+                    { new: true }
+                );
+                if (claimed) {
+                    await Customer.updateOne({ _id: booking.customerId }, { $inc: { wallet_balance: Number(booking.walletRedeemed) } });
+                    booking.walletRefunded = true;
+                }
+            }
+        } catch (walletErr) {
+            console.error('Wallet settlement error:', walletErr);
         }
 
         const io = getSocketIO();

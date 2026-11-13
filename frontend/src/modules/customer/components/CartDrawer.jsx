@@ -4,6 +4,7 @@ import { useCustomer } from '../context/CustomerContext';
 import { useNavigate } from 'react-router-dom';
 import { X, Trash2, Calendar, Zap, Tag, ChevronRight, ShieldCheck } from 'lucide-react';
 import { formatDuration } from '../../../shared/store/selectors';
+import { StylistPicker } from './StylistPicker';
 
 export const CartDrawer = () => {
   const {
@@ -37,16 +38,16 @@ export const CartDrawer = () => {
     }
   };
 
+  // All amounts come from cartSummary (admin Platform Settings in DB) — same as checkout & booking
   const billValue = cartSummary.subtotal || 0;
-  const visibleDiscount = Math.round(billValue * 0.40);
-  const instantDiscount = Math.round(visibleDiscount * 0.50);
-  const walletCashbackIssued = Math.round(visibleDiscount * 0.50);
-  const walletBalance = Number(user?.wallet_balance) || 0;
+  const instantDiscount = cartSummary.instantDiscount || 0;
+  const walletCashbackIssued = cartSummary.walletCashback || 0;
+  const walletBalance = cartSummary.walletBalance || 0;
   const couponDiscount = cartSummary.discount || 0;
   const convenienceFee = cartSummary.convenienceFee || 0;
-  const walletRedeemed = Math.min(Math.round(walletBalance * 0.50), Math.max(0, billValue - instantDiscount - couponDiscount));
-  const calculatedPayable = Math.max(0, billValue - instantDiscount - couponDiscount - walletRedeemed + convenienceFee);
-  const finalPayableTotal = Math.max(0, calculatedPayable + (cartSummary.taxAmount || 0));
+  const walletRedeemed = cartSummary.walletRedeemed || 0;
+  const calculatedPayable = cartSummary.payableBeforeTax || 0;
+  const finalPayableTotal = cartSummary.finalAmount || 0;
 
   return (
     <AnimatePresence>
@@ -163,6 +164,9 @@ export const CartDrawer = () => {
                   )))}
                 </div>
 
+                {/* Choose Stylist — salon's staff from DB (same pick shows on Checkout) */}
+                <StylistPicker cartItem={cartItems[0]} />
+
                 {/* Promo Code & Coupon Section - Compact */}
                 <div className="bg-white border border-stone-200/80 rounded-xl p-2.5 shadow-xs">
                   <div className="flex items-center gap-1.5 mb-2">
@@ -235,7 +239,7 @@ export const CartDrawer = () => {
                     <span>₹{billValue}</span>
                   </div>
                   <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
-                    <span>Instant Discount (50% of Promo)</span>
+                    <span>Instant Discount ({cartSummary.instantDiscountPercent}%)</span>
                     <span>-₹{instantDiscount}</span>
                   </div>
                   {walletRedeemed > 0 && (
@@ -282,7 +286,7 @@ export const CartDrawer = () => {
 
                   {/* Excel Cashback Notification */}
                   <div className="bg-amber-50/80 border border-amber-200/80 rounded-lg p-2 mt-1 text-[10px] text-amber-900 font-bold flex items-center justify-between">
-                    <span>✨ Wallet Cashback Earned:</span>
+                    <span>✨ Wallet Cashback (after service):</span>
                     <span className="font-black text-amber-800">+₹{walletCashbackIssued}</span>
                   </div>
                 </div>

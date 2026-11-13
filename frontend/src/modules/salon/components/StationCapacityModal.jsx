@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useSalon } from '../context/SalonContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Armchair, Plus, Minus, Info } from 'lucide-react';
+import { X, Armchair, Info } from 'lucide-react';
 
 export const StationCapacityModal = ({ isOpen, onClose }) => {
-  const { occupiedChairs, setOccupiedChairs, metrics, showToast, openModal, closeModal } = useSalon();
+  const { occupiedChairs, metrics, openModal, closeModal } = useSalon();
 
   // Prevent background scrolling and notify context when modal is open
   useEffect(() => {
@@ -21,22 +21,8 @@ export const StationCapacityModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const totalChairs = metrics.totalChairs || 4;
+  const totalChairs = metrics.totalChairs || 0; // real stations from DB (no fake default)
   const availableChairs = Math.max(0, totalChairs - occupiedChairs);
-
-  const handleOccupy = () => {
-    if (occupiedChairs < totalChairs) {
-      setOccupiedChairs(occupiedChairs + 1);
-      showToast(`1 station occupied (${occupiedChairs + 1}/${totalChairs} in use)`);
-    }
-  };
-
-  const handleRelease = () => {
-    if (occupiedChairs > 0) {
-      setOccupiedChairs(occupiedChairs - 1);
-      showToast(`1 station freed (${availableChairs + 1} stations ready)`);
-    }
-  };
 
   return (
     <AnimatePresence>
@@ -87,7 +73,7 @@ export const StationCapacityModal = ({ isOpen, onClose }) => {
                   {occupiedChairs} <span className="text-[11px] text-stone-400 font-normal">/ {totalChairs}</span>
                 </span>
                 <span className="text-[9px] text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.2 rounded-full inline-block mt-0.5">
-                  {Math.round((occupiedChairs / totalChairs) * 100)}% load
+                  {totalChairs > 0 ? Math.round((occupiedChairs / totalChairs) * 100) : 0}% load
                 </span>
               </div>
 
@@ -102,41 +88,14 @@ export const StationCapacityModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Stepper Control */}
-            <div className="bg-white rounded-xl p-2.5 border border-stone-200/80">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold text-stone-900">Adjust Occupancy</span>
-                <span className="text-[10px] text-stone-400">Live Counter</span>
-              </div>
-
-              <div className="flex items-center justify-between bg-stone-50 rounded-lg p-1.5 border border-stone-200/70">
-                <button
-                  type="button"
-                  onClick={handleRelease}
-                  disabled={occupiedChairs <= 0}
-                  className="w-8 h-8 rounded-md bg-white hover:bg-stone-100 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-stone-800 flex items-center justify-center border border-stone-200 shadow-2xs font-bold transition-all cursor-pointer"
-                  title="Free 1 chair"
-                >
-                  <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
-                </button>
-
-                <div className="text-center">
-                  <div className="text-base font-bold text-stone-900 leading-tight">
-                    {occupiedChairs} of {totalChairs}
-                  </div>
-                  <span className="text-[9.5px] text-stone-500">Occupied Stations</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleOccupy}
-                  disabled={occupiedChairs >= totalChairs}
-                  className="w-8 h-8 rounded-md bg-rose-900 hover:bg-rose-950 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-white flex items-center justify-center shadow-2xs font-bold transition-all cursor-pointer"
-                  title="Occupy 1 chair"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                </button>
-              </div>
+            {/* Automatic occupancy (from today's bookings) */}
+            <div className="bg-white rounded-xl p-2.5 border border-stone-200/80 flex items-start gap-2">
+              <Info className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
+              <p className="text-[10.5px] text-stone-600 leading-snug">
+                Updates automatically: a station becomes <strong>Occupied</strong> when you tap <strong>Start Service</strong> on a
+                booking and is freed when you mark it <strong>Completed</strong>. For a customer without a booking, add a{' '}
+                <strong>Walk-In Booking</strong> first.
+              </p>
             </div>
 
             {/* Individual Chair Visualizer */}

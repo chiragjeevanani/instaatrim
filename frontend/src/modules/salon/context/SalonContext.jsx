@@ -138,14 +138,18 @@ export const SalonProvider = ({ children }) => {
   const instantWaitMinutes = salonProfile.instantWaitMinutes ?? 15;
   const setInstantWaitMinutes = useCallback((val) => patchSalon({ instantWaitMinutes: val }), [patchSalon]);
 
-  const occupiedChairs = salonProfile.occupiedChairs ?? 0;
-  const setOccupiedChairs = useCallback(
-    (val) => patchSalon({ occupiedChairs: typeof val === 'function' ? val(occupiedChairs) : val }),
-    [patchSalon, occupiedChairs]
-  );
-
   // ---------------- Bookings (shared store, filtered to this salon) ----------------
   const bookings = useMemo(() => state.bookings.filter((b) => b.salonId === salonId), [state.bookings, salonId]);
+
+  // Occupied chairs = today's bookings currently "In Service" (from DB) — goes up on Start Service,
+  // down on Complete. Not a manual number any more.
+  const occupiedChairs = useMemo(() => {
+    const todayKey = dateKey(new Date());
+    const inService = bookings.filter((b) => b.dateKey === todayKey && b.status === BOOKING_STATUS.SERVICE_STARTED).length;
+    const total = Number(salonProfile.totalChairs) || 0;
+    return total > 0 ? Math.min(inService, total) : inService;
+  }, [bookings, salonProfile.totalChairs]);
+  const setOccupiedChairs = useCallback(() => {}, []); // kept for compatibility (automatic now)
 
   const [toast, setToast] = useState(null);
   const showToast = useCallback((message, type = 'success') => {

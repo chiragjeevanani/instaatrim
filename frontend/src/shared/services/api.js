@@ -242,6 +242,66 @@ const salons = {
     }
   },
 
+  // App start / session wiped by another tab: restore the logged-in salon partner from the
+  // saved token (renewing it with the refresh token if it expired). Logout only on Logout
+  // or when the tokens are really invalid.
+  restoreSession: async () => {
+    let token = localStorage.getItem('instaatrim_partner_token');
+    const refreshToken = localStorage.getItem('instaatrim_partner_refresh_token');
+    if (!token && !refreshToken) return null;
+
+    const decode = (t) => {
+      try {
+        const part = String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(atob(part.padEnd(part.length + ((4 - (part.length % 4)) % 4), '=')));
+      } catch {
+        return null;
+      }
+    };
+    let payload = token ? decode(token) : null;
+    const expired = !payload || (payload.exp && payload.exp * 1000 < Date.now() + 30000);
+
+    if (expired) {
+      if (!refreshToken) return null;
+      try {
+        const r = await fetch(`${API_BASE}/salons/refresh-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        if (r.status === 401) {
+          localStorage.removeItem('instaatrim_partner_token');
+          localStorage.removeItem('instaatrim_partner_refresh_token');
+          return null;
+        }
+        if (!r.ok) return null; // server down → try again later
+        const j = await r.json();
+        if (j.refreshToken) localStorage.setItem('instaatrim_partner_refresh_token', j.refreshToken);
+        if (!j.token) return null;
+        token = j.token;
+        localStorage.setItem('instaatrim_partner_token', token);
+        payload = decode(token);
+      } catch {
+        return null;
+      }
+    }
+
+    const salonId = payload?.role === 'salon' ? String(payload.id || '') : '';
+    if (!salonId) return null;
+    try {
+      const res = await fetch(`${API_BASE}/salons/${salonId}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      const data = { ...json.data, id: String(json.data?._id || json.data?.id || salonId) };
+      const existing = getState().salons.find((s) => s.id === data.id);
+      dispatch(existing ? { type: 'PATCH_SALON', payload: { salonId: data.id, patch: data } } : { type: 'ADD_SALON', payload: data });
+      dispatch({ type: 'SET_PARTNER_SESSION', payload: { salonId: data.id } });
+      return data;
+    } catch {
+      return null;
+    }
+  },
+
   logout: async () => {
     try {
       const token = localStorage.getItem('instaatrim_partner_token');
@@ -503,10 +563,10 @@ const readJson = async (res, fallbackMsg) => {
 
 const categoryRequests = {
   // Salon partner
-  create: async ({ type, categoryId, requestedName, tags, gender, note }) => {
+  create: async ({ type, categoryId, requestedName, groupName, duration, price, tags, gender, note }) => {
     const res = await fetchWithServiceAuth(`${API_BASE}/category-requests`, {
       method: 'POST',
-      body: JSON.stringify({ type, categoryId, requestedName, tags, gender, note })
+      body: JSON.stringify({ type, categoryId, requestedName, groupName, duration, price, tags, gender, note })
     });
     return (await readJson(res, 'Could not send request')).data;
   },
@@ -680,33 +740,26 @@ const bookings = {
   },
 
   create: async (payload) => {
+    // A booking is confirmed ONLY when it is saved in DB. No local / fake booking on failure —
+    // the customer sees the real reason and can try again.
+    let res;
     try {
-      const res = await fetch(`${API_BASE}/bookings`, {
+      res = await fetch(`${API_BASE}/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.message || 'Failed to create booking');
-
-      const newBooking = { ...json.data, id: json.data._id };
-      dispatch({ type: 'ADD_BOOKING', payload: newBooking });
-      return newBooking;
     } catch (e) {
-      console.error('Real booking creation failed, falling back to mock:', e);
-      const booking = {
-        id: newBookingId(),
-        status: BOOKING_STATUS.CONFIRMED,
-        createdAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
-        paymentStatus: 'Pending',
-        stationId: null,
-        staffId: null,
-        ...payload
-      };
-      booking.dateKey = payload.dateKey || dateKey(new Date());
-      dispatch({ type: 'ADD_BOOKING', payload: booking });
-      return clone(booking);
+      console.error('Booking request failed:', e);
+      throw new ApiError('Could not reach the server. Please check your internet and try again.', 'NETWORK');
     }
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success || !json.data?._id) {
+      throw new ApiError(`Booking failed: ${json.message || 'Please try again.'}`, json.code || 'BOOKING_FAILED');
+    }
+    const newBooking = { ...json.data, id: json.data._id };
+    dispatch({ type: 'ADD_BOOKING', payload: newBooking });
+    return newBooking;
   },
 
   updateStatus: async (bookingId, status, extra = {}, { force = false } = {}) => {
@@ -1391,6 +1444,36 @@ const customers = {
       dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
       return clone(record);
     }),
+
+  // App start: if a customer login token is saved, restore the logged-in customer from DB.
+  // Keeps the customer logged in across refreshes / closed tabs until they press Logout
+  // (or the token really expires / is invalid).
+  restoreSession: async () => {
+    const token = localStorage.getItem('instaatrim_token');
+    if (!token) return null;
+    try {
+      const res = await fetch(`${API_BASE}/customers/me`, {
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        // token expired / invalid → real logout
+        localStorage.removeItem('instaatrim_token');
+        localStorage.removeItem('instaatrim_customer');
+        dispatch({ type: 'LOGOUT_CUSTOMER' });
+        return null;
+      }
+      if (!res.ok) return null; // server down → keep current state, try again next time
+      const data = await res.json();
+      if (!data?.customer) return null;
+      const record = mapCustomerFromApi(data.customer);
+      dispatch({ type: 'SET_CUSTOMER_LOCATIONS', payload: { userId: record.id, locations: record.savedLocations } });
+      dispatch({ type: 'UPSERT_CUSTOMER', payload: record });
+      localStorage.setItem('instaatrim_customer', JSON.stringify(data.customer));
+      return clone(record);
+    } catch (_) {
+      return null; // network error → don't log out
+    }
+  },
 
   logout: async () => {
     try {

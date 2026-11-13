@@ -67,10 +67,20 @@ export const SalonProfilePage = () => {
   }, [salon?.id]);
 
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeSubcategory, setActiveSubcategory] = useState('All');
 
-  const categories = ['All', ...new Set(services.map((s) => s.category))];
+  const categories = ['All', ...new Set(services.map((s) => s.category).filter(Boolean))];
 
-  const filteredServices = activeCategory === 'All' ? services : services.filter((s) => s.category === activeCategory);
+  // Category → its sub-categories (from this salon's own services in DB) → services
+  const categoryServices = activeCategory === 'All' ? services : services.filter((s) => s.category === activeCategory);
+  const subcategories =
+    activeCategory === 'All'
+      ? []
+      : [...new Set(categoryServices.map((s) => String(s.subcategory || '').trim()).filter(Boolean))];
+  const filteredServices =
+    activeSubcategory === 'All'
+      ? categoryServices
+      : categoryServices.filter((s) => String(s.subcategory || '').trim() === activeSubcategory);
 
   // Open Now is computed from the salon's real hours + the store-open flag
   // instead of a hardcoded literal.
@@ -296,7 +306,10 @@ export const SalonProfilePage = () => {
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => {
+                setActiveCategory(cat);
+                setActiveSubcategory('All');
+              }}
               className={`px-3.5 py-1.5 lg:px-4 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer ${
                 activeCategory === cat
                   ? 'bg-brand-maroon text-white shadow-xs'
@@ -307,6 +320,25 @@ export const SalonProfilePage = () => {
             </button>
           ))}
         </div>
+
+        {/* Sub-category Tabs — shown after a category is picked (only if its services have sub-categories) */}
+        {subcategories.length > 0 && (
+          <div className="flex items-center gap-1.5 px-3.5 lg:px-5 overflow-x-auto no-scrollbar py-2 border-b border-stone-100 bg-stone-50/60">
+            {['All', ...subcategories].map((sub) => (
+              <button
+                key={sub}
+                onClick={() => setActiveSubcategory(sub)}
+                className={`px-3 py-1 rounded-full text-[11px] font-bold shrink-0 border transition-all cursor-pointer ${
+                  activeSubcategory === sub
+                    ? 'bg-white border-brand-maroon text-brand-maroon'
+                    : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                }`}
+              >
+                {sub === 'All' ? `All ${activeCategory}` : sub}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Service Items */}
         <div className="divide-y divide-stone-100">

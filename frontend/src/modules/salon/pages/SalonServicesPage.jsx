@@ -26,21 +26,10 @@ export const SalonServicesPage = () => {
   const isApproved = Boolean(salonProfile?.isVerified && salonProfile?.verificationStatus === 'Live');
   const isRejected = salonProfile?.verificationStatus === 'Rejected';
 
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [deleteModal, setDeleteModal] = useState(null);
 
-  const categories = useMemo(() => {
-    const fromAdmin = (dynamicCategories || []).map((c) => c.name || c.shortName);
-    // Also include any service category currently in this salon's catalog so existing items are selectable
-    const fromServices = services.map((s) => s.category).filter(Boolean);
-    const combined = Array.from(new Set([...fromAdmin, ...fromServices]));
-    return ['All', ...(combined.length > 0 ? combined : ['Waxing', 'Facial', 'Spa', 'Body Polishing', 'Mani-Pedi'])];
-  }, [dynamicCategories, services]);
-
-  const filteredServices = services.filter((s) => {
-    if (selectedCategory === 'All') return true;
-    return s.category === selectedCategory;
-  });
+  // All of this salon's services from DB (no category filter chips)
+  const filteredServices = services;
 
   const handleEdit = (service) => {
     if (!isApproved) {
@@ -144,26 +133,6 @@ export const SalonServicesPage = () => {
             )}
             <span>Add Service</span>
           </button>
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto lg:overflow-visible lg:flex-wrap no-scrollbar py-0.5">
-          {categories.map((cat) => {
-            const isActive = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`text-[10.5px] font-semibold px-3 py-1 rounded-full shrink-0 transition-all ${
-                  isActive
-                    ? 'bg-rose-900 text-white shadow-xs'
-                    : 'bg-white text-stone-600 border border-stone-200/80 hover:bg-stone-50 hover:text-stone-900'
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
         </div>
 
         {/* Services List */}

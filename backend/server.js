@@ -137,6 +137,10 @@ connectDB().then(() => {
                 const r = await run({ apply: true, quiet: true });
                 logger.info(`Master service catalog loaded into DB (updated ${r.updated}, created ${r.created} categories)`);
             }
+            // Categories saved with only a flat service list → give them sub-categories
+            const { backfillGroupsFromTags } = require('./scripts/seedServiceCatalog');
+            const filled = await backfillGroupsFromTags();
+            if (filled) logger.info(`Sub-categories built from service lists for ${filled} categories`);
         } catch (e) {
             logger.error({ err: e.message }, 'Master service catalog auto-load failed');
         }

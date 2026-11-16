@@ -1,4 +1,5 @@
 const Category = require('../models/Category');
+const { groupsFromTags } = require('../scripts/seedServiceCatalog');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -117,7 +118,9 @@ exports.createCategory = async (req, res) => {
             parsedServiceCategories = [name];
         }
 
-        const subcategoryGroups = parseSubcategoryGroups(req.body.subcategoryGroups) || [];
+        let subcategoryGroups = parseSubcategoryGroups(req.body.subcategoryGroups) || [];
+        // Only a flat service list given → group it into catalog sub-categories (Haircut, Hair Color, …)
+        if (subcategoryGroups.length === 0) subcategoryGroups = groupsFromTags(parsedServiceCategories);
         parsedServiceCategories = withGroupServiceTags(parsedServiceCategories, subcategoryGroups);
 
         const category = new Category({
@@ -208,7 +211,16 @@ exports.updateCategory = async (req, res) => {
 
         const category = await Category.findByIdAndUpdate(req.params.id, updateData, { new: true });
         if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
-        
+
+        // Still no sub-categories → build them from the service list (Haircut, Hair Color, …)
+        if (!(category.subcategoryGroups || []).length) {
+            const derived = groupsFromTags(category.serviceCategories);
+            if (derived.length) {
+                category.subcategoryGroups = derived;
+                await category.save();
+            }
+        }
+
         res.status(200).json({ success: true, data: category });
     } catch (error) {
         console.error('Error updating category:', error);

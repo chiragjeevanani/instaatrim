@@ -7,6 +7,8 @@
 //
 // Dry run (only shows what would change):  node scripts/seedServiceCatalog.js
 // Apply:                                   node scripts/seedServiceCatalog.js --apply
+// Only fill categories that have NO sub-categories (keeps admin's own edits in the others):
+//                                           node scripts/seedServiceCatalog.js --only-empty [--apply]
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Category = require('../models/Category');
@@ -80,7 +82,7 @@ const uniqueSlug = async (name) => {
     return slug;
 };
 
-const run = async ({ apply, uri, quiet } = {}) => {
+const run = async ({ apply, uri, quiet, onlyEmpty } = {}) => {
     const log = quiet ? () => {} : console.log;
     if (uri) await mongoose.connect(uri);
     let updated = 0;
@@ -99,6 +101,10 @@ const run = async ({ apply, uri, quiet } = {}) => {
         const existing = (await Category.findOne({ ...nameFilter, salonId: null })) // global first
             || (await Category.findOne(nameFilter));
 
+        if (existing && onlyEmpty && (existing.subcategoryGroups || []).length > 0) {
+            log(`  = "${existing.name}": already has ${existing.subcategoryGroups.length} sub-categories — skipped`);
+            continue;
+        }
         if (existing) {
             const tags = existing.serviceCategories || [];
             const lower = tags.map(norm);
@@ -135,10 +141,57 @@ const run = async ({ apply, uri, quiet } = {}) => {
     return { updated, created };
 };
 
-module.exports = { run, CATALOG };
+// Service name → { group, duration, price } from the master catalog.
+// Matched loosely: case-insensitive, ignoring "(…)" notes — "Highlights" = "Highlights (per streak/section)".
+const looseKey = (s) => norm(s).replace(/\([^)]*\)/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const SERVICE_INDEX = new Map();
+CATALOG.forEach((c) => c.groups.forEach((g) => g.services.forEach(([name, duration, price]) => {
+    const k = looseKey(name);
+    if (!SERVICE_INDEX.has(k)) SERVICE_INDEX.set(k, { group: g.name, duration, price });
+})));
+
+// A category that only has a flat tag list (e.g. created by admin without sub-categories) →
+// group its tags into catalog sub-categories (Haircut, Hair Color, …) with suggested time & price.
+// Tags not in the catalog go under "Other Services". Returns [] when no tag is in the catalog.
+const groupsFromTags = (tags) => {
+    const list = (Array.isArray(tags) ? tags : []).map((t) => String(t || '').trim()).filter(Boolean);
+    const byGroup = new Map();
+    const other = [];
+    let matched = 0;
+    const seen = new Set();
+    list.forEach((name) => {
+        if (seen.has(norm(name))) return;
+        seen.add(norm(name));
+        const hit = SERVICE_INDEX.get(looseKey(name));
+        if (!hit) { other.push({ name, duration: null, price: 0 }); return; }
+        matched += 1;
+        if (!byGroup.has(hit.group)) byGroup.set(hit.group, []);
+        byGroup.get(hit.group).push({ name, duration: hit.duration, price: hit.price });
+    });
+    if (!matched) return [];
+    const groups = [...byGroup.entries()].map(([name, services]) => ({ name, services }));
+    if (other.length) groups.push({ name: 'Other Services', services: other });
+    return groups;
+};
+
+// Fill sub-categories for every category that has tags but no sub-categories. Never touches others.
+const backfillGroupsFromTags = async () => {
+    const cats = await Category.find({ $or: [{ subcategoryGroups: { $exists: false } }, { subcategoryGroups: { $size: 0 } }] });
+    let filled = 0;
+    for (const cat of cats) {
+        const groups = groupsFromTags(cat.serviceCategories);
+        if (!groups.length) continue;
+        cat.subcategoryGroups = groups;
+        await cat.save();
+        filled += 1;
+    }
+    return filled;
+};
+
+module.exports = { run, CATALOG, groupsFromTags, backfillGroupsFromTags };
 
 if (require.main === module) {
-    run({ apply: process.argv.includes('--apply'), uri: process.env.MONGODB_URI || process.env.MONGO_URI }).catch((e) => {
+    run({ apply: process.argv.includes('--apply'), onlyEmpty: process.argv.includes('--only-empty'), uri: process.env.MONGODB_URI || process.env.MONGO_URI }).catch((e) => {
         console.error(e);
         process.exit(1);
     });

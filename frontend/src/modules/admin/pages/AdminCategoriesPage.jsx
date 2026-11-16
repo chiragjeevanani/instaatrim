@@ -336,7 +336,11 @@ export const AdminCategoriesPage = () => {
           .filter((sv) => sv.name)
       }))
       .filter((g) => g.name);
-    payload.append('subcategoryGroups', JSON.stringify(cleanGroups));
+    // On edit, send sub-categories ONLY if the admin changed them — otherwise an old copy in the
+    // browser could wipe the sub-categories saved in DB. Server keeps them when the field is missing.
+    if (!editingCategory || formData.groupsTouched) {
+      payload.append('subcategoryGroups', JSON.stringify(cleanGroups));
+    }
     
     payload.append('description', formData.description.trim());
     payload.append('price', formData.price || 0);
@@ -951,6 +955,7 @@ export const AdminCategoriesPage = () => {
                     onClick={() =>
                       setFormData((prev) => ({
                         ...prev,
+                        groupsTouched: true,
                         subcategoryGroups: [...(prev.subcategoryGroups || []), { name: '', services: [{ name: '', duration: 30, price: '' }] }]
                       }))
                     }
@@ -966,7 +971,7 @@ export const AdminCategoriesPage = () => {
 
                 {(formData.subcategoryGroups || []).map((g, gi) => {
                   const setGroups = (fn) =>
-                    setFormData((prev) => ({ ...prev, subcategoryGroups: fn([...(prev.subcategoryGroups || [])]) }));
+                    setFormData((prev) => ({ ...prev, groupsTouched: true, subcategoryGroups: fn([...(prev.subcategoryGroups || [])]) }));
                   const updateGroup = (patch) => setGroups((arr) => { arr[gi] = { ...arr[gi], ...patch }; return arr; });
                   const updateService = (si, patch) =>
                     updateGroup({ services: (g.services || []).map((sv, i) => (i === si ? { ...sv, ...patch } : sv)) });

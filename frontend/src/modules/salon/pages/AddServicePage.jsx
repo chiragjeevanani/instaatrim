@@ -98,7 +98,7 @@ export const AddServicePage = () => {
   const normalizeDuration = (d) => (typeof d === 'number' ? formatDuration(d) : d || '');
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState(availableCategories[0] || '');
+  const [category, setCategory] = useState(''); // picked from the Category dropdown
   const [subcategory, setSubcategory] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('45 mins');
@@ -127,14 +127,6 @@ export const AddServicePage = () => {
   useEffect(() => {
     api.categories.list().catch(() => {});
   }, []);
-
-  // DB categories load async — default to the salon's own category once they arrive
-  useEffect(() => {
-    if (!existingService && !category && availableCategories.length > 0) {
-      setCategory(availableCategories[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableCategories.join('|')]);
 
   // Sub-services of the selected category (DB) — used for manual entry chips
   const selectedCategoryTags = findDbCategory(category)?.serviceCategories || [];
@@ -184,53 +176,37 @@ export const AddServicePage = () => {
     [dbCategoryList]
   );
 
-  // Search the catalog while typing the title:
-  //  "hair"      → Hair (shows its sub-categories)
-  //  "haircut"   → Hair → Haircut (shows its services)
-  //  "keratin"   → Hair → Hair Treatments (service highlighted)
+  // Category dropdown (DB) → opens its sub-categories → services
+  const handleSelectCategory = (catName) => {
+    const groups = catalogCategories.find((c) => c.name === catName)?.subcategoryGroups || [];
+    setPickerCatName(catName);
+    // only one group (e.g. tags-only category) → open it directly
+    setPickerGroupName(groups.length === 1 ? groups[0].name : '');
+    setCategory(catName);
+    setSubcategory('');
+    // a service picked from the previous category doesn't belong to the new one
+    if (appliedTemplateName && name === appliedTemplateName) {
+      setName('');
+      setAppliedTemplateName('');
+    }
+  };
+
+  // Edit service: open the picker on the service's saved category / sub-category
   useEffect(() => {
-    const q = name.trim().toLowerCase();
-    // Title cleared → hide the sub-category / services picker
-    if (!q) {
-      if (pickerCatName) setPickerCatName('');
-      if (pickerGroupName) setPickerGroupName('');
-      return;
-    }
-    if (q.length < 2) return;
-    const labels = (c) => [c.name, c.shortName].filter(Boolean).map((n) => n.trim().toLowerCase());
-    const open = (catName, groupName = '') => {
-      // only one group (e.g. tags-only category) → open it directly
-      const groups = catalogCategories.find((c) => c.name === catName)?.subcategoryGroups || [];
-      const g = groupName || (groups.length === 1 ? groups[0].name : '');
-      if (catName !== pickerCatName) setPickerCatName(catName);
-      if (g !== pickerGroupName) setPickerGroupName(g);
-    };
-
-    // 1) category name
-    const cat =
-      catalogCategories.find((c) => labels(c).includes(q)) ||
-      catalogCategories.find((c) => labels(c).some((n) => n.startsWith(q)));
-    if (cat) return open(cat.name);
-    if (q.length < 3) return;
-
-    // 2) sub-category name
-    for (const c of catalogCategories) {
-      const g = c.subcategoryGroups.find((x) => x.name.toLowerCase().startsWith(q));
-      if (g) return open(c.name, g.name);
-    }
-    // 3) service name — exact first, then partial
-    for (const exact of [true, false]) {
-      for (const c of catalogCategories) {
-        for (const g of c.subcategoryGroups) {
-          if (g.services.some((s) => (exact ? s.name.toLowerCase() === q : s.name.toLowerCase().includes(q)))) {
-            return open(c.name, g.name);
-          }
-        }
-      }
-    }
-    // no catalog match → manual entry; keep whatever picker was open
+    if (!existingService || pickerCatName || catalogCategories.length === 0) return;
+    const cat = catalogCategories.find(
+      (c) => c.name.trim().toLowerCase() === String(existingService.category || '').trim().toLowerCase()
+    );
+    if (!cat) return;
+    const sub = String(existingService.subcategory || '').trim().toLowerCase();
+    const group =
+      cat.subcategoryGroups.find((g) => g.name.trim().toLowerCase() === sub) ||
+      cat.subcategoryGroups.find((g) => g.services.some((s) => s.name.trim().toLowerCase() === sub)) ||
+      (cat.subcategoryGroups.length === 1 ? cat.subcategoryGroups[0] : null);
+    setPickerCatName(cat.name);
+    setPickerGroupName(group ? group.name : '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, catalogCategories]);
+  }, [existingService?.id, catalogCategories]);
 
   // Category chips are removed — the service's category follows the catalog category the partner searched
   useEffect(() => {
@@ -263,7 +239,7 @@ export const AddServicePage = () => {
   const handleClearTemplate = () => {
     setName('');
     setAppliedTemplateName('');
-    setCategory(availableCategories[0] || '');
+    setCategory('');
     setSubcategory('');
     setDescription('');
     setDuration('45 mins');
@@ -525,7 +501,7 @@ export const AddServicePage = () => {
             <div className="relative">
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block">
-                  Service Title <span className="text-rose-600">*</span>
+                  Category <span className="text-rose-600">*</span>
                 </label>
                 <div className="flex items-center gap-1.5">
                   {(name || appliedTemplateName) && (
@@ -542,31 +518,24 @@ export const AddServicePage = () => {
                 </div>
               </div>
 
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  required
-                  placeholder="Pick from catalog or type your own service name..."
-                  value={name}
-                  onFocus={() => setShowAutofillSuggestions(true)}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setShowAutofillSuggestions(true);
-                  }}
-                  className="w-full bg-[#faf7fc] text-xs text-stone-900 placeholder:text-stone-400 rounded-xl border border-purple-100 pl-3 pr-8 py-2.5 outline-none focus:bg-white focus:border-rose-900 focus:ring-1 focus:ring-rose-900/30 transition-all font-medium"
-                />
-                {name && (
-                  <button
-                    type="button"
-                    onClick={handleClearTemplate}
-                    className="absolute right-2.5 text-stone-400 hover:text-stone-700 p-0.5 rounded-full hover:bg-stone-200/60 transition-colors cursor-pointer"
-                    title="Clear title"
-                  >
-                    <AlertCircle className="w-3.5 h-3.5 rotate-45" />
-                  </button>
+              {/* Category dropdown — all admin categories from DB (new ones appear automatically) */}
+              <select
+                required
+                value={category}
+                onChange={(e) => handleSelectCategory(e.target.value)}
+                className="w-full bg-[#faf7fc] text-xs text-stone-900 rounded-xl border border-purple-100 px-3 py-2.5 outline-none focus:bg-white focus:border-rose-900 focus:ring-1 focus:ring-rose-900/30 transition-all font-medium cursor-pointer"
+              >
+                <option value="">Select category</option>
+                {catalogCategories.map((c) => (
+                  <option key={c.id || c._id || c.name} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+                {/* old service saved under a category that's no longer in the list */}
+                {category && !catalogCategories.some((c) => c.name === category) && (
+                  <option value={category}>{category}</option>
                 )}
-              </div>
-
+              </select>
             </div>
 
             {/* Master catalog picker (DB): sub-categories → services of the typed category */}
@@ -579,21 +548,20 @@ export const AddServicePage = () => {
                       ? ' — choose a sub-category'
                       : ' — services'}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPickerCatName('');
-                      setPickerGroupName('');
-                    }}
-                    className="text-[10px] text-stone-400 hover:text-stone-700 cursor-pointer"
-                  >
-                    Close
-                  </button>
+                  {pickerCat.subcategoryGroups.length > 1 && pickerGroup && (
+                    <button
+                      type="button"
+                      onClick={() => setPickerGroupName('')}
+                      className="text-[10px] text-stone-400 hover:text-stone-700 cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-1.5">
                   {pickerCat.subcategoryGroups.length === 0 && (
-                    <p className="text-[10.5px] text-stone-500">No services listed in this category yet — type your service name above.</p>
+                    <p className="text-[10.5px] text-stone-500">No services listed in this category yet — type your service name below.</p>
                   )}
                   {pickerCat.subcategoryGroups.length > 1 && pickerCat.subcategoryGroups.map((g) => {
                     const isSel = pickerGroupName === g.name;
@@ -645,10 +613,28 @@ export const AddServicePage = () => {
                 )}
 
                 <p className="text-[9.5px] text-stone-500">
-                  Time &amp; price are DrimStyle suggestions — you can change them below. You can also type your own service name.
+                  Time &amp; price are DrimStyle suggestions — you can change them below. Service not listed? Type it in Service Name below.
                 </p>
               </div>
             )}
+
+            {/* Service name — filled by "Select" above, or type a new service of your own */}
+            <div>
+              <label className="text-[10.5px] font-bold text-stone-600 uppercase tracking-wider block mb-1">
+                Service Name <span className="text-rose-600">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={category ? 'Select a service above or type a new service name' : 'Select a category first, or type your service name'}
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (appliedTemplateName && e.target.value !== appliedTemplateName) setAppliedTemplateName('');
+                }}
+                className="w-full bg-[#faf7fc] text-xs text-stone-900 placeholder:text-stone-400 rounded-xl border border-purple-100 px-3 py-2.5 outline-none focus:bg-white focus:border-rose-900 focus:ring-1 focus:ring-rose-900/30 transition-all font-medium"
+              />
+            </div>
 
             {/* Sub-service chips of the selected category (DB) — only for categories without the
                 catalog hierarchy (those use the sub-category → services picker above) */}

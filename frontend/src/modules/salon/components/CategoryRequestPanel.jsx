@@ -15,10 +15,9 @@ const STATUS_STYLE = {
  */
 export const CategoryRequestPanel = ({ categories = [], currentCategory = '', suggestedName = '', showToast }) => {
   const [open, setOpen] = useState(false);
-  // Category dropdown: an existing category → request a new service in it (sub-category → service name);
-  // "+ New category" → request a whole new category
+  // Only "Request a new category" is offered now
+  const [type, setType] = useState('category');
   const [categoryId, setCategoryId] = useState('');
-  const type = categoryId === '__newcat' ? 'category' : 'subcategory';
   const [requestedName, setRequestedName] = useState('');
   const [tags, setTags] = useState('');
   const [gender, setGender] = useState('unisex');
@@ -47,7 +46,7 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
   }, [loadMine]);
 
   const openPanel = () => {
-    const cur = categories.find((c) => c.name === currentCategory);
+    const cur = categories.find((c) => c.name === currentCategory) || categories[0];
     setCategoryId(cur ? String(cur.id || cur._id) : '');
     setRequestedName(suggestedName || '');
     setGroupChoice('');
@@ -67,12 +66,8 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
       setError('Please enter a name (at least 2 characters).');
       return;
     }
-    if (!categoryId) {
+    if (type === 'subcategory' && !categoryId) {
       setError('Please choose the category.');
-      return;
-    }
-    if (type === 'subcategory' && groupNames.length > 0 && !groupChoice) {
-      setError('Please choose the sub-category.');
       return;
     }
     const groupName = groupChoice === '__new' ? newGroupName.trim() : groupChoice;
@@ -141,58 +136,60 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
           </div>
 
           <p className="text-[10.5px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 leading-snug">
-            ✅ You can add any service right now — just type its name in <b>Service Name</b> above and save.
-            Want it added to the DrimStyle list (or need a new category)? Request it below.
+            ✅ You can add any service right now — just type its name in <b>Service Title</b> above and save.
+            Need a whole new category? Request it from DrimStyle below.
           </p>
 
-          {/* 1) Category (DB) */}
-          <div>
-            <label className="text-[10px] font-semibold text-stone-700 block mb-1">
-              Category <span className="text-rose-600">*</span>
-            </label>
-            <select
-              value={categoryId}
-              onChange={(e) => {
-                setCategoryId(e.target.value);
-                setGroupChoice('');
-                setNewGroupName('');
-              }}
-              className={inputCls}
-            >
-              <option value="">Select category</option>
-              {categories.map((c) => (
-                <option key={c.id || c._id} value={c.id || c._id}>
-                  {c.name}
-                </option>
-              ))}
-              <option value="__newcat">+ New category (not in the list)</option>
-            </select>
+          <div className="grid grid-cols-1 gap-1.5">
+            {[
+              { val: 'category', label: 'Request a new category', hint: 'e.g. Tattoo & Piercing' }
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setType(opt.val)}
+                className={`text-left px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer ${type === opt.val
+                  ? 'bg-rose-900 text-white border-rose-900'
+                  : 'bg-white text-stone-700 border-purple-200 hover:border-purple-400'
+                  }`}
+              >
+                <span className="text-[11px] font-bold block">{opt.label}</span>
+                <span className={`text-[9.5px] block ${type === opt.val ? 'text-rose-100' : 'text-stone-500'}`}>{opt.hint}</span>
+              </button>
+            ))}
           </div>
 
-          {/* 2) Sub-category of the chosen category (DB) */}
-          {type === 'subcategory' && categoryId && groupNames.length > 0 && (
+          {type === 'subcategory' && (
             <div>
-              <label className="text-[10px] font-semibold text-stone-700 block mb-1">
-                Sub-category <span className="text-rose-600">*</span>
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {[...groupNames, '__new'].map((g) => {
-                  const isSel = groupChoice === g;
-                  return (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setGroupChoice(isSel ? '' : g)}
-                      className={`text-[10.5px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer ${isSel
-                        ? 'bg-rose-900 text-white border-rose-900'
-                        : 'bg-white text-stone-700 border-purple-200 hover:border-purple-400'
-                        }`}
-                    >
-                      {g === '__new' ? '+ New sub-category' : g}
-                    </button>
-                  );
-                })}
-              </div>
+              <label className="text-[10px] font-semibold text-stone-700 block mb-1">Category</label>
+              <select
+                value={categoryId}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setGroupChoice('');
+                  setNewGroupName('');
+                }}
+                className={inputCls}
+              >
+                {categories.map((c) => (
+                  <option key={c.id || c._id} value={c.id || c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {type === 'subcategory' && groupNames.length > 0 && (
+            <div>
+              <label className="text-[10px] font-semibold text-stone-700 block mb-1">Sub-category</label>
+              <select value={groupChoice} onChange={(e) => setGroupChoice(e.target.value)} className={inputCls}>
+                <option value="">Not sure (admin will decide)</option>
+                {groupNames.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+                <option value="__new">+ New sub-category…</option>
+              </select>
               {groupChoice === '__new' && (
                 <input
                   type="text"
@@ -206,10 +203,9 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
             </div>
           )}
 
-          {categoryId && (
           <div>
             <label className="text-[10px] font-semibold text-stone-700 block mb-1">
-              {type === 'subcategory' ? 'New service name' : 'New category name'} <span className="text-rose-600">*</span>
+              {type === 'subcategory' ? 'Service name' : 'Category name'} <span className="text-rose-600">*</span>
             </label>
             <input
               type="text"
@@ -220,6 +216,18 @@ export const CategoryRequestPanel = ({ categories = [], currentCategory = '', su
               className={inputCls}
             />
           </div>
+
+          {type === 'subcategory' && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-semibold text-stone-700 block mb-1">Time (minutes, optional)</label>
+                <input type="number" min="5" max="720" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 30" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-stone-700 block mb-1">Price ₹ (optional)</label>
+                <input type="number" min="1" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. 400" className={inputCls} />
+              </div>
+            </div>
           )}
 
           {type === 'category' && (

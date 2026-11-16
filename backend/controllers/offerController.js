@@ -8,11 +8,14 @@ const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 // API shape kept compatible with the existing UI (salonId 'all' for global, `discount` label, `id`)
 const toClient = (o) => {
     const d = o.toObject ? o.toObject() : o;
+    const dayWise = d.dayDiscounts && DAYS.some((k) => d.dayDiscounts[k] != null);
+    const dayValues = dayWise ? DAYS.map((k) => Number(d.dayDiscounts[k]) || 0).filter((v) => v > 0) : [];
+    const varies = dayValues.length > 0 && Math.min(...dayValues) !== Math.max(...dayValues);
     return {
         ...d,
         id: String(d._id),
         salonId: d.salonId ? String(d.salonId) : 'all',
-        discount: `${d.discountPercent}% OFF`,
+        discount: varies ? `Up to ${d.discountPercent}% OFF` : `${d.discountPercent}% OFF`,
         subcategory: (d.subcategories || []).join(', ')
     };
 };
@@ -43,6 +46,27 @@ const buildFields = async (body, { forceSalonId } = {}) => {
     if (body.applicableDays !== undefined) {
         const days = (Array.isArray(body.applicableDays) ? body.applicableDays : []).map((d) => String(d).slice(0, 3)).filter((d) => DAYS.includes(d));
         out.applicableDays = days.length ? days : DAYS;
+    }
+    // Day-wise discount: { Mon: 30, ..., Sat: 10, Sun: 0 } (0 / empty = no offer that day). null = same every day.
+    if (body.dayDiscounts !== undefined) {
+        if (!body.dayDiscounts) {
+            out.dayDiscounts = null;
+        } else {
+            const map = {};
+            for (const k of DAYS) {
+                const v = Number(body.dayDiscounts[k]);
+                map[k] = Number.isFinite(v) && v > 0 ? Math.round(v) : 0;
+                if (map[k] > 90) errors.push(`${k}: discount must be between 1% and 90%`);
+            }
+            const onDays = DAYS.filter((k) => map[k] > 0);
+            if (!onDays.length) {
+                errors.push('Enter a discount for at least one day');
+            } else {
+                out.dayDiscounts = map;
+                out.applicableDays = onDays;                                  // offer runs only on those days
+                out.discountPercent = Math.max(...onDays.map((k) => map[k])); // highest day = headline %
+            }
+        }
     }
     if (body.validTill !== undefined) {
         const v = String(body.validTill || '').slice(0, 10);

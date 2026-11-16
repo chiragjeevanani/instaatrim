@@ -375,6 +375,8 @@ export const SalonDashboardPage = () => {
                   {/* Services summary */}
                   <div className="text-[11px] text-stone-500 font-normal truncate">
                     {b.services.map((s) => s.name).join(', ')}
+                    {/* stylist the customer picked at booking */}
+                    {b.staffName && <span className="text-stone-700 font-semibold"> • Stylist: {b.staffName}</span>}
                   </div>
 
                   {/* Status, Price, & Action Button */}

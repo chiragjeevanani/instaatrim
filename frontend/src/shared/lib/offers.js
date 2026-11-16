@@ -13,14 +13,27 @@ const localDateStr = (d = new Date()) => {
   return `${y}-${m}-${day}`;
 };
 
-// Active, approved, not expired, and valid on today's weekday
+// Offer has a different % per weekday (e.g. weekdays 30%, weekend 10%)
+export const isDayWiseOffer = (offer) =>
+  !!offer?.dayDiscounts && DAY_KEYS.some((k) => offer.dayDiscounts[k] != null);
+
+// Discount % of an offer on a date's weekday. Day-wise offers use that day's own value;
+// others use discountPercent on their applicable days. (Same rule as backend utils/offerPricing.js)
+export const offerPercentOn = (offer, now = new Date()) => {
+  if (!offer) return 0;
+  const day = DAY_KEYS[now.getDay()];
+  if (isDayWiseOffer(offer)) return Number(offer.dayDiscounts[day]) || 0;
+  const days = Array.isArray(offer.applicableDays) ? offer.applicableDays.map((d) => String(d).slice(0, 3)) : [];
+  if (days.length && !days.includes(day)) return 0;
+  return Number(offer.discountPercent) || 0;
+};
+
+// Active, approved, not expired, and has a discount on today's weekday
 export const isOfferLiveNow = (offer, now = new Date()) => {
   if (!offer || offer.isActive === false) return false;
   if (offer.approvalStatus && offer.approvalStatus !== 'approved') return false;
   if (offer.validTill && String(offer.validTill).slice(0, 10) < localDateStr(now)) return false;
-  const days = Array.isArray(offer.applicableDays) ? offer.applicableDays.map((d) => String(d).slice(0, 3)) : [];
-  if (days.length && !days.includes(DAY_KEYS[now.getDay()])) return false;
-  return Number(offer.discountPercent) > 0;
+  return offerPercentOn(offer, now) > 0;
 };
 
 // Offer is for this salon (or all salons)
@@ -41,9 +54,9 @@ export const offerMatchesService = (offer, service) => {
   return subs.includes(norm(service.subcategory)) || subs.includes(norm(service.name || service.title));
 };
 
-export const discountAmountFor = (offer, basePrice) => {
+export const discountAmountFor = (offer, basePrice, now = new Date()) => {
   const price = Number(basePrice) || 0;
-  let amt = Math.round((price * Number(offer.discountPercent || 0)) / 100);
+  let amt = Math.round((price * offerPercentOn(offer, now)) / 100);
   if (Number(offer.maxDiscount) > 0) amt = Math.min(amt, Number(offer.maxDiscount));
   return Math.max(0, Math.min(amt, price));
 };
@@ -55,9 +68,9 @@ export const getBestOfferForService = (service, salonId, offers = [], now = new 
   let best = null;
   for (const offer of offers || []) {
     if (!isOfferLiveNow(offer, now) || !offerAppliesToSalon(offer, salonId) || !offerMatchesService(offer, service)) continue;
-    const savings = discountAmountFor(offer, basePrice);
+    const savings = discountAmountFor(offer, basePrice, now);
     if (savings > 0 && (!best || savings > best.savings)) {
-      best = { offer, basePrice, finalPrice: basePrice - savings, savings, label: `${offer.discountPercent}% OFF` };
+      best = { offer, basePrice, finalPrice: basePrice - savings, savings, label: `${offerPercentOn(offer, now)}% OFF` };
     }
   }
   return best;
@@ -66,6 +79,22 @@ export const getBestOfferForService = (service, salonId, offers = [], now = new 
 // Live offers visible on one salon's page
 export const liveOffersForSalon = (salonId, offers = [], now = new Date()) =>
   (offers || []).filter((o) => isOfferLiveNow(o, now) && offerAppliesToSalon(o, salonId));
+
+// "Mon–Fri 30% • Sat–Sun 10%" for day-wise offers ('' otherwise). Consecutive days with the same % are grouped.
+const WEEK_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export const dayWiseText = (offer) => {
+  if (!isDayWiseOffer(offer)) return '';
+  const parts = [];
+  let i = 0;
+  while (i < WEEK_ORDER.length) {
+    const pct = Number(offer.dayDiscounts[WEEK_ORDER[i]]) || 0;
+    let j = i;
+    while (j + 1 < WEEK_ORDER.length && (Number(offer.dayDiscounts[WEEK_ORDER[j + 1]]) || 0) === pct) j += 1;
+    if (pct > 0) parts.push(`${WEEK_ORDER[i]}${j > i ? `–${WEEK_ORDER[j]}` : ''} ${pct}%`);
+    i = j + 1;
+  }
+  return parts.join(' • ');
+};
 
 // Human text: "20% OFF on Head Massage, Foot Reflexology" / "on Spa & Massage" / "on all services"
 export const offerScopeText = (offer) => {

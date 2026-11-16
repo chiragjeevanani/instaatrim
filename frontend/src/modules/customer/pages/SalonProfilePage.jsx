@@ -6,7 +6,7 @@ import { api } from '../../../shared/services/api';
 import { SlotPickerModal } from '../components/SlotPickerModal';
 import { BookingFlowModal } from '../components/BookingFlowModal';
 import { SalonTeamSection } from '../components/SalonTeamSection';
-import { getBestOfferForService, liveOffersForSalon, offerScopeText } from '../../../shared/lib/offers';
+import { getBestOfferForService, liveOffersForSalon, offerScopeText, offerPercentOn, dayWiseText } from '../../../shared/lib/offers';
 import { reviewSummary, salonHoursLabel, salonPhone, formatDuration } from '../../../shared/store/selectors';
 import { parseHoursRange, nowMinutesOfDay } from '../../../shared/lib/time';
 import {
@@ -279,12 +279,15 @@ export const SalonProfilePage = () => {
           {liveOffersForSalon(salon._id || salon.id, state.offers || []).map((o) => (
             <div key={o.id || o._id} className="flex items-start gap-2">
               <span className="shrink-0 text-[10px] font-extrabold text-white bg-emerald-600 px-1.5 py-0.5 rounded">
-                {o.discountPercent}% OFF
+                {offerPercentOn(o)}% OFF
               </span>
               <p className="text-[11.5px] text-stone-700 leading-snug">
                 <span className="font-bold text-stone-900">{o.title}</span> — on {offerScopeText(o)}
                 {o.validTill && <span className="text-stone-400"> • till {o.validTill}</span>}
-                {Array.isArray(o.applicableDays) && o.applicableDays.length > 0 && o.applicableDays.length < 7 && (
+                {/* day-wise offer: "Mon–Fri 30% • Sat–Sun 10%" */}
+                {dayWiseText(o) ? (
+                  <span className="text-stone-400"> • {dayWiseText(o)}</span>
+                ) : Array.isArray(o.applicableDays) && o.applicableDays.length > 0 && o.applicableDays.length < 7 && (
                   <span className="text-stone-400"> • {o.applicableDays.join(', ')}</span>
                 )}
               </p>

@@ -17,7 +17,7 @@ import {
 import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
-import { isOfferLiveNow, offerMatchesService, offerScopeText } from '../../../shared/lib/offers';
+import { isOfferLiveNow, offerMatchesService, offerScopeText, offerPercentOn } from '../../../shared/lib/offers';
 
 export const LiveOffersStrip = () => {
   const navigate = useNavigate();
@@ -131,7 +131,8 @@ export const LiveOffersStrip = () => {
         {/* Horizontal Scroll of Offer Cards */}
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-0.5 w-full">
           {liveDeals.map((deal) => {
-            const discountLabel = deal.discount || (deal.discountPercent ? `${deal.discountPercent}% OFF` : 'SPECIAL OFFER');
+            // today's % (day-wise offers differ by weekday)
+            const discountLabel = offerPercentOn(deal) > 0 ? `${offerPercentOn(deal)}% OFF` : deal.discount || 'SPECIAL OFFER';
             const isGlobal = deal.salonId === 'all' || !deal.salonId;
 
             return (
@@ -215,13 +216,13 @@ export const LiveOffersStrip = () => {
               <div className="flex items-start justify-between pb-3 border-b border-stone-100">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 tracking-wider">
-                    {selectedDealForModal.discount || 'Special Discount'} Applied
+                    {offerPercentOn(selectedDealForModal) > 0 ? `${offerPercentOn(selectedDealForModal)}% OFF` : selectedDealForModal.discount || 'Special Discount'} Applied
                   </span>
                   <h3 className="text-base font-bold text-stone-900 mt-1">
                     Select Salon for {selectedDealForModal.title}
                   </h3>
                   <p className="text-xs text-stone-500">
-                    {selectedDealForModal.discountPercent}% OFF on <span className="font-semibold text-stone-700">{offerScopeText(selectedDealForModal)}</span> — applied automatically at the salon
+                    {offerPercentOn(selectedDealForModal)}% OFF today on <span className="font-semibold text-stone-700">{offerScopeText(selectedDealForModal)}</span> — applied automatically at the salon
                   </p>
                 </div>
                 <button

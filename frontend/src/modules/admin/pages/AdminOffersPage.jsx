@@ -3,7 +3,15 @@ import { Tag, CheckCircle2, XCircle, Clock, Search, AlertCircle, Percent, Plus, 
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 import { api } from '../../../shared/services/api';
+import { dayWiseText } from '../../../shared/lib/offers';
 
+// Day-wise discount: week order for the per-day inputs
+const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const WEEKEND = ['Sat', 'Sun'];
+// "All Categories" = offer on every service (saved as category '' — backend already treats '' as all)
+const ALL_CATEGORIES = 'All Categories';
+const emptyDayDiscounts = () => WEEK_DAYS.reduce((m, d) => ({ ...m, [d]: '' }), {});
 
 export const AdminOffersPage = () => {
   const { offers = [], salons = [], categories = [], approveOffer, rejectOffer, createOffer, updateOffer, deleteOffer } = useAdmin();
@@ -31,8 +39,15 @@ export const AdminOffersPage = () => {
     maxDiscount: '', // optional cap in ₹
     description: '',
     applicableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    validTill: '' // '' = no expiry (admin can pick a date)
+    validTill: '', // '' = no expiry (admin can pick a date)
+    // Day-wise discount (e.g. weekdays 30%, weekend 10%). false = same `discount` every day
+    dayWise: false,
+    dayDiscounts: emptyDayDiscounts()
   };
+
+  // Fill a group of days (weekdays / weekend) with one % in day-wise mode
+  const setDaysPercent = (days, val) =>
+    setFormData((prev) => ({ ...prev, dayDiscounts: { ...prev.dayDiscounts, ...days.reduce((m, d) => ({ ...m, [d]: val }), {}) } }));
 
   const [formData, setFormData] = useState(initialFormState);
 
@@ -148,9 +163,15 @@ export const AdminOffersPage = () => {
       subArr = offer.subcategory.split(",").map((s) => s.trim()).filter(Boolean);
     }
     const discVal = offer.discountPercent || (parseFloat(offer.discount) || 25);
+    const dd = offer.dayDiscounts;
+    const isDayWise = !!dd && WEEK_DAYS.some((d) => dd[d] != null);
     setFormData({
+      dayWise: isDayWise,
+      dayDiscounts: isDayWise
+        ? WEEK_DAYS.reduce((m, d) => ({ ...m, [d]: Number(dd[d]) > 0 ? String(dd[d]) : '' }), {})
+        : emptyDayDiscounts(),
       title: offer.title || "",
-      category: offer.category || "",
+      category: offer.category || ALL_CATEGORIES, // '' in DB = every category
       subcategories: subArr,
       salonId: offer.salonId || "all",
       salonName: offer.salonName || "All Salons (Global Offer)",
@@ -185,26 +206,49 @@ export const AdminOffersPage = () => {
 
     setIsSubmitting(true);
     try {
+      const isAllCats = formData.category.trim() === ALL_CATEGORIES;
       const pendingTag = customSubInput.trim();
-      const subs = pendingTag && !formData.subcategories.includes(pendingTag) ? [...formData.subcategories, pendingTag] : formData.subcategories;
-      const scopeText = subs.length > 0 ? subs.join(', ') : formData.category.trim();
-      const pct = Number(formData.discount) || 0;
-      if (pct < 1 || pct > 90) {
+      const subs = isAllCats
+        ? []
+        : pendingTag && !formData.subcategories.includes(pendingTag) ? [...formData.subcategories, pendingTag] : formData.subcategories;
+      const scopeText = isAllCats ? 'all services' : subs.length > 0 ? subs.join(', ') : formData.category.trim();
+      // Day-wise: each day's own % (empty / 0 = no offer that day). Otherwise one % for every day.
+      let dayDiscounts = null;
+      let applicableDays = formData.applicableDays;
+      let pct = Number(formData.discount) || 0;
+      if (formData.dayWise) {
+        dayDiscounts = WEEK_DAYS.reduce((m, d) => ({ ...m, [d]: Math.round(Number(formData.dayDiscounts[d]) || 0) }), {});
+        const bad = WEEK_DAYS.find((d) => dayDiscounts[d] < 0 || dayDiscounts[d] > 90);
+        if (bad) {
+          alert(`${bad}: discount must be between 1% and 90%`);
+          setIsSubmitting(false);
+          return;
+        }
+        applicableDays = WEEK_DAYS.filter((d) => dayDiscounts[d] > 0);
+        if (applicableDays.length === 0) {
+          alert('Enter a discount for at least one day');
+          setIsSubmitting(false);
+          return;
+        }
+        pct = Math.max(...applicableDays.map((d) => dayDiscounts[d]));
+      } else if (pct < 1 || pct > 90) {
         alert('Discount must be between 1% and 90%');
         setIsSubmitting(false);
         return;
       }
+      const dayText = dayDiscounts ? dayWiseText({ dayDiscounts }) : '';
 
       const offerPayload = {
         title: formData.title.trim(),
-        category: formData.category.trim(),
+        category: isAllCats ? '' : formData.category.trim(), // '' = every category
         subcategories: subs, // [] = whole category
         salonId: formData.salonId,
         salonName: formData.salonName,
         discountPercent: pct,
+        dayDiscounts, // null = same % every day
         maxDiscount: Number(formData.maxDiscount) || 0,
-        description: formData.description.trim() || `Flat ${pct}% off on ${scopeText}`,
-        applicableDays: formData.applicableDays,
+        description: formData.description.trim() || (dayText ? `${dayText} off on ${scopeText}` : `Flat ${pct}% off on ${scopeText}`),
+        applicableDays,
         validTill: formData.validTill,
         isActive: true
       };
@@ -397,6 +441,13 @@ export const AdminOffersPage = () => {
                       </span>
                     </div>
 
+                    {dayWiseText(offer) && (
+                      <div className="flex justify-between gap-2">
+                        <span className="text-stone-400 shrink-0">Day-wise</span>
+                        <span className="text-amber-300 font-semibold text-right">{dayWiseText(offer)}</span>
+                      </div>
+                    )}
+
                     {offer.applicableDays && (
                       <div className="flex justify-between">
                         <span className="text-stone-400">Applicable Days</span>
@@ -564,8 +615,19 @@ export const AdminOffersPage = () => {
                 />
 
                 {/* Autocomplete Dropdown */}
-                {showCatSuggestions && catSuggestions.length > 0 && (
+                {showCatSuggestions && (
                   <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#161622] border border-[#2f2f45] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#232336] max-h-52 overflow-y-auto">
+                    {/* One click: offer on every category / every service */}
+                    <div
+                      onClick={() => handleSelectCategory({ name: ALL_CATEGORIES })}
+                      className="p-2.5 bg-purple-900/20 hover:bg-purple-900/40 cursor-pointer transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-xs font-bold text-emerald-300">{ALL_CATEGORIES}</span>
+                      </div>
+                      <span className="text-[10px] text-stone-400">every service</span>
+                    </div>
                     {catSuggestions.map((cat) => (
                       <div
                         key={cat.name}
@@ -583,20 +645,30 @@ export const AdminOffersPage = () => {
                 )}
               </div>
 
-              {/* 3. Subcategories (Multi-Select Chips + Manual Tags) */}
-              <div>
+              {/* 3. Subcategories (Multi-Select Chips + Manual Tags) — not needed for "All Categories" */}
+              <div className={formData.category === ALL_CATEGORIES ? 'hidden' : ''}>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider">
                     Subcategories / Service Tags (Multi-Select)
                   </label>
                   {availableSubcategories.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleSelectAllSubcategories}
-                      className="text-[10px] text-purple-400 hover:text-purple-300 font-semibold cursor-pointer"
-                    >
-                      + Select All
-                    </button>
+                    availableSubcategories.every((s) => formData.subcategories.includes(s)) ? (
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, subcategories: [] }))}
+                        className="text-[10px] text-stone-400 hover:text-white font-semibold cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSelectAllSubcategories}
+                        className="text-[10px] text-purple-400 hover:text-purple-300 font-semibold cursor-pointer"
+                      >
+                        + Select All
+                      </button>
+                    )
                   )}
                 </div>
 
@@ -712,7 +784,92 @@ export const AdminOffersPage = () => {
 
               {/* 5. Discount rule — applied on each matching service's OWN price in the salon */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#101018] border border-[#232336]">
-                <div>
+                {/* Discount type: one % every day, or a different % per day (weekdays vs weekend) */}
+                <div className="sm:col-span-2 grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#141420] border border-[#2d2d42]">
+                  {[
+                    { key: false, label: 'Same every day' },
+                    { key: true, label: 'Day-wise discount' }
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.key)}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => {
+                          if (prev.dayWise === opt.key) return prev;
+                          // switching to day-wise: start every day from the current flat %
+                          const start = String(Number(prev.discount) || '');
+                          return {
+                            ...prev,
+                            dayWise: opt.key,
+                            dayDiscounts: opt.key && WEEK_DAYS.every((d) => !prev.dayDiscounts[d])
+                              ? WEEK_DAYS.reduce((m, d) => ({ ...m, [d]: start }), {})
+                              : prev.dayDiscounts
+                          };
+                        })
+                      }
+                      className={`py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                        formData.dayWise === opt.key ? 'bg-purple-600 text-white' : 'text-stone-400 hover:text-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {formData.dayWise && (
+                  <div className="sm:col-span-2 space-y-2.5">
+                    {/* Quick fill: weekdays / weekend */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'Weekdays (Mon–Fri) %', days: WEEKDAYS },
+                        { label: 'Weekend (Sat–Sun) %', days: WEEKEND }
+                      ].map((g) => {
+                        const vals = g.days.map((d) => formData.dayDiscounts[d]);
+                        const same = vals.every((v) => v === vals[0]) ? vals[0] : '';
+                        return (
+                          <div key={g.label}>
+                            <label className="block text-[10px] font-bold text-stone-300 uppercase tracking-wider mb-1">{g.label}</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="90"
+                              placeholder={same === '' && vals.some(Boolean) ? 'Mixed' : 'e.g. 30'}
+                              value={same}
+                              onChange={(e) => setDaysPercent(g.days, e.target.value)}
+                              className="w-full bg-[#141420] border border-purple-500/40 rounded-xl px-3 py-2 text-purple-300 placeholder-stone-600 focus:outline-none focus:border-purple-500 text-xs font-semibold"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Each day's own % (fine-tune any single day) */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-300 uppercase tracking-wider mb-1">Per day % (empty / 0 = no offer that day)</label>
+                      <div className="grid grid-cols-7 gap-1">
+                        {WEEK_DAYS.map((d) => (
+                          <div key={d} className="text-center">
+                            <span className={`block text-[9.5px] font-bold mb-0.5 ${WEEKEND.includes(d) ? 'text-amber-300' : 'text-stone-400'}`}>{d}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="90"
+                              value={formData.dayDiscounts[d]}
+                              onChange={(e) => setDaysPercent([d], e.target.value)}
+                              className="w-full bg-[#141420] border border-[#2d2d42] rounded-lg px-1 py-1.5 text-center text-white focus:outline-none focus:border-purple-500 text-[11px] font-semibold"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[9.5px] text-stone-500 mt-1">
+                        {dayWiseText({ dayDiscounts: WEEK_DAYS.reduce((m, d) => ({ ...m, [d]: Number(formData.dayDiscounts[d]) || 0 }), {}) }) ||
+                          'Enter a discount for at least one day'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className={formData.dayWise ? 'hidden' : ''}>
                   <label className="block text-[10.5px] font-bold text-stone-300 uppercase tracking-wider mb-1 flex items-center justify-between">
                     <span>Discount (%) *</span>
                     {Number(formData.discount) > 0 && (
@@ -746,17 +903,26 @@ export const AdminOffersPage = () => {
                 </div>
 
                 <p className="sm:col-span-2 text-[10.5px] text-emerald-300/90 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-2.5 py-1.5">
-                  Example: a ₹1,000 service →{' '}
-                  <b>
-                    ₹
-                    {(() => {
-                      const pct = Math.min(90, Math.max(0, Number(formData.discount) || 0));
+                  {(() => {
+                    const priceAt = (p) => {
+                      const pct = Math.min(90, Math.max(0, Number(p) || 0));
                       let off = Math.round((1000 * pct) / 100);
                       if (Number(formData.maxDiscount) > 0) off = Math.min(off, Number(formData.maxDiscount));
                       return 1000 - off;
-                    })()}
-                  </b>{' '}
-                  for the customer. Applies on{' '}
+                    };
+                    if (!formData.dayWise) {
+                      return (
+                        <>Example: a ₹1,000 service → <b>₹{priceAt(formData.discount)}</b> for the customer.</>
+                      );
+                    }
+                    // day-wise: weekday vs weekend price (Mon & Sat as the samples)
+                    return (
+                      <>
+                        Example: a ₹1,000 service → <b>₹{priceAt(formData.dayDiscounts.Mon)}</b> on Monday,{' '}
+                        <b>₹{priceAt(formData.dayDiscounts.Sat)}</b> on Saturday.
+                      </>
+                    );
+                  })()} Applies on{' '}
                   {formData.subcategories.length > 0 ? formData.subcategories.join(', ') : formData.category || 'the selected category'}
                   {formData.salonId && formData.salonId !== 'all' ? ` at ${formData.salonName}` : ' in all salons'}.
                 </p>

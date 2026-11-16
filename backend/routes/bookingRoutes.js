@@ -5,6 +5,7 @@ const bookingController = require('../controllers/bookingController');
 router.post('/', bookingController.createBooking);
 router.get('/all', bookingController.getAllBookings);
 router.get('/customer/:customerId', bookingController.getCustomerBookings);
+router.get('/salon/:salonId/staff/:staffId/busy', bookingController.getStaffBusy);
 router.get('/salon/:salonId', bookingController.getSalonBookings);
 router.get('/:id', bookingController.getBookingById);
 router.patch('/:id/status', bookingController.updateBookingStatus);

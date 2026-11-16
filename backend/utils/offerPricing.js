@@ -14,13 +14,21 @@ const istNow = () => {
     return { date: `${get('year')}-${get('month')}-${get('day')}`, day: get('weekday') };
 };
 
+// Discount % of an offer on one weekday ('Mon'…'Sun'). Day-wise offers use that day's own value
+// (weekdays 30%, weekend 10%…); others use discountPercent on their applicable days.
+const percentForDay = (offer, day) => {
+    const dd = offer && offer.dayDiscounts;
+    if (dd && DAY_KEYS.some((k) => dd[k] != null)) return Number(dd[day]) || 0;
+    const days = (offer.applicableDays || []).map((d) => String(d).slice(0, 3));
+    if (days.length && !days.includes(day)) return 0;
+    return Number(offer.discountPercent) || 0;
+};
+
 const isOfferLiveNow = (offer, now = istNow()) => {
     if (!offer || offer.isActive === false) return false;
     if (offer.approvalStatus && offer.approvalStatus !== 'approved') return false;
     if (offer.validTill && String(offer.validTill).slice(0, 10) < now.date) return false;
-    const days = (offer.applicableDays || []).map((d) => String(d).slice(0, 3));
-    if (days.length && !days.includes(now.day)) return false;
-    return Number(offer.discountPercent) > 0;
+    return percentForDay(offer, now.day) > 0;
 };
 
 const offerAppliesToSalon = (offer, salonId) => !offer.salonId || String(offer.salonId) === String(salonId);
@@ -33,8 +41,8 @@ const offerMatchesService = (offer, service) => {
     return subs.includes(norm(service.subcategory)) || subs.includes(norm(service.title || service.name));
 };
 
-const discountAmountFor = (offer, price) => {
-    let amt = Math.round((Number(price) * Number(offer.discountPercent || 0)) / 100);
+const discountAmountFor = (offer, price, day = istNow().day) => {
+    let amt = Math.round((Number(price) * percentForDay(offer, day)) / 100);
     if (Number(offer.maxDiscount) > 0) amt = Math.min(amt, Number(offer.maxDiscount));
     return Math.max(0, Math.min(amt, Number(price)));
 };
@@ -49,12 +57,13 @@ const loadLiveOffersForSalon = async (salonId) => {
 // Price the customer must pay for one service (best live offer applied)
 const priceWithBestOffer = (service, offers) => {
     const base = Number(service.price) || 0;
+    const day = istNow().day;
     let best = 0;
     for (const o of offers) {
         if (!offerMatchesService(o, service)) continue;
-        best = Math.max(best, discountAmountFor(o, base));
+        best = Math.max(best, discountAmountFor(o, base, day));
     }
     return base - best;
 };
 
-module.exports = { loadLiveOffersForSalon, priceWithBestOffer, istNow };
+module.exports = { loadLiveOffersForSalon, priceWithBestOffer, istNow, percentForDay };

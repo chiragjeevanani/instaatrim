@@ -56,7 +56,9 @@ const isSalonHoliday = (salon, dateKeyStr) => (salon.holidays || []).some((h) =>
  *
  * @returns {{ slots: Array<{time, startMin, endMin, staffId, staffOptions}>, reason: string|null }}
  */
-export function getDaySlots({ salon, staffList, durationMinutes, category, bookings, holds = [], dateObj, excludeHoldId }) {
+// pickedStaff (optional): { id, busy: [{ start, end }] } — the stylist the customer chose (DB).
+// A slot that overlaps one of that stylist's busy windows is not bookable; free slots go to that stylist.
+export function getDaySlots({ salon, staffList, durationMinutes, category, bookings, holds = [], dateObj, excludeHoldId, pickedStaff = null }) {
   const weekday = weekdayName(dateObj);
   const todayKeyStr = dateKey(dateObj);
   const duration = parseInt(durationMinutes, 10) || 30;
@@ -122,13 +124,18 @@ export function getDaySlots({ salon, staffList, durationMinutes, category, booki
       relevantBookings.filter((b) => overlaps(t, slotEnd, bookingWindow(b).start, bookingWindow(b).end)).length +
       relevantHolds.filter((h) => overlaps(t, slotEnd, h.startMin, h.endMin)).length;
 
-    if (freeStaff.length > 0 && chairsInUse < totalChairs) {
+    const pickedBusy =
+      pickedStaff?.id &&
+      ((pickedStaff.busy || []).some((w) => overlaps(t, slotEnd, w.start, w.end)) ||
+        relevantHolds.some((h) => String(h.staffId) === String(pickedStaff.id) && overlaps(t, slotEnd, h.startMin, h.endMin)));
+
+    if (freeStaff.length > 0 && chairsInUse < totalChairs && !pickedBusy) {
       slots.push({
         time: minutesToClock(t),
         startMin: t,
         endMin: slotEnd,
-        staffId: freeStaff[0].id,
-        staffOptions: freeStaff.map((s) => s.id),
+        staffId: pickedStaff?.id || freeStaff[0].id,
+        staffOptions: pickedStaff?.id ? [pickedStaff.id] : freeStaff.map((s) => s.id),
         available: true
       });
     } else {
@@ -152,7 +159,7 @@ export function getDaySlots({ salon, staffList, durationMinutes, category, booki
  * Minutes), 'next' (Next Available Slot), or 'unavailable' when the salon
  * has instant booking off, is closed, or has no free resource today.
  */
-export function getInstantAvailability({ salon, staffList, durationMinutes, category, bookings, holds = [], atDate = new Date() }) {
+export function getInstantAvailability({ salon, staffList, durationMinutes, category, bookings, holds = [], atDate = new Date(), pickedStaff = null }) {
   if (!salon.hasInstantBooking || !salon.isInstantBookingEnabled) {
     return { state: 'unavailable', label: 'Instant Booking is turned off by this salon', slot: null };
   }
@@ -160,7 +167,7 @@ export function getInstantAvailability({ salon, staffList, durationMinutes, cate
     return { state: 'unavailable', label: 'Salon is currently closed', slot: null };
   }
 
-  const { slots } = getDaySlots({ salon, staffList, durationMinutes, category, bookings, holds, dateObj: atDate });
+  const { slots } = getDaySlots({ salon, staffList, durationMinutes, category, bookings, holds, dateObj: atDate, pickedStaff });
   const availableSlots = slots.filter(s => s.available !== false);
 
   if (availableSlots.length === 0) {

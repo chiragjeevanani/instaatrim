@@ -18,6 +18,14 @@ const offerSchema = new mongoose.Schema({
     maxDiscount: { type: Number, default: 0 },                  // 0 = no cap (₹)
 
     applicableDays: { type: [String], default: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },
+    // Day-wise discount (e.g. weekdays 30%, weekend 10%). null = same discountPercent every applicable day.
+    // When set: each day's own % (0 = no offer that day); discountPercent = the highest day value.
+    dayDiscounts: {
+        type: new mongoose.Schema({
+            Mon: Number, Tue: Number, Wed: Number, Thu: Number, Fri: Number, Sat: Number, Sun: Number
+        }, { _id: false }),
+        default: null
+    },
     validTill: { type: String, default: '' },                   // 'YYYY-MM-DD', '' = no expiry
 
     isActive: { type: Boolean, default: true },

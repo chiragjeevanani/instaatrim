@@ -5,6 +5,7 @@ import { useAppData } from '../../../shared/store/AppDataProvider';
 import { getDaySlots, getInstantAvailability } from '../../../shared/lib/availability';
 import { acquireHold, releaseHold } from '../../../shared/lib/slotLock';
 import { rollingDays, dateKey } from '../../../shared/lib/time';
+import { keepPickedStylist, pickedStylistId, usePickedStylistBusy } from '../../../shared/lib/stylist';
 import { X, Zap, Calendar, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 
 // SRS §9.1 / §9.2 / §9.3 fix: this used to render one hardcoded array of
@@ -66,6 +67,11 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
 
   const selectedDay = days.find((d) => d.key === selectedDayKey) || days[0];
 
+  // Stylist chosen in "Choose Stylist" → only times that stylist is free (their bookings from DB)
+  const pickedId = pickedStylistId(bookingSlot);
+  const pickedForDay = usePickedStylistBusy(finalSalonId, pickedId, selectedDay?.key, isSlotPickerOpen);
+  const pickedForToday = usePickedStylistBusy(finalSalonId, pickedId, dateKey(new Date()), isSlotPickerOpen);
+
   const { slots: daySlots, reason: daySlotsReason } = useMemo(() => {
     if (!salon || !selectedDay) return { slots: [], reason: 'Loading…' };
     return getDaySlots({
@@ -76,9 +82,10 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
       bookings: state.bookings,
       holds: state.holds,
       dateObj: selectedDay.date,
-      excludeHoldId: pendingHold?.id
+      excludeHoldId: pendingHold?.id,
+      pickedStaff: pickedForDay
     });
-  }, [salon, staffList, durationMinutes, category, state.bookings, state.holds, selectedDay, pendingHold]);
+  }, [salon, staffList, durationMinutes, category, state.bookings, state.holds, selectedDay, pendingHold, pickedForDay]);
 
   const instantAvailability = useMemo(() => {
     if (!salon) return { state: 'unavailable', label: 'Unavailable', slot: null };
@@ -88,9 +95,10 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
       durationMinutes,
       category,
       bookings: state.bookings,
-      holds: state.holds
+      holds: state.holds,
+      pickedStaff: pickedForToday
     });
-  }, [salon, staffList, durationMinutes, category, state.bookings, state.holds]);
+  }, [salon, staffList, durationMinutes, category, state.bookings, state.holds, pickedForToday]);
 
   // Release any hold we took out if the modal closes without confirming.
   useEffect(() => {
@@ -138,16 +146,16 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           startMin: instantAvailability.slot.startMin,
           endMin: instantAvailability.slot.endMin
         });
-        setBookingSlot({
+        setBookingSlot((prev) => ({
           type: 'Instant',
           dateKey: dateKey(new Date()),
           date: 'Today',
           time: instantAvailability.slot.time,
-          staffId: instantAvailability.slot.staffId,
+          ...keepPickedStylist(prev, instantAvailability.slot.staffId),
           holdId: hold.id,
           holdExpiresAt: hold.expiresAt,
           durationMinutes
-        });
+        }));
         showToast(`Instant slot held for 8 minutes — ${instantAvailability.label}`);
       } else {
         if (!selectedSlot) {
@@ -163,16 +171,16 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           startMin: selectedSlot.startMin,
           endMin: selectedSlot.endMin
         });
-        setBookingSlot({
+        setBookingSlot((prev) => ({
           type: 'Scheduled',
           dateKey: selectedDay.key,
           date: selectedDay.isToday ? 'Today' : selectedDay.label,
           time: selectedSlot.time,
-          staffId: selectedSlot.staffId,
+          ...keepPickedStylist(prev, selectedSlot.staffId),
           holdId: hold.id,
           holdExpiresAt: hold.expiresAt,
           durationMinutes
-        });
+        }));
         showToast(`Slot held for 8 minutes — ${selectedDay.label}, ${selectedSlot.time}`);
       }
       setPendingHold(null); // ownership passes to bookingSlot / checkout now

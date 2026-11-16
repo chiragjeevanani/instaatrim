@@ -3,6 +3,30 @@ const Salon = require('../models/Salon');
 const PlatformSettings = require('../models/PlatformSettings');
 const { sendPushNotification } = require('../config/firebase');
 
+// ── Stylist time helpers (same rules as frontend shared/lib/availability.js) ──
+const NON_BLOCKING_STATUSES = ['Cancelled', 'No Show', 'Refunded'];
+// "11:00 AM" → 660; anything else → null
+const clockToMinutes = (clock) => {
+    const m = String(clock || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!m) return null;
+    let h = parseInt(m[1], 10);
+    const min = parseInt(m[2], 10);
+    if (/pm/i.test(m[3]) && h !== 12) h += 12;
+    if (/am/i.test(m[3]) && h === 12) h = 0;
+    return h * 60 + min;
+};
+// "30" / "1 hr 15 mins" / 45 → minutes
+const durationToMinutes = (input) => {
+    if (typeof input === 'number' && input > 0) return input;
+    const str = String(input || '').toLowerCase();
+    const hr = str.match(/(\d+)\s*hr/);
+    const mn = str.match(/(\d+)\s*min/);
+    if (!hr && !mn) { const bare = str.match(/(\d+)/); return bare ? parseInt(bare[1], 10) : 30; }
+    return (hr ? parseInt(hr[1], 10) * 60 : 0) + (mn ? parseInt(mn[1], 10) : 0);
+};
+const bookingDurationMinutes = (b) =>
+    (b.services || []).reduce((sum, s) => sum + durationToMinutes(s.duration) * (Number(s.quantity) || 1), 0) || 30;
+
 // Helper to safely get Socket.IO instance
 const getSocketIO = () => {
     try {
@@ -161,6 +185,29 @@ exports.createBooking = async (req, res) => {
             }
         }
 
+        // Picked stylist already booked at this time (scheduled slot) → don't double-book them
+        const newStart = clockToMinutes(bookingData.time);
+        if (staffId && bookingData.dateKey && newStart !== null) {
+            const newEnd = newStart + bookingDurationMinutes(bookingData);
+            const sameDay = await Booking.find({
+                salonId: String(bookingData.salonId),
+                staffId,
+                dateKey: bookingData.dateKey,
+                status: { $nin: NON_BLOCKING_STATUSES }
+            }).select('time services.duration services.quantity').lean();
+            const clash = sameDay.some((b) => {
+                const s = clockToMinutes(b.time);
+                return s !== null && newStart < s + bookingDurationMinutes(b) && s < newEnd;
+            });
+            if (clash) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'STYLIST_BUSY',
+                    message: `${staffName} is already booked at ${bookingData.time}. Please pick another time or stylist.`
+                });
+            }
+        }
+
         const rewards = priceCheck.rewards || { instantDiscount: 0, walletRedeemed: 0, walletCashback: 0 };
         const booking = new Booking({
             ...bookingData,
@@ -248,6 +295,35 @@ exports.getCustomerBookings = async (req, res) => {
         const { customerId } = req.params;
         const bookings = await Booking.find({ customerId }).sort({ createdAt: -1 });
         res.status(200).json({ success: true, data: bookings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Customer slot picker: when the times one stylist is already booked on a date (no customer details).
+// GET /api/bookings/salon/:salonId/staff/:staffId/busy?dateKey=YYYY-MM-DD
+exports.getStaffBusy = async (req, res) => {
+    try {
+        const { salonId, staffId } = req.params;
+        const dateKey = String(req.query.dateKey || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+            return res.status(400).json({ success: false, message: 'dateKey (YYYY-MM-DD) is required' });
+        }
+        const list = await Booking.find({
+            salonId: String(salonId),
+            staffId: String(staffId),
+            dateKey,
+            status: { $nin: NON_BLOCKING_STATUSES }
+        }).select('time bookingMode createdAt services.duration services.quantity').lean();
+        res.status(200).json({
+            success: true,
+            data: list.map((b) => ({
+                time: b.time,
+                bookingMode: b.bookingMode,
+                createdAt: b.createdAt,
+                durationMinutes: bookingDurationMinutes(b)
+            }))
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

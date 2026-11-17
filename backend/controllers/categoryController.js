@@ -73,14 +73,19 @@ const findDuplicateCategory = async ({ name, slug, salonId, excludeId }) => {
     const notSelf = excludeId ? { _id: { $ne: excludeId } } : {};
     if (clean) {
         const esc = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const sameName = await Category.find({ ...notSelf, name: { $regex: `^\\s*${esc}\\s*$`, $options: 'i' } }).select('salonId salonName').lean();
+        // deleted (soft) categories don't block a new one with the same name
+        const sameName = await Category.find({ ...notSelf, isDeleted: { $ne: true }, name: { $regex: `^\\s*${esc}\\s*$`, $options: 'i' } }).select('salonId salonName').lean();
         const global = sameName.find((c) => !c.salonId);
         if (global) return `"${clean}" category is already added for All Salons.`;
         const sameSalon = sid && sameName.find((c) => String(c.salonId) === sid);
         if (sameSalon) return `"${clean}" category is already added for ${sameSalon.salonName || 'this salon'}.`;
     }
-    if (slug && (await Category.exists({ ...notSelf, slug: String(slug).trim() }))) {
-        return `Slug "${String(slug).trim()}" is already used by another category. Please use a different slug.`;
+    if (slug) {
+        const taken = await Category.findOne({ ...notSelf, slug: String(slug).trim() }).select('name isDeleted').lean();
+        if (taken && taken.isDeleted) {
+            return `Slug "${String(slug).trim()}" belongs to the deleted category "${taken.name}". Restore it from the Deleted tab, or use a different slug.`;
+        }
+        if (taken) return `Slug "${String(slug).trim()}" is already used by another category. Please use a different slug.`;
     }
     return null;
 };
@@ -152,7 +157,9 @@ exports.createCategory = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
     try {
-        const categories = await Category.find();
+        // Deleted (soft) categories are hidden from salons & customers; admin asks for them with ?includeDeleted=1
+        const filter = req.query.includeDeleted === '1' ? {} : { isDeleted: { $ne: true } };
+        const categories = await Category.find(filter);
         res.status(200).json({ success: true, data: categories });
     } catch (error) {
         console.error('Error fetching categories:', error);
@@ -228,20 +235,70 @@ exports.updateCategory = async (req, res) => {
     }
 };
 
+// Salon services listed under a category (matched by name) → { services, salons }
+const categoryUsage = async (category) => {
+    const Service = require('../models/Service');
+    const esc = String(category.name || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const filter = { category: { $regex: `^\\s*${esc}\\s*$`, $options: 'i' } };
+    if (category.salonId) filter.salonId = { $in: [category.salonId, String(category.salonId)] };
+    const list = await Service.find(filter).select('salonId').lean();
+    return { services: list.length, salons: new Set(list.map((s) => String(s.salonId))).size };
+};
+
+// Admin: how much a category is used (shown in the delete warning)
+exports.getCategoryUsage = async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
+        res.status(200).json({ success: true, data: await categoryUsage(category) });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+// Soft delete: hidden from salons & customers right away, kept in DB (image, sub-categories, settings)
+// so the admin can restore it anytime. Salon services are never deleted.
 exports.deleteCategory = async (req, res) => {
     try {
-        const category = await Category.findByIdAndDelete(req.params.id);
+        const category = await Category.findById(req.params.id);
+        if (!category || category.isDeleted) return res.status(404).json({ success: false, message: 'Category not found' });
+
+        category.isDeleted = true;
+        category.isActive = false;
+        category.deletedAt = new Date();
+        await category.save();
+
+        res.status(200).json({
+            success: true,
+            data: category,
+            message: `"${category.name}" deleted. You can restore it anytime from the Deleted tab.`
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+// Restore a soft-deleted category (back to Active, with all its old settings)
+exports.restoreCategory = async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
         if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
-        
-        if (category.image && category.image.includes('/uploads/categories/')) {
-            const filename = category.image.split('/uploads/categories/')[1];
-            const filepath = path.join(__dirname, '../uploads/categories', filename);
-            if (fs.existsSync(filepath)) {
-                fs.unlinkSync(filepath);
-            }
+        if (!category.isDeleted) return res.status(400).json({ success: false, message: `"${category.name}" is not deleted.` });
+
+        const duplicate = await findDuplicateCategory({ name: category.name, salonId: category.salonId, excludeId: category._id });
+        if (duplicate) {
+            return res.status(409).json({
+                success: false,
+                code: 'DUPLICATE',
+                message: `Can't restore: a category named "${category.name}" already exists. Rename or delete that one first.`
+            });
         }
 
-        res.status(200).json({ success: true, message: 'Category deleted' });
+        category.isDeleted = false;
+        category.isActive = true;
+        category.deletedAt = null;
+        await category.save();
+        res.status(200).json({ success: true, data: category, message: `"${category.name}" restored and visible to salons again.` });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server Error' });
     }

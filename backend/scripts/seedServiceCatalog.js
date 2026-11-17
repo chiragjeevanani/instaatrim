@@ -97,7 +97,8 @@ const run = async ({ apply, uri, quiet, onlyEmpty } = {}) => {
 
         // Prefer a GLOBAL category with the same name / alias
         const names = [entry.name, ...entry.aliases];
-        const nameFilter = { $or: names.map((n) => ({ name: { $regex: `^${escapeRegex(n)}$`, $options: 'i' } })) };
+        // soft-deleted categories don't count as existing (admin can still restore them)
+        const nameFilter = { isDeleted: { $ne: true }, $or: names.map((n) => ({ name: { $regex: `^${escapeRegex(n)}$`, $options: 'i' } })) };
         const existing = (await Category.findOne({ ...nameFilter, salonId: null })) // global first
             || (await Category.findOne(nameFilter));
 

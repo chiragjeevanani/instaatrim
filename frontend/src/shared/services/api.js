@@ -1894,7 +1894,8 @@ const ads = {
 const categories = {
   list: async (filters = {}) => {
     try {
-      const res = await fetch(`${API_BASE}/categories`, { headers: authHeaders() });
+      // admin Categories page also needs soft-deleted ones (Deleted tab → Restore)
+      const res = await fetch(`${API_BASE}/categories${filters.includeDeleted ? '?includeDeleted=1' : ''}`, { headers: authHeaders() });
       if (res.ok) {
         const json = await res.json();
         const mapped = json.data.map(cat => ({ ...cat, id: cat._id }));
@@ -1985,18 +1986,36 @@ const categories = {
     }
   },
 
+  // Soft delete (restorable). Returns the server message.
   remove: async (categoryId) => {
-    try {
-      await fetch(`${API_BASE}/categories/${categoryId}`, {
-        method: 'DELETE',
-        headers: authHeaders()
-      });
-      dispatch({ type: 'DELETE_CATEGORY', payload: { categoryId } });
-      return true;
-    } catch (e) {
-      console.error(e);
-      throw e;
-    }
+    const res = await fetch(`${API_BASE}/categories/${categoryId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.message || 'Could not delete the category. Please try again.');
+    await categories.list({ includeDeleted: true }).catch(() => {});
+    return json.message;
+  },
+
+  // Bring a soft-deleted category back (Active again). Returns the server message.
+  restore: async (categoryId) => {
+    const res = await fetch(`${API_BASE}/categories/${categoryId}/restore`, {
+      method: 'PATCH',
+      headers: authHeaders()
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.message || 'Could not restore the category. Please try again.');
+    await categories.list({ includeDeleted: true }).catch(() => {});
+    return json.message;
+  },
+
+  // How many salon services / salons use a category (for the delete warning)
+  usage: async (categoryId) => {
+    const res = await fetch(`${API_BASE}/categories/${categoryId}/usage`, { headers: authHeaders() });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.message || 'Could not load category usage');
+    return json.data;
   },
 
   toggleActive: async (categoryId) => {

@@ -686,13 +686,25 @@ export const AdminProvider = ({ children }) => {
     }
   }, [showToast]);
 
+  // Soft delete — the category can be restored from the Deleted tab
   const deleteCategory = useCallback(async (id) => {
     try {
-      await api.categories.remove(id);
-      showToast('Category deleted from catalog', 'info');
+      const message = await api.categories.remove(id);
+      showToast(message || 'Category deleted. You can restore it from the Deleted tab.', 'info');
       return true;
     } catch (err) {
       showToast(err.message || 'Failed to delete category', 'error');
+      throw err;
+    }
+  }, [showToast]);
+
+  const restoreCategory = useCallback(async (id) => {
+    try {
+      const message = await api.categories.restore(id);
+      showToast(message || 'Category restored', 'success');
+      return true;
+    } catch (err) {
+      showToast(err.message || 'Failed to restore category', 'error');
       throw err;
     }
   }, [showToast]);
@@ -902,6 +914,7 @@ export const AdminProvider = ({ children }) => {
       createCategory,
       updateCategory,
       deleteCategory,
+      restoreCategory,
       toggleCategoryActive,
       boostSalon,
       removeSalonBoost,
@@ -994,6 +1007,7 @@ export const AdminProvider = ({ children }) => {
       createCategory,
       updateCategory,
       deleteCategory,
+      restoreCategory,
       toggleCategoryActive,
       boostSalon,
       removeSalonBoost,

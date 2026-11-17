@@ -80,10 +80,12 @@ export function getDaySlots({ salon, staffList, durationMinutes, category, booki
   // filter staff by yet, so every staff member is treated as qualified for
   // that preview and the real category filter applies once a service is
   // actually added to the cart.
-  const qualifiedStaff = (staffList || []).filter((st) => (category ? (st.serviceCategories || []).includes(category) : true));
-  if (qualifiedStaff.length === 0) {
-    return { slots: [], reason: 'No staff at this salon are assigned to this service category.' };
-  }
+  // Booking must never be blocked by staff skill tags: salon with no staff in DB → the salon itself takes the
+  // booking (its own hours); no staff tagged for this category → any staff can take it (salon assigns).
+  const salonKey = salon.id || salon._id || 'salon';
+  const pool = (staffList || []).length > 0 ? staffList : [{ id: `salon-${salonKey}`, weeklyHours: salon.weeklyHours }];
+  const tagged = category ? pool.filter((st) => (st.serviceCategories || []).includes(category)) : pool;
+  const qualifiedStaff = tagged.length > 0 ? tagged : pool;
 
   const relevantBookings = (bookings || []).filter(
     (b) => b.dateKey === todayKeyStr && isBookingBlocking(b.status) && b.staffId

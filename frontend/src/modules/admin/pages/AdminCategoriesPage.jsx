@@ -31,6 +31,7 @@ export const AdminCategoriesPage = () => {
     createCategory,
     updateCategory,
     deleteCategory,
+    restoreCategory,
     toggleCategoryActive,
     showToast,
     theme
@@ -43,7 +44,7 @@ export const AdminCategoriesPage = () => {
 
   React.useEffect(() => {
     import('../../../shared/services/api').then(({ api }) => {
-      api.categories.list();
+      api.categories.list({ includeDeleted: true }); // + soft-deleted ones for the Deleted tab
       api.services.listAll();
       api.salons.list();
     });
@@ -121,6 +122,24 @@ export const AdminCategoriesPage = () => {
 
   // Delete Confirm Modal
   const [deleteConfirm, setDeleteConfirm] = useState(null); // category object
+  const [usageLoaded, setUsageLoaded] = useState({ id: null, data: null });
+  const [isDeleting, setIsDeleting] = useState(false);
+  // { services, salons } for the category in the delete popup; null while loading
+  const deleteUsage = deleteConfirm && usageLoaded.id === deleteConfirm.id ? usageLoaded.data : null;
+
+  // Delete warning: how many salon services / salons use this category (from DB)
+  React.useEffect(() => {
+    if (!deleteConfirm) return undefined;
+    let alive = true;
+    const id = deleteConfirm.id;
+    api.categories
+      .usage(id)
+      .then((u) => alive && setUsageLoaded({ id, data: u }))
+      .catch(() => alive && setUsageLoaded({ id, data: { services: null, salons: null } }));
+    return () => {
+      alive = false;
+    };
+  }, [deleteConfirm]);
 
   // Map service count by category
   const categoryStats = useMemo(() => {
@@ -143,17 +162,22 @@ export const AdminCategoriesPage = () => {
     return stats;
   }, [categories, services]);
 
-  // KPIs
-  const totalCategories = categories.length;
-  const activeCount = categories.filter((c) => c.isActive !== false).length;
+  // KPIs (deleted categories are not counted)
+  const liveCategories = categories.filter((c) => !c.isDeleted);
+  const deletedCount = categories.length - liveCategories.length;
+  const totalCategories = liveCategories.length;
+  const activeCount = liveCategories.filter((c) => c.isActive !== false).length;
   const totalServicesLinked = services.length;
-  const womenCategories = categories.filter((c) => c.gender === 'women').length;
-  const menCategories = categories.filter((c) => c.gender === 'men').length;
-  const unisexCategories = categories.filter((c) => !c.gender || c.gender === 'unisex').length;
+  const womenCategories = liveCategories.filter((c) => c.gender === 'women').length;
+  const menCategories = liveCategories.filter((c) => c.gender === 'men').length;
+  const unisexCategories = liveCategories.filter((c) => !c.gender || c.gender === 'unisex').length;
 
   // Filtered categories
   const filteredCategories = useMemo(() => {
     return categories.filter((cat) => {
+      // Deleted (soft) categories only appear in the "Deleted" tab
+      if (filterGender === 'deleted') { if (!cat.isDeleted) return false; }
+      else if (cat.isDeleted) return false;
       const q = search.trim().toLowerCase();
       const matchesSearch =
         !q ||
@@ -165,7 +189,7 @@ export const AdminCategoriesPage = () => {
       if (!matchesSearch) return false;
 
       if (filterGender === 'inactive') return cat.isActive === false;
-      if (filterGender === 'all') return true;
+      if (filterGender === 'all' || filterGender === 'deleted') return true;
       return (cat.gender || 'unisex') === filterGender;
     });
   }, [categories, search, filterGender]);
@@ -397,12 +421,15 @@ export const AdminCategoriesPage = () => {
 
   // Confirm Delete
   const handleConfirmDelete = async () => {
-    if (!deleteConfirm) return;
+    if (!deleteConfirm || isDeleting) return;
+    setIsDeleting(true);
     try {
       await deleteCategory(deleteConfirm.id);
       setDeleteConfirm(null);
     } catch (err) {
       // toast shown in context
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -501,7 +528,8 @@ export const AdminCategoriesPage = () => {
               { id: 'unisex', label: 'Unisex' },
               { id: 'women', label: 'Women' },
               { id: 'men', label: 'Men' },
-              { id: 'inactive', label: 'Hidden / Inactive' }
+              { id: 'inactive', label: 'Hidden / Inactive' },
+              { id: 'deleted', label: `Deleted${deletedCount ? ` (${deletedCount})` : ''}` }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -664,8 +692,21 @@ export const AdminCategoriesPage = () => {
                           </span>
                         </td>
 
-                        {/* Status Toggle */}
+                        {/* Status Toggle (deleted → "Deleted" + date, no toggle) */}
                         <td className="py-3.5 px-4">
+                          {cat.isDeleted ? (
+                            <div>
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-red-950/40 text-red-300 border-red-800/60 inline-flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                                Deleted
+                              </span>
+                              {cat.deletedAt && (
+                                <p className="text-[9.5px] text-stone-500 mt-1">
+                                  {new Date(cat.deletedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
                           <button
                             type="button"
                             onClick={() => toggleCategoryActive(cat.id)}
@@ -682,10 +723,21 @@ export const AdminCategoriesPage = () => {
                             />
                             {isActive ? 'Active' : 'Hidden'}
                           </button>
+                          )}
                         </td>
 
-                        {/* Actions */}
+                        {/* Actions (deleted → Restore only) */}
                         <td className="py-3.5 px-5 text-right">
+                          {cat.isDeleted ? (
+                            <button
+                              type="button"
+                              onClick={() => restoreCategory(cat.id).catch(() => {})}
+                              title="Restore Category"
+                              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition-colors cursor-pointer"
+                            >
+                              Restore
+                            </button>
+                          ) : (
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
@@ -704,6 +756,7 @@ export const AdminCategoriesPage = () => {
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1328,11 +1381,23 @@ export const AdminCategoriesPage = () => {
             </div>
             <div>
               <h3 className="text-base font-bold text-white tracking-tight">
-                Delete Category "{deleteConfirm.name}"?
+                Delete "{deleteConfirm.name}"?
               </h3>
-              <p className="text-xs text-stone-400 mt-1">
-                Are you sure you want to remove this category from the admin catalog? Salons will no longer be able to select it.
+              {/* How much it is used (live from DB) */}
+              <p className={`text-xs mt-2 font-semibold ${deleteUsage?.services > 0 ? 'text-amber-300' : 'text-stone-300'}`}>
+                {deleteUsage === null
+                  ? 'Checking how many salons use this category…'
+                  : deleteUsage.services === null
+                  ? 'Could not check how many salons use this category.'
+                  : deleteUsage.services > 0
+                  ? `⚠️ ${deleteUsage.services} service${deleteUsage.services > 1 ? 's' : ''} from ${deleteUsage.salons} salon${deleteUsage.salons > 1 ? 's' : ''} ${deleteUsage.services > 1 ? 'are' : 'is'} listed under this category.`
+                  : 'No salon has listed services under this category yet.'}
               </p>
+              <ul className="text-[11px] text-stone-400 mt-2 space-y-1 text-left list-disc pl-5">
+                <li>It will be hidden from salons and customers right away.</li>
+                <li>Salon services will not be deleted.</li>
+                <li>You can restore it anytime from the <b className="text-stone-200">Deleted</b> tab.</li>
+              </ul>
             </div>
             <div className="flex items-center gap-3 pt-2">
               <button
@@ -1345,9 +1410,10 @@ export const AdminCategoriesPage = () => {
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold text-xs transition-all shadow-md shadow-red-950/40 cursor-pointer"
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold text-xs transition-all shadow-md shadow-red-950/40 cursor-pointer disabled:opacity-60"
               >
-                Yes, Delete
+                {isDeleting ? 'Deleting…' : 'Delete Category'}
               </button>
             </div>
           </div>

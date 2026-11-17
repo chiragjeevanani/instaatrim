@@ -28,6 +28,9 @@ const categorySchema = new mongoose.Schema({
     salonId: { type: mongoose.Schema.Types.ObjectId, ref: 'Salon', default: null }, // Null = All Salons (Global)
     salonName: { type: String, default: 'All Salons (Global)' },
     isActive: { type: Boolean, default: true },
+    // Soft delete: admin "Delete" hides the category everywhere but keeps it in DB, so it can be restored
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
     colSpan: { type: Number, default: 1 }
 }, { timestamps: true });
 

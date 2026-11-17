@@ -7,12 +7,16 @@ import { SafeImage } from '../../../shared/components/SafeImage';
 import { formatDuration } from '../../../shared/store/selectors';
 import { categoriesForHomeSection, serviceInHomeSection } from '../../../shared/lib/homeSections';
 import { getBestOfferForService } from '../../../shared/lib/offers';
+import { groupBySalonChoice } from '../../../shared/lib/serviceGroups';
+import { ChooseSalonModal } from './ChooseSalonModal';
 
 // Card shows the offer price (display only); the cart gets the plain service and applies the offer itself
-const forCart = ({ offerDeal, ...service }) => service; // eslint-disable-line no-unused-vars
+const forCart = ({ offerDeal, options, groupKey, salonCount, ...service }) => service; // eslint-disable-line no-unused-vars
 
 export const TrendingServices = ({ genderFilter = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
+  // "Choose a Salon" popup for the tapped service (all salons offering it)
+  const [chooseGroup, setChooseGroup] = useState(null);
   const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail, currentLocation } = useCustomer();
   const { state } = useAppData();
 
@@ -72,6 +76,8 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
           isBoosted: Boolean(s.isBoosted || s.isSponsored),
           boostRank: s.boostRank || 999,
           salonName: salon?.name || 'Salon Partner',
+          salonArea: salon?.area || salon?.locationCity || salon?.city || '',
+          salonRating: salon?.rating || 0,
           discount: discountPct > 0 ? `${discountPct}% OFF` : null,
           // admin offer (DB) — display only; the cart applies the same offer itself on "Add"
           offerDeal: getBestOfferForService(s, s.salonId, state.offers || [])
@@ -91,7 +97,8 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
     [trendingServices]
   );
 
-  const filteredServices = trendingServices.filter((srv) => {
+  // One card per service (cheapest salon shown); booking asks which salon
+  const filteredServices = groupBySalonChoice(trendingServices).filter((srv) => {
     if (selectedFilter === 'All' || !filterTabs.includes(selectedFilter)) return true;
     return srv.category === selectedFilter;
   });
@@ -133,11 +140,13 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
       ) : (
         <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 mt-3 pb-2 w-full max-w-full snap-x snap-mandatory scroll-px-4 lg:snap-none lg:grid lg:grid-cols-5 lg:gap-4 lg:overflow-visible lg:[&>*:nth-child(n+11)]:hidden">
           {filteredServices.map((service) => {
-            const isInCart = cartItems.some((item) => item.id === service.id);
+            // the salon option of this service that is already in the cart (if any)
+            const cartOpt = service.options.find((o) => cartItems.some((item) => item.id === o.id));
+            const isInCart = !!cartOpt;
 
             return (
               <motion.article
-                key={service.id}
+                key={service.groupKey}
                 whileHover={{ y: -2 }}
                 onClick={() => openServiceDetail && openServiceDetail(service)}
                 className="w-[160px] lg:w-auto shrink-0 snap-start bg-white rounded-2xl p-2.5 lg:p-3 border border-stone-200/90 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer group"
@@ -159,6 +168,11 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                     {service.title}
                   </h3>
 
+                  {/* Where it's available */}
+                  <p className="text-[10.5px] text-stone-500 line-clamp-1 mt-0.5">
+                    {service.salonCount > 1 ? `Available at ${service.salonCount} salons` : `at ${service.salonName}`}
+                  </p>
+
                   {/* Duration */}
                   <div className="flex items-center gap-1 text-[11px] text-stone-500 mt-0.5 font-medium">
                     <Clock className="w-3 h-3 stroke-[2]" />
@@ -170,6 +184,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                     // full offer price (same as cart): half of the discount off now, half to wallet after the service
                     <>
                       <div className="flex items-baseline gap-1 mt-1">
+                        {service.salonCount > 1 && <span className="text-[9.5px] text-stone-500">from</span>}
                         <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.offerDeal.basePrice - service.offerDeal.totalDiscount}</span>
                         <span className="text-[9.5px] text-stone-400 line-through">₹{service.offerDeal.basePrice}</span>
                         <span className="text-[10px] font-semibold text-emerald-700 ml-auto">{service.offerDeal.label}</span>
@@ -180,6 +195,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                     </>
                   ) : (
                     <div className="flex items-baseline gap-1 mt-1">
+                      {service.salonCount > 1 && <span className="text-[9.5px] text-stone-500">from</span>}
                       <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.price}</span>
                       {Number(service.originalPrice) > Number(service.price) && (
                         <span className="text-[9.5px] text-stone-400 line-through">₹{service.originalPrice}</span>
@@ -201,15 +217,15 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                 >
                   <button
                     type="button"
-                    onClick={() => removeFromCart(service.id)}
+                    onClick={() => removeFromCart(cartOpt.id)}
                     className="h-full px-3 flex items-center justify-center hover:bg-rose-100 transition-colors cursor-pointer"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="font-semibold">{cartItems.find(item => item.id === service.id)?.quantity || 1}</span>
+                  <span className="font-semibold">{cartItems.find(item => item.id === cartOpt.id)?.quantity || 1}</span>
                   <button
                     type="button"
-                    onClick={() => addToCart(forCart(service), { id: service.salonId, name: service.salonName })}
+                    onClick={() => addToCart(forCart(cartOpt), { id: cartOpt.salonId, name: cartOpt.salonName })}
                     className="h-full px-3 flex items-center justify-center hover:bg-rose-100 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -220,7 +236,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      addToCart(forCart(service), { id: service.salonId, name: service.salonName });
+                      setChooseGroup(service); // ask which salon
                     }}
                     className="mt-2.5 w-full h-8 border border-brand-maroon/50 text-brand-maroon bg-white hover:bg-rose-50/70 font-bold text-xs rounded-lg active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                   >
@@ -232,6 +248,8 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
           })}
         </div>
       )}
+
+      <ChooseSalonModal group={chooseGroup} onClose={() => setChooseGroup(null)} />
     </section>
   );
 };

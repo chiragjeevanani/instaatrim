@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
@@ -8,20 +8,24 @@ import { SafeImage } from '../../../shared/components/SafeImage';
 import { formatDuration } from '../../../shared/store/selectors';
 import { categoriesForHomeSection, serviceInHomeSection } from '../../../shared/lib/homeSections';
 import { getBestOfferForService } from '../../../shared/lib/offers';
+import { groupBySalonChoice } from '../../../shared/lib/serviceGroups';
+import { ChooseSalonModal } from './ChooseSalonModal';
 
 // Card shows the offer price (display only); the cart gets the plain service and applies the offer itself
-const forCart = ({ offerDeal, ...service }) => service; // eslint-disable-line no-unused-vars
+const forCart = ({ offerDeal, options, groupKey, salonCount, ...service }) => service; // eslint-disable-line no-unused-vars
 
 export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
   const { cartItems, addToCart, removeFromCart, setIsCartOpen, openServiceDetail, currentLocation } = useCustomer();
   const { state } = useAppData();
   const navigate = useNavigate();
+  // "Choose a Salon" popup for the tapped service (all salons offering it)
+  const [chooseGroup, setChooseGroup] = useState(null);
 
   // Categories the admin marked "Featured Service Packages" (DB)
   const featuredCategories = categoriesForHomeSection(state.categories, 'featured');
 
   // Curate highlighted service packages & treatments
-  const featuredServices = (state.services || [])
+  const featuredServices = groupBySalonChoice((state.services || [])
     .filter((s) => {
       if (!s.isActive) return false;
       if (!serviceInHomeSection(s, featuredCategories)) return false;
@@ -63,18 +67,21 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
 
       return true;
     })
-    .slice(0, 6)
     .map((s) => {
       const salon = state.salons.find((sal) => sal.id === s.salonId);
       const discountPct = s.originalPrice ? Math.round((1 - s.price / s.originalPrice) * 100) : 0;
       return {
         ...s,
         salonName: salon?.name || 'Partner Salon',
+        salonArea: salon?.area || salon?.locationCity || salon?.city || '',
+        salonRating: salon?.rating || 0,
         discount: discountPct > 0 ? `${discountPct}% OFF` : null,
         // admin offer (DB) — display only; the cart applies the same offer itself on "Book"
         offerDeal: getBestOfferForService(s, s.salonId, state.offers || [])
       };
-    });
+    }))
+    // one card per service (cheapest salon shown); "Book" asks which salon
+    .slice(0, 6);
 
   if (featuredServices.length === 0) return null;
 
@@ -99,12 +106,14 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
 
       <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 w-full max-w-full snap-x snap-mandatory lg:snap-none lg:grid lg:grid-cols-6 lg:gap-4 lg:overflow-visible">
         {featuredServices.map((service) => {
-          const cartItem = cartItems.find((item) => item.id === service.id);
+          // the salon option of this service that is already in the cart (if any)
+          const cartOpt = service.options.find((o) => cartItems.some((item) => item.id === o.id));
+          const cartItem = cartOpt ? cartItems.find((item) => item.id === cartOpt.id) : null;
           const quantity = cartItem?.quantity || 0;
 
           return (
             <motion.div
-              key={service.id}
+              key={service.groupKey}
               whileHover={{ y: -2 }}
               onClick={() => openServiceDetail && openServiceDetail(service)}
               className="w-[164px] lg:w-auto shrink-0 snap-start bg-white rounded-2xl group p-2.5 border border-stone-200/90 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
@@ -132,7 +141,7 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
                 </h4>
                 
                 <p className="text-[10.5px] lg:text-[11px] text-stone-500 line-clamp-1 mt-0.5">
-                  {service.salonName}
+                  {service.salonCount > 1 ? `Available at ${service.salonCount} salons` : service.salonName}
                 </p>
 
                 <div className="flex items-center gap-1 text-[10.5px] text-stone-500 mt-1 font-medium">
@@ -146,6 +155,7 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
                   // full offer price (same as cart): half of the discount off now, half to wallet after the service
                   <div className="flex flex-col">
                     <div className="flex items-baseline gap-1">
+                      {service.salonCount > 1 && <span className="text-[9px] text-stone-500">from</span>}
                       <span className="font-black text-[13px] text-stone-900">₹{service.offerDeal.basePrice - service.offerDeal.totalDiscount}</span>
                       <span className="text-[9px] text-stone-400 line-through">₹{service.offerDeal.basePrice}</span>
                     </div>
@@ -155,6 +165,7 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
                   </div>
                 ) : (
                   <div className="flex items-baseline gap-1">
+                    {service.salonCount > 1 && <span className="text-[9px] text-stone-500">from</span>}
                     <span className="font-black text-[13px] text-stone-900">₹{service.price}</span>
                     {Number(service.originalPrice) > Number(service.price) && (
                       <span className="text-[9px] text-stone-400 line-through">₹{service.originalPrice}</span>
@@ -169,7 +180,7 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
                   >
                     <button
                       type="button"
-                      onClick={() => removeFromCart(service.id)}
+                      onClick={() => removeFromCart(cartOpt.id)}
                       className="w-7 h-full flex items-center justify-center text-brand-maroon hover:bg-brand-maroon/10 active:scale-95 transition-all cursor-pointer"
                     >
                       <span className="text-sm font-bold leading-none mb-[2px]">-</span>
@@ -179,7 +190,7 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
                     </span>
                     <button
                       type="button"
-                      onClick={() => addToCart(forCart(service), { id: service.salonId, name: service.salonName })}
+                      onClick={() => addToCart(forCart(cartOpt), { id: cartOpt.salonId, name: cartOpt.salonName })}
                       className="w-7 h-full flex items-center justify-center text-brand-maroon hover:bg-brand-maroon/10 active:scale-95 transition-all cursor-pointer"
                     >
                       <span className="text-sm font-bold leading-none mb-[2px]">+</span>
@@ -190,7 +201,7 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      addToCart(forCart(service), { id: service.salonId, name: service.salonName });
+                      setChooseGroup(service); // ask which salon
                     }}
                     className="h-8 px-3 bg-brand-maroon hover:bg-brand-darkMaroon text-white font-bold text-[11px] rounded-lg active:scale-95 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                   >
@@ -203,6 +214,8 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
           );
         })}
       </div>
+
+      <ChooseSalonModal group={chooseGroup} onClose={() => setChooseGroup(null)} />
     </section>
   );
 };

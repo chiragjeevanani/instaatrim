@@ -3,8 +3,10 @@ const {
     createCategory, 
     getCategories, 
     updateCategory, 
-    deleteCategory, 
-    toggleCategoryActive, 
+    deleteCategory,
+    restoreCategory,
+    getCategoryUsage,
+    toggleCategoryActive,
     uploadCategoryMiddleware 
 } = require('../controllers/categoryController');
 const { protectAdmin } = require('../middlewares/authMiddleware');
@@ -13,7 +15,9 @@ const router = express.Router();
 router.post('/', protectAdmin, uploadCategoryMiddleware, createCategory);
 router.get('/', getCategories); // Public or protected depending on needs, but GET usually public for customer/salons
 router.put('/:id', protectAdmin, uploadCategoryMiddleware, updateCategory);
-router.delete('/:id', protectAdmin, deleteCategory);
+router.delete('/:id', protectAdmin, deleteCategory);            // soft delete (restorable)
+router.patch('/:id/restore', protectAdmin, restoreCategory);
+router.get('/:id/usage', protectAdmin, getCategoryUsage);        // services / salons using it (delete warning)
 router.patch('/:id/toggle', protectAdmin, toggleCategoryActive);
 // Admin: create a salon's starter menu (services + price) from this category's sub-categories
 router.post('/:id/salon-services', protectAdmin, require('../controllers/categoryMenuController').addCategoryServicesToSalon);

@@ -81,6 +81,7 @@ const uniqueSlug = async (name) => {
 // Category visible to this salon (global or assigned to it) with this exact name
 const findVisibleCategoryByName = (name, salonId) =>
     Category.findOne({
+        isDeleted: { $ne: true },
         name: { $regex: `^${escapeRegex(cleanName(name))}$`, $options: 'i' },
         $or: [{ salonId: null }, { salonId: { $exists: false } }, { salonId }]
     });

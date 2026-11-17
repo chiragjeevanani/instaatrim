@@ -33,6 +33,8 @@ export const AdminPlatformSettingsPage = () => {
   const [settingsForm, setSettingsForm] = useState({
     convenienceFee: 15,
     taxRatePercent: 5,
+    safetyHygieneFee: 0,
+    stylistFee: 0,
     defaultCommissionRatePercent: 12,
     referralBonusCustomer: 50,
     referralBonusReferee: 100,
@@ -87,12 +89,13 @@ export const AdminPlatformSettingsPage = () => {
       ...settingsForm,
       convenienceFee: Number(settingsForm.convenienceFee),
       taxRatePercent: Number(settingsForm.taxRatePercent),
+      safetyHygieneFee: Math.max(0, Number(settingsForm.safetyHygieneFee) || 0),
+      stylistFee: Math.max(0, Number(settingsForm.stylistFee) || 0),
       defaultCommissionRatePercent: Number(settingsForm.defaultCommissionRatePercent),
       referralBonusCustomer: Number(settingsForm.referralBonusCustomer),
       referralBonusReferee: Number(settingsForm.referralBonusReferee),
       minPayoutThreshold: Number(settingsForm.minPayoutThreshold),
       cancellationFreeHours: Number(settingsForm.cancellationFreeHours),
-      instantDiscountPercent: Math.min(90, Math.max(0, Number(settingsForm.instantDiscountPercent) || 0)),
       walletCashbackPercent: Math.min(90, Math.max(0, Number(settingsForm.walletCashbackPercent) || 0)),
       walletRedeemPercent: Math.min(100, Math.max(0, Number(settingsForm.walletRedeemPercent) || 0))
     });
@@ -215,12 +218,45 @@ export const AdminPlatformSettingsPage = () => {
                   />
                   <span className="text-[10px] text-stone-500 mt-0.5 block">Statutory tax charged to client (Set 0 for Zero Tax)</span>
                 </div>
+
+                <div>
+                  <label className="block text-stone-400 font-semibold mb-1">
+                    Safety &amp; Hygiene Fee (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={settingsForm.safetyHygieneFee}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, safetyHygieneFee: e.target.value })}
+                    className={`w-full p-2.5 rounded-xl border outline-none font-bold ${
+                      isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
+                    }`}
+                  />
+                  <span className="text-[10px] text-stone-500 mt-0.5 block">Safety &amp; Hygiene Kit, added per booking (Set 0 for Free)</span>
+                </div>
+
+                <div>
+                  <label className="block text-stone-400 font-semibold mb-1">
+                    Staff / Stylist Fee (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={settingsForm.stylistFee}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, stylistFee: e.target.value })}
+                    className={`w-full p-2.5 rounded-xl border outline-none font-bold ${
+                      isLight ? 'bg-stone-50 border-stone-300 text-stone-900' : 'bg-[#1a1a26] border-[#2d2d40] text-white'
+                    }`}
+                  />
+                  <span className="text-[10px] text-stone-500 mt-0.5 block">Added when the customer picks a specific stylist ("Any Stylist" = no fee; Set 0 for Free)</span>
+                </div>
               </div>
 
               {/* Customer booking rewards — used by cart, checkout & booking (set 0 to switch off) */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { key: 'instantDiscountPercent', label: 'Instant Discount (% of bill)', max: 90, hint: 'Cut from the bill at checkout (0 = off)' },
                   { key: 'walletCashbackPercent', label: 'Wallet Cashback (% of bill)', max: 90, hint: 'Credited to wallet after booking (0 = off)' },
                   { key: 'walletRedeemPercent', label: 'Wallet Use Limit (% of balance)', max: 100, hint: 'Max wallet balance usable per booking' }
                 ].map((f) => (

@@ -4,6 +4,7 @@ import { api } from '../../../shared/services/api';
 import { computeDiscount, isFirstBookingForCustomer } from '../../../shared/store/selectors';
 import { getBestOfferForService } from '../../../shared/lib/offers';
 import { dateKey } from '../../../shared/lib/time';
+import { pickedStylistId } from '../../../shared/lib/stylist';
 
 import { io } from 'socket.io-client';
 import { requestFirebaseToken, messaging } from '../../../shared/lib/firebase';
@@ -465,7 +466,8 @@ export const CustomerProvider = ({ children }) => {
             discount: best.label,
             appliedOfferId: best.offer.id || best.offer._id,
             appliedOfferTitle: best.offer.title,
-            offerSavings: best.savings
+            offerSavings: best.savings,
+            offerCashback: best.offerCashback // other half of the offer → wallet after service
           }
         : { ...rawService, basePrice };
 
@@ -527,11 +529,12 @@ export const CustomerProvider = ({ children }) => {
         const best = getBestOfferForService({ ...item, basePrice: base }, item.salonId, state.offers || []);
         const price = best ? best.finalPrice : base;
         const offerId = best ? best.offer.id || best.offer._id : undefined;
-        if (price === item.price && offerId === item.appliedOfferId) return item;
+        const cashback = best ? best.offerCashback : undefined;
+        if (price === item.price && offerId === item.appliedOfferId && cashback === item.offerCashback) return item;
         changed = true;
         return best
-          ? { ...item, basePrice: base, price, originalPrice: base, discount: best.label, appliedOfferId: offerId, appliedOfferTitle: best.offer.title, offerSavings: best.savings }
-          : { ...item, basePrice: base, price: base, discount: undefined, appliedOfferId: undefined, appliedOfferTitle: undefined, offerSavings: undefined };
+          ? { ...item, basePrice: base, price, originalPrice: base, discount: best.label, appliedOfferId: offerId, appliedOfferTitle: best.offer.title, offerSavings: best.savings, offerCashback: cashback }
+          : { ...item, basePrice: base, price: base, discount: undefined, appliedOfferId: undefined, appliedOfferTitle: undefined, offerSavings: undefined, offerCashback: undefined };
       });
       return changed ? next : prev;
     });
@@ -601,17 +604,24 @@ export const CustomerProvider = ({ children }) => {
     // Elite members get 0 convenience fee
     const convenienceFee = user?.is_elite ? 0 : (Number(settings.convenienceFee) || 0);
     const taxRatePercent = Number(settings.taxRatePercent) || 0;
+    // Safety & Hygiene Kit fee per booking — set by admin in Platform Settings (0 = free)
+    const safetyHygieneFee = cartItems.length > 0 ? Math.max(0, Number(settings.safetyHygieneFee) || 0) : 0;
+    // Stylist fee — only when the customer picked a specific stylist ("Any Stylist" = no fee). Same rule as backend.
+    const stylistName = cartItems.length > 0 && pickedStylistId(bookingSlot) ? bookingSlot.staffName : null;
+    const stylistFee = stylistName ? Math.max(0, Number(settings.stylistFee) || 0) : 0;
     
     const taxableAmount = Math.max(0, subtotal - discount);
     const taxAmount = Math.round((taxableAmount * taxRatePercent) / 100);
 
     // Booking rewards — % set by admin in Platform Settings (0 = off). Same rules as the backend.
     const pct = (v, d) => (v === undefined || v === null || Number.isNaN(Number(v)) ? d : Math.max(0, Number(v)));
-    const instantDiscountPercent = pct(settings.instantDiscountPercent, 20);
+    const instantDiscountPercent = 0; // Instant discount removed — not applied on bookings (same as backend)
     const walletCashbackPercent = pct(settings.walletCashbackPercent, 20);
     const walletRedeemPercent = pct(settings.walletRedeemPercent, 50);
     const instantDiscount = Math.round((subtotal * instantDiscountPercent) / 100);
-    const walletCashback = Math.round((subtotal * walletCashbackPercent) / 100);
+    // + wallet half of every applied offer (credited after the service, like the platform cashback)
+    const offerWalletCashback = cartItems.reduce((acc, item) => acc + (Number(item.offerCashback) || 0) * (item.quantity || 1), 0);
+    const walletCashback = Math.round((subtotal * walletCashbackPercent) / 100) + offerWalletCashback;
     const walletBalance = Number(user?.wallet_balance) || 0;
     const walletRedeemed = Math.min(
       Math.round((walletBalance * walletRedeemPercent) / 100),
@@ -619,16 +629,16 @@ export const CustomerProvider = ({ children }) => {
     );
 
     // What the customer actually pays (same everywhere: cart, checkout, booking)
-    const payableBeforeTax = Math.max(0, subtotal - instantDiscount - discount - walletRedeemed + convenienceFee);
+    const payableBeforeTax = Math.max(0, subtotal - instantDiscount - discount - walletRedeemed + convenienceFee + safetyHygieneFee + stylistFee);
     const finalAmount = payableBeforeTax + taxAmount;
     const totalSavings = originalSubtotal - taxableAmount;
 
     return {
-      subtotal, originalSubtotal, discount, taxAmount, taxRatePercent, convenienceFee, finalAmount, totalSavings,
-      instantDiscount, instantDiscountPercent, walletCashback, walletCashbackPercent,
+      subtotal, originalSubtotal, discount, taxAmount, taxRatePercent, convenienceFee, safetyHygieneFee, stylistFee, stylistName, finalAmount, totalSavings,
+      instantDiscount, instantDiscountPercent, walletCashback, walletCashbackPercent, offerWalletCashback,
       walletBalance, walletRedeemed, walletRedeemPercent, payableBeforeTax
     };
-  }, [cartItems, appliedCoupon, state.platformSettings, user?.is_elite, user?.wallet_balance]);
+  }, [cartItems, appliedCoupon, state.platformSettings, user?.is_elite, user?.wallet_balance, bookingSlot]);
 
   // ---------------- Bookings (shared store) ----------------
   const bookings = useMemo(() => user ? state.bookings.filter((b) => b.customerId === user.id) : [], [state.bookings, user?.id]);

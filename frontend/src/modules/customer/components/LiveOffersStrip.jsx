@@ -169,6 +169,9 @@ export const LiveOffersStrip = () => {
                     {deal.subcategory || deal.category}
                   </p>
 
+                  {/* How the offer is given (same split as cart / checkout) */}
+                  <p className="text-[9.5px] font-bold text-amber-300 mt-0.5">Half off now + half in wallet after the service</p>
+
                   {/* Description snippet */}
                   {deal.description && (
                     <p className="text-[10px] text-stone-300/80 mt-1.5 line-clamp-2 leading-relaxed">
@@ -222,7 +225,7 @@ export const LiveOffersStrip = () => {
                     Select Salon for {selectedDealForModal.title}
                   </h3>
                   <p className="text-xs text-stone-500">
-                    {offerPercentOn(selectedDealForModal)}% OFF today on <span className="font-semibold text-stone-700">{offerScopeText(selectedDealForModal)}</span> — applied automatically at the salon
+                    {offerPercentOn(selectedDealForModal)}% OFF today on <span className="font-semibold text-stone-700">{offerScopeText(selectedDealForModal)}</span> — applied automatically at the salon: half off the price now, half in your wallet after the service
                   </p>
                 </div>
                 <button

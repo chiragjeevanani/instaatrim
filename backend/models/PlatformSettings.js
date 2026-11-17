@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const platformSettingsSchema = new mongoose.Schema({
     convenienceFee: { type: Number, default: 15 },
     taxRatePercent: { type: Number, default: 5 },
+    safetyHygieneFee: { type: Number, default: 0, min: 0 }, // ₹ per booking (Safety & Hygiene Kit); 0 = free
+    stylistFee: { type: Number, default: 0, min: 0 },       // ₹ per booking when the customer picks a specific stylist; 0 = free
     defaultCommissionRatePercent: { type: Number, default: 12 },
     referralBonusCustomer: { type: Number, default: 50 },
     referralBonusReferee: { type: Number, default: 100 },

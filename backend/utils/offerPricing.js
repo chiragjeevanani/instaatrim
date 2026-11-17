@@ -54,8 +54,16 @@ const loadLiveOffersForSalon = async (salonId) => {
     return all.filter((o) => isOfferLiveNow(o, now) && offerAppliesToSalon(o, salonId));
 };
 
-// Price the customer must pay for one service (best live offer applied)
-const priceWithBestOffer = (service, offers) => {
+// Offer discount is split: half off the price now, half to the customer's wallet after the service
+// is completed (cancel / no-show → no wallet part). Same rule as frontend shared/lib/offers.js.
+const OFFER_INSTANT_SHARE = 0.5;
+const splitOfferDiscount = (total) => {
+    const instant = Math.round((Number(total) || 0) * OFFER_INSTANT_SHARE);
+    return { instant, wallet: (Number(total) || 0) - instant };
+};
+
+// Best live offer for one service → { price: what the customer pays now, cashback: offer half to wallet }
+const bestOfferSplit = (service, offers) => {
     const base = Number(service.price) || 0;
     const day = istNow().day;
     let best = 0;
@@ -63,7 +71,11 @@ const priceWithBestOffer = (service, offers) => {
         if (!offerMatchesService(o, service)) continue;
         best = Math.max(best, discountAmountFor(o, base, day));
     }
-    return base - best;
+    const { instant, wallet } = splitOfferDiscount(best);
+    return { price: base - instant, cashback: wallet };
 };
 
-module.exports = { loadLiveOffersForSalon, priceWithBestOffer, istNow, percentForDay };
+// Price the customer must pay now for one service (best live offer applied)
+const priceWithBestOffer = (service, offers) => bestOfferSplit(service, offers).price;
+
+module.exports = { loadLiveOffersForSalon, priceWithBestOffer, bestOfferSplit, istNow, percentForDay };

@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Tag, CheckCircle2, XCircle, Clock, Search, AlertCircle, Percent, Plus, Sparkles, Store, X, Layers, Calendar, ChevronDown, Check, Edit3, Trash2 } from 'lucide-react';
+import { Tag, CheckCircle2, XCircle, Clock, Search, AlertCircle, Percent, Plus, Store, X, Calendar, ChevronDown, Check, Edit3, Trash2 } from 'lucide-react';
 import { AdminTopBar } from '../components/AdminTopBar';
 import { useAdmin } from '../context/AdminContext';
 import { api } from '../../../shared/services/api';
-import { dayWiseText } from '../../../shared/lib/offers';
+import { dayWiseText, splitOfferDiscount } from '../../../shared/lib/offers';
 
 // Day-wise discount: week order for the per-day inputs
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -25,7 +25,6 @@ export const AdminOffersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOfferId, setEditingOfferId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [showCatSuggestions, setShowCatSuggestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customSubInput, setCustomSubInput] = useState('');
 
@@ -65,15 +64,63 @@ export const AdminOffersPage = () => {
         const cs = c.salonId ? String(c.salonId._id || c.salonId.id || c.salonId) : '';
         return !cs || cs === 'all' || cs === sel;
       })
-      .map((c) => ({ name: c.name, subcategories: Array.isArray(c.serviceCategories) ? c.serviceCategories : [] }));
+      .map((c) => {
+        const tags = Array.isArray(c.serviceCategories) ? c.serviceCategories.filter(Boolean) : [];
+        // Same picker as salon "Add Service": category → sub-category → services (DB).
+        // Category without sub-categories → its tags as services under one implicit group.
+        const groups = Array.isArray(c.subcategoryGroups) && c.subcategoryGroups.length > 0
+          ? c.subcategoryGroups.map((g) => ({ name: g.name, services: (g.services || []).map((s) => s.name).filter(Boolean) }))
+          : tags.length ? [{ name: 'Services', isFallback: true, services: tags }] : [];
+        const isFallback = groups.length === 1 && groups[0].isFallback;
+        // "Select All" picks every sub-category (or every service when there are no sub-categories)
+        return { name: c.name, groups, subcategories: isFallback ? tags : groups.map((g) => g.name) };
+      });
   }, [categories, formData.salonId]);
 
-  // Autocomplete category filter
-  const catSuggestions = useMemo(() => {
-    const q = (formData.category || '').toLowerCase().trim();
-    if (!q) return CATEGORY_CATALOG;
-    return CATEGORY_CATALOG.filter((c) => c.name.toLowerCase().includes(q));
-  }, [formData.category, CATEGORY_CATALOG]);
+  // Sub-category opened in the picker (shows its services)
+  const [openGroup, setOpenGroup] = useState('');
+  const selectedCatalog = CATEGORY_CATALOG.find((c) => c.name.toLowerCase() === (formData.category || '').toLowerCase()) || null;
+  const pickerGroups = selectedCatalog?.groups || [];
+  const pickerGroup = pickerGroups.find((g) => g.name === openGroup) || null;
+
+  // "Discount applicable on" — worked out from what the admin picked (no extra buttons):
+  // Whole Salon (every service) → Category (nothing picked below) → Sub-category (whole ones) → Service (single ones)
+  const SCOPES = [
+    { key: 'salon', label: 'Whole Salon' },
+    { key: 'category', label: 'Category' },
+    { key: 'subcategory', label: 'Sub-category' },
+    { key: 'service', label: 'Service' }
+  ];
+  const groupNamesOf = (catName) =>
+    (CATEGORY_CATALOG.find((c) => c.name.toLowerCase() === String(catName || '').toLowerCase())?.groups || [])
+      .filter((g) => !g.isFallback)
+      .map((g) => g.name);
+  const scopeOf = (catName, subs) => {
+    if (!catName || catName === ALL_CATEGORIES) return catName ? 'salon' : '';
+    if (!subs.length) return 'category';
+    const names = groupNamesOf(catName);
+    return subs.every((s) => names.includes(s)) ? 'subcategory' : 'service';
+  };
+  const currentScope = scopeOf(formData.category, formData.subcategories);
+
+  // Whole sub-category on/off (its single services are then covered by it)
+  const toggleGroup = (g) =>
+    setFormData((prev) => {
+      const has = prev.subcategories.includes(g.name);
+      const rest = prev.subcategories.filter((s) => s !== g.name && !g.services.includes(s));
+      return { ...prev, subcategories: has ? rest : [...rest, g.name] };
+    });
+
+  // One service on/off. If its whole sub-category was selected → keep the other services of it.
+  const toggleService = (g, svc) =>
+    setFormData((prev) => {
+      if (!g.isFallback && prev.subcategories.includes(g.name)) {
+        const rest = prev.subcategories.filter((s) => s !== g.name);
+        return { ...prev, subcategories: [...rest, ...g.services.filter((s) => s !== svc && !rest.includes(s))] };
+      }
+      const has = prev.subcategories.includes(svc);
+      return { ...prev, subcategories: has ? prev.subcategories.filter((s) => s !== svc) : [...prev.subcategories, svc] };
+    });
 
   // Dynamic available subcategories for currently selected category
   const availableSubcategories = useMemo(() => {
@@ -89,19 +136,9 @@ export const AdminOffersPage = () => {
       category: cat.name,
       subcategories: [] // none selected = offer applies to the whole category
     }));
-    setShowCatSuggestions(false);
-  };
-
-  const toggleSubcategory = (sub) => {
-    setFormData((prev) => {
-      const exists = prev.subcategories.includes(sub);
-      return {
-        ...prev,
-        subcategories: exists
-          ? prev.subcategories.filter((s) => s !== sub)
-          : [...prev.subcategories, sub]
-      };
-    });
+    // only one sub-category (or tags-only category) → open it directly
+    const groups = cat.groups || [];
+    setOpenGroup(groups.length === 1 ? groups[0].name : '');
   };
 
   const handleSelectAllSubcategories = () => {
@@ -149,6 +186,7 @@ export const AdminOffersPage = () => {
 
   const handleOpenCreate = () => {
     setEditingOfferId(null);
+    setOpenGroup('');
     setFormData(initialFormState);
     setCustomSubInput("");
     setIsModalOpen(true);
@@ -156,6 +194,7 @@ export const AdminOffersPage = () => {
 
   const handleOpenEdit = (offer) => {
     setEditingOfferId(offer.id || offer._id);
+    setOpenGroup('');
     let subArr = [];
     if (Array.isArray(offer.subcategories) && offer.subcategories.length > 0) {
       subArr = offer.subcategories;
@@ -202,7 +241,7 @@ export const AdminOffersPage = () => {
   const handleCreateOfferSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) return alert('Please enter an offer name');
-    if (!formData.category.trim()) return alert('Please select or enter a category');
+    if (!formData.category.trim()) return alert('Please select a category (or "Whole Salon")');
 
     setIsSubmitting(true);
     try {
@@ -591,65 +630,80 @@ export const AdminOffersPage = () => {
                 />
               </div>
 
-              {/* 2. Category (Smart Autocomplete + Manual Input) */}
-              <div className="relative">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider">
-                    Category <span className="text-red-400">*</span>
-                  </label>
-                  <span className="text-[10px] text-purple-400 font-medium flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Smart Autocomplete &amp; Manual
-                  </span>
+              {/* 2. Assign to Salon (Dynamic DB) */}
+              <div>
+                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>Assign to Salon (Dynamic DB)</span>
+                  <span className="text-[10px] text-purple-400 font-normal">Apply globally or pick salon</span>
+                </label>
+                <div className="relative">
+                  <Store className="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={formData.salonId}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      if (selId === 'all') {
+                        setFormData({ ...formData, salonId: 'all', salonName: 'All Salons (Global Offer)' });
+                      } else {
+                        const s = salons.find((item) => (item.id || item._id) === selId);
+                        setFormData({
+                          ...formData,
+                          salonId: selId,
+                          salonName: s ? s.name : 'Specific Salon'
+                        });
+                      }
+                    }}
+                    className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer font-medium"
+                  >
+                    <option value="all">🌐 All Salons (Global Deal - Apply to all partner salons in DB)</option>
+                    {salons.map((s) => {
+                      const sId = s.id || s._id;
+                      const sLoc = s.locationCity || s.city || s.area || '';
+                      return (
+                        <option key={sId} value={sId}>
+                          🏪 {s.name}{sLoc ? ` (${sLoc})` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Hair, Nails, Facial, Spa..."
-                  value={formData.category}
-                  onFocus={() => setShowCatSuggestions(true)}
-                  onChange={(e) => {
-                    setFormData({ ...formData, category: e.target.value });
-                    setShowCatSuggestions(true);
-                  }}
-                  className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-stone-600 focus:outline-none focus:border-purple-500 font-medium"
-                />
-
-                {/* Autocomplete Dropdown */}
-                {showCatSuggestions && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#161622] border border-[#2f2f45] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#232336] max-h-52 overflow-y-auto">
-                    {/* One click: offer on every category / every service */}
-                    <div
-                      onClick={() => handleSelectCategory({ name: ALL_CATEGORIES })}
-                      className="p-2.5 bg-purple-900/20 hover:bg-purple-900/40 cursor-pointer transition-colors flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-xs font-bold text-emerald-300">{ALL_CATEGORIES}</span>
-                      </div>
-                      <span className="text-[10px] text-stone-400">every service</span>
-                    </div>
-                    {catSuggestions.map((cat) => (
-                      <div
-                        key={cat.name}
-                        onClick={() => handleSelectCategory(cat)}
-                        className="p-2.5 hover:bg-purple-900/30 cursor-pointer transition-colors flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Layers className="w-3.5 h-3.5 text-purple-400" />
-                          <span className="text-xs font-semibold text-white">{cat.name}</span>
-                        </div>
-                        <span className="text-[10px] text-stone-400">{cat.subcategories.length} subcategories</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
-              {/* 3. Subcategories (Multi-Select Chips + Manual Tags) — not needed for "All Categories" */}
-              <div className={formData.category === ALL_CATEGORIES ? 'hidden' : ''}>
+              {/* 3. Category dropdown — admin categories from DB (same as salon "Add Service") */}
+              <div>
+                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5">
+                  Category <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === ALL_CATEGORIES) return handleSelectCategory({ name: ALL_CATEGORIES });
+                    const cat = CATEGORY_CATALOG.find((c) => c.name === val);
+                    handleSelectCategory(cat || { name: val });
+                  }}
+                  className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 font-medium cursor-pointer"
+                >
+                  <option value="">Select category</option>
+                  {/* offer on every service of the salon(s) */}
+                  <option value={ALL_CATEGORIES}>Whole Salon (every service)</option>
+                  {CATEGORY_CATALOG.map((cat) => (
+                    <option key={cat.name} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                  {/* old offer saved under a category that's no longer in the list */}
+                  {formData.category && formData.category !== ALL_CATEGORIES && !CATEGORY_CATALOG.some((c) => c.name === formData.category) && (
+                    <option value={formData.category}>{formData.category}</option>
+                  )}
+                </select>
+              </div>
+
+              {/* 4. Sub-category → Services of the chosen category (optional; nothing picked = whole category) */}
+              <div className={!formData.category || formData.category === ALL_CATEGORIES ? 'hidden' : ''}>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider">
-                    Subcategories / Service Tags (Multi-Select)
+                    Sub-category &amp; Services <span className="text-stone-500 normal-case font-medium">(optional)</span>
                   </label>
                   {availableSubcategories.length > 0 && (
                     availableSubcategories.every((s) => formData.subcategories.includes(s)) ? (
@@ -672,27 +726,74 @@ export const AdminOffersPage = () => {
                   )}
                 </div>
 
-                {/* Clickable Multi-Select Chips */}
-                {availableSubcategories.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2.5 max-h-32 overflow-y-auto p-1 bg-[#101018] rounded-xl border border-[#232336]">
-                    {availableSubcategories.map((sub) => {
-                      const isSelected = formData.subcategories.includes(sub);
-                      return (
-                        <button
-                          key={sub}
-                          type="button"
-                          onClick={() => toggleSubcategory(sub)}
-                          className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all cursor-pointer flex items-center gap-1 ${
-                            isSelected
-                              ? 'bg-purple-600 text-white border-purple-500 shadow-xs'
-                              : 'bg-[#181824] text-stone-300 border-[#2b2b3e] hover:border-purple-400'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3 h-3 text-white" />}
-                          <span>{sub}</span>
-                        </button>
-                      );
-                    })}
+                {/* Same as salon "Add Service": choose a sub-category → its services (DB) */}
+                {selectedCatalog && (
+                  <div className="mb-2.5 p-2.5 bg-[#101018] rounded-xl border border-[#232336] space-y-2">
+                    {pickerGroups.length === 0 && (
+                      <p className="text-[10.5px] text-stone-500">No sub-categories in this category yet — offer applies to the whole category.</p>
+                    )}
+
+                    {/* 1) Sub-category chips — tap to open its services (hidden when only one group) */}
+                    {pickerGroups.length > 1 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {pickerGroups.map((g) => {
+                          const isOpen = openGroup === g.name;
+                          const picked = formData.subcategories.includes(g.name) || g.services.some((s) => formData.subcategories.includes(s));
+                          return (
+                            <button
+                              key={g.name}
+                              type="button"
+                              onClick={() => setOpenGroup(isOpen ? '' : g.name)}
+                              className={`text-[11px] px-2.5 py-1 rounded-full border font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                                isOpen
+                                  ? 'bg-purple-600 text-white border-purple-500'
+                                  : picked
+                                  ? 'bg-purple-500/20 text-purple-200 border-purple-500/50'
+                                  : 'bg-[#181824] text-stone-300 border-[#2b2b3e] hover:border-purple-400'
+                              }`}
+                            >
+                              {picked && <Check className="w-3 h-3" />}
+                              {g.name} <span className={isOpen ? 'text-purple-200' : 'text-stone-500'}>({g.services.length})</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* 2) Services of the opened sub-category: whole sub-category or single services */}
+                    {pickerGroup && (
+                      <div className="rounded-lg border border-[#2b2b3e] divide-y divide-[#232336]">
+                        {!pickerGroup.isFallback && (
+                          <label className="flex items-center justify-between gap-2 px-2.5 py-2 cursor-pointer bg-purple-900/10">
+                            <span className="text-[11px] font-bold text-white">All {pickerGroup.name} services</span>
+                            <input
+                              type="checkbox"
+                              checked={formData.subcategories.includes(pickerGroup.name)}
+                              onChange={() => toggleGroup(pickerGroup)}
+                              className="accent-purple-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                          </label>
+                        )}
+                        {pickerGroup.services.map((svc) => {
+                          const viaGroup = !pickerGroup.isFallback && formData.subcategories.includes(pickerGroup.name);
+                          return (
+                            <label key={svc} className="flex items-center justify-between gap-2 px-2.5 py-1.5 cursor-pointer">
+                              <span className="text-[11px] text-stone-300">{svc}</span>
+                              <input
+                                type="checkbox"
+                                checked={viaGroup || formData.subcategories.includes(svc)}
+                                onChange={() => toggleService(pickerGroup, svc)}
+                                className="accent-purple-500 w-3.5 h-3.5 cursor-pointer"
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <p className="text-[9.5px] text-stone-500">
+                      Tap a sub-category, then tick "All … services" or single services. Nothing ticked = whole {selectedCatalog.name} category.
+                    </p>
                   </div>
                 )}
 
@@ -738,51 +839,44 @@ export const AdminOffersPage = () => {
                 </div>
               </div>
 
-              {/* 4. Assign to Salon (Dynamic DB) */}
-              <div>
-                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>Assign to Salon (Dynamic DB)</span>
-                  <span className="text-[10px] text-purple-400 font-normal">Apply globally or pick salon</span>
-                </label>
-                <div className="relative">
-                  <Store className="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <select
-                    value={formData.salonId}
-                    onChange={(e) => {
-                      const selId = e.target.value;
-                      if (selId === 'all') {
-                        setFormData({ ...formData, salonId: 'all', salonName: 'All Salons (Global Offer)' });
-                      } else {
-                        const s = salons.find((item) => (item.id || item._id) === selId);
-                        setFormData({
-                          ...formData,
-                          salonId: selId,
-                          salonName: s ? s.name : 'Specific Salon'
-                        });
-                      }
-                    }}
-                    className="w-full bg-[#101018] border border-[#2d2d42] rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500 cursor-pointer font-medium"
-                  >
-                    <option value="all">🌐 All Salons (Global Deal - Apply to all partner salons in DB)</option>
-                    {salons.map((s) => {
-                      const sId = s.id || s._id;
-                      const sLoc = s.locationCity || s.city || s.area || '';
-                      return (
-                        <option key={sId} value={sId}>
-                          🏪 {s.name}{sLoc ? ` (${sLoc})` : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
+              {/* 5. Discount Applicable On — updates by itself from the category / sub-category / services picked above */}
+              <div className="p-3 rounded-2xl bg-[#101018] border border-[#232336] space-y-2">
+                <label className="block text-[11px] font-bold text-stone-300 uppercase tracking-wider">Discount Applicable On</label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {SCOPES.map((s) => (
+                    <span
+                      key={s.key}
+                      className={`text-center px-1.5 py-1.5 rounded-lg border text-[10.5px] font-bold ${
+                        currentScope === s.key
+                          ? 'bg-purple-600 border-purple-500 text-white'
+                          : 'bg-[#141420] border-[#2d2d42] text-stone-500'
+                      }`}
+                    >
+                      {currentScope === s.key && '✓ '}
+                      {s.label}
+                    </span>
+                  ))}
                 </div>
-                <p className="text-[10px] text-stone-500 mt-1">
-                  {formData.salonId === 'all'
-                    ? '✨ This offer will be automatically applied to these Subcategories across all salons.'
-                    : `✨ This offer will be assigned exclusively to ${formData.salonName}.`}
+                <p className="text-[10.5px] text-emerald-300/90 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-2.5 py-1.5">
+                  {!currentScope ? (
+                    'Choose a category above (or "Whole Salon").'
+                  ) : (
+                    <>
+                      ✨ Applies on{' '}
+                      <b>
+                        {currentScope === 'salon'
+                          ? 'every service'
+                          : currentScope === 'category'
+                          ? `all ${formData.category} services`
+                          : `${formData.category} › ${formData.subcategories.join(', ')}`}
+                      </b>{' '}
+                      {formData.salonId === 'all' ? 'in all salons' : `at ${formData.salonName}`}. Customer gets half the discount instantly and half in wallet after the service.
+                    </>
+                  )}
                 </p>
               </div>
 
-              {/* 5. Discount rule — applied on each matching service's OWN price in the salon */}
+              {/* 6. Discount rule — applied on each matching service's OWN price in the salon */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#101018] border border-[#232336]">
                 {/* Discount type: one % every day, or a different % per day (weekdays vs weekend) */}
                 <div className="sm:col-span-2 grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#141420] border border-[#2d2d42]">
@@ -904,22 +998,27 @@ export const AdminOffersPage = () => {
 
                 <p className="sm:col-span-2 text-[10.5px] text-emerald-300/90 bg-emerald-500/5 border border-emerald-500/20 rounded-lg px-2.5 py-1.5">
                   {(() => {
-                    const priceAt = (p) => {
+                    // Same split as the customer app: half the discount off now, half to wallet after the service
+                    const splitAt = (p) => {
                       const pct = Math.min(90, Math.max(0, Number(p) || 0));
                       let off = Math.round((1000 * pct) / 100);
                       if (Number(formData.maxDiscount) > 0) off = Math.min(off, Number(formData.maxDiscount));
-                      return 1000 - off;
+                      const { instant, wallet } = splitOfferDiscount(off);
+                      return { now: 1000 - instant, wallet };
                     };
                     if (!formData.dayWise) {
+                      const s = splitAt(formData.discount);
                       return (
-                        <>Example: a ₹1,000 service → <b>₹{priceAt(formData.discount)}</b> for the customer.</>
+                        <>Example: a ₹1,000 service → <b>₹{s.now}</b> now + <b>₹{s.wallet}</b> in wallet after the service.</>
                       );
                     }
                     // day-wise: weekday vs weekend price (Mon & Sat as the samples)
+                    const mon = splitAt(formData.dayDiscounts.Mon);
+                    const sat = splitAt(formData.dayDiscounts.Sat);
                     return (
                       <>
-                        Example: a ₹1,000 service → <b>₹{priceAt(formData.dayDiscounts.Mon)}</b> on Monday,{' '}
-                        <b>₹{priceAt(formData.dayDiscounts.Sat)}</b> on Saturday.
+                        Example: a ₹1,000 service → <b>₹{mon.now}</b> + <b>₹{mon.wallet}</b> wallet on Monday,{' '}
+                        <b>₹{sat.now}</b> + <b>₹{sat.wallet}</b> wallet on Saturday.
                       </>
                     );
                   })()} Applies on{' '}

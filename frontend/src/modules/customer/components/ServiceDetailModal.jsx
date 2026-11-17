@@ -116,7 +116,8 @@ export const ServiceDetailModal = () => {
 
   const discountPct = useMemo(() => {
     if (!activeDetailService?.originalPrice || !activeDetailService?.price) return null;
-    return Math.round((1 - activeDetailService.price / activeDetailService.originalPrice) * 100);
+    const pct = Math.round((1 - activeDetailService.price / activeDetailService.originalPrice) * 100);
+    return pct > 0 ? pct : null; // no real discount → no "% OFF" badge (and no stray "0")
   }, [activeDetailService]);
 
   const eliteSavings = useMemo(() => {
@@ -344,7 +345,7 @@ export const ServiceDetailModal = () => {
                   <span className="text-lg font-black text-stone-900">
                     ₹{activeDetailService.price}
                   </span>
-                  {activeDetailService.originalPrice && (
+                  {Number(activeDetailService.originalPrice) > Number(activeDetailService.price) && (
                     <span className="text-xs text-stone-400 line-through font-medium">
                       ₹{activeDetailService.originalPrice}
                     </span>
@@ -527,7 +528,7 @@ export const ServiceDetailModal = () => {
                   <span className="text-base font-black text-stone-900">
                     ₹{activeDetailService.price}
                   </span>
-                  {activeDetailService.originalPrice && (
+                  {Number(activeDetailService.originalPrice) > Number(activeDetailService.price) && (
                     <span className="text-[10px] text-stone-400 line-through">
                       ₹{activeDetailService.originalPrice}
                     </span>

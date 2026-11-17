@@ -373,7 +373,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                             </div>
                             <div className="flex items-baseline gap-1.5 mt-1.5">
                               <span className="text-xs font-black text-stone-900">₹{item.price}</span>
-                              {item.originalPrice && (
+                              {Number(item.originalPrice) > Number(item.price) && (
                                 <span className="text-[10px] text-stone-400 line-through">₹{item.originalPrice}</span>
                               )}
                             </div>

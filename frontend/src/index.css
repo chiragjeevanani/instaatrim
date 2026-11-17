@@ -1,19 +1,24 @@
 @layer utilities {
+
   /* Hide scrollbars for clean carousel / app feel */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -42,6 +47,7 @@ input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type="number"] {
   -moz-appearance: textfield;
 }
@@ -97,7 +103,8 @@ input[type="number"] {
   --admin-code-text: #7e22ce;
 }
 
-.admin-theme-dark, .admin-theme-light {
+.admin-theme-dark,
+.admin-theme-light {
   background-color: var(--admin-bg-base);
   color: var(--admin-text-body);
 }
@@ -107,6 +114,7 @@ input[type="number"] {
 .admin-theme-dark [class*="bg-[#0a0a0f]"] {
   background-color: #0d0d12 !important;
 }
+
 .admin-theme-light [class*="bg-[#0d0d12]"],
 .admin-theme-light [class*="bg-[#0a0a0f]"] {
   background-color: var(--admin-bg-base) !important;
@@ -115,6 +123,7 @@ input[type="number"] {
 .admin-theme-dark [class*="bg-[#121218]"] {
   background-color: #121218 !important;
 }
+
 .admin-theme-light [class*="bg-[#121218]"] {
   background-color: var(--admin-bg-sidebar) !important;
 }
@@ -125,6 +134,7 @@ input[type="number"] {
   background-color: #14141e !important;
   border-color: #262638 !important;
 }
+
 .admin-theme-light [class*="bg-[#14141d]"],
 .admin-theme-light [class*="bg-[#14141e]"],
 .admin-theme-light [class*="bg-[#13131c]"],
@@ -141,6 +151,7 @@ input[type="number"] {
 .admin-theme-dark [class*="bg-[#1f1f2e]"] {
   background-color: #181822 !important;
 }
+
 .admin-theme-light [class*="bg-[#181822]"],
 .admin-theme-light [class*="bg-[#1b1b26]"],
 .admin-theme-light [class*="bg-[#111119]"],
@@ -153,6 +164,7 @@ input[type="number"] {
 .admin-theme-dark [class*="bg-[#1e1e2e]"] {
   background-color: #1e1e2e !important;
 }
+
 .admin-theme-light [class*="bg-[#1e1e2e]"] {
   background-color: #f3e8ff !important;
 }
@@ -160,6 +172,7 @@ input[type="number"] {
 .admin-theme-dark [class*="bg-[#0d0d14]"] {
   background-color: #0d0d14 !important;
 }
+
 .admin-theme-light [class*="bg-[#0d0d14]"] {
   background-color: #ffffff !important;
 }
@@ -172,6 +185,7 @@ input[type="number"] {
 .admin-theme-dark [class*="border-[#232333]"] {
   border-color: #262638 !important;
 }
+
 .admin-theme-light [class*="border-[#262633]"],
 .admin-theme-light [class*="border-[#262638]"],
 .admin-theme-light [class*="border-[#2d2d3d]"],
@@ -183,8 +197,9 @@ input[type="number"] {
 .admin-theme-dark [class*="border-[#1e1e2c]"] {
   border-color: #1e1e2c !important;
 }
+
 .admin-theme-light [class*="border-[#1e1e2c]"],
-.admin-theme-light [class*="divide-[#1e1e2c]"] > * {
+.admin-theme-light [class*="divide-[#1e1e2c]"]>* {
   border-color: #e2e8f0 !important;
 }
 
@@ -235,6 +250,7 @@ input[type="number"] {
 .admin-theme-light [class*="text-purple-400"] a {
   color: #6b21a8 !important;
 }
+
 .admin-theme-light a[class*="text-purple-400"]:hover,
 .admin-theme-light [class*="text-purple-400"] a:hover {
   color: #4c1d95 !important;
@@ -267,7 +283,7 @@ input[type="number"] {
   background-color: #f8fafc !important;
 }
 
-.admin-theme-light tbody.divide-y > * {
+.admin-theme-light tbody.divide-y>* {
   border-color: #e2e8f0 !important;
 }
 
@@ -580,7 +596,7 @@ input[type="number"] {
   border-color: #7e22ce !important;
 }
 
-.admin-theme-light .relative > svg {
+.admin-theme-light .relative>svg {
   color: #64748b !important;
 }
 
@@ -636,8 +652,13 @@ input[type="number"] {
    their own width (-100%), which makes the loop seamless.
    ========================================================================== */
 @keyframes ds-marquee {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-100%, 0, 0); }
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-100%, 0, 0);
+  }
 }
 
 .ds-marquee-track {
@@ -651,14 +672,22 @@ input[type="number"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ds-marquee-track { animation: none; }
+  .ds-marquee-track {
+    animation: none;
+  }
 }
 
 /* Landing "How booking works" auto-advance timer — its animationend moves the flow to the next step */
 @keyframes ds-flow-fill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
 }
+
 .ds-flow-timer {
   animation: ds-flow-fill 6.5s linear forwards;
 }

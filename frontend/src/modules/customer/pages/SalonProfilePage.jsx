@@ -375,6 +375,10 @@ export const SalonProfilePage = () => {
                         <span className="font-extrabold text-xs text-emerald-700">₹{deal.finalPrice}</span>
                         <span className="text-[10px] text-stone-400 line-through">₹{deal.basePrice}</span>
                         <span className="text-[9px] font-extrabold text-white bg-emerald-600 px-1.5 py-0.5 rounded">{deal.label}</span>
+                        {/* other half of the offer goes to wallet after the service */}
+                        {deal.offerCashback > 0 && (
+                          <span className="text-[9.5px] font-bold text-amber-700">+ ₹{deal.offerCashback} in wallet</span>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-baseline gap-1">

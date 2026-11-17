@@ -61,16 +61,34 @@ export const discountAmountFor = (offer, basePrice, now = new Date()) => {
   return Math.max(0, Math.min(amt, price));
 };
 
-// Best live offer for a service at a salon → { offer, basePrice, finalPrice, savings, label } | null
+// Offer discount is split: half off the price now, half to the customer's wallet after the service
+// is completed (cancel / no-show → no wallet part). Same rule as backend utils/offerPricing.js.
+export const OFFER_INSTANT_SHARE = 0.5;
+export const splitOfferDiscount = (total) => {
+  const instant = Math.round((Number(total) || 0) * OFFER_INSTANT_SHARE);
+  return { instant, wallet: (Number(total) || 0) - instant };
+};
+
+// Best live offer for a service at a salon →
+// { offer, basePrice, finalPrice, savings (off now), offerCashback (to wallet), totalDiscount, label } | null
 export const getBestOfferForService = (service, salonId, offers = [], now = new Date()) => {
   const basePrice = Number(service?.basePrice ?? service?.price) || 0;
   if (!basePrice) return null;
   let best = null;
   for (const offer of offers || []) {
     if (!isOfferLiveNow(offer, now) || !offerAppliesToSalon(offer, salonId) || !offerMatchesService(offer, service)) continue;
-    const savings = discountAmountFor(offer, basePrice, now);
-    if (savings > 0 && (!best || savings > best.savings)) {
-      best = { offer, basePrice, finalPrice: basePrice - savings, savings, label: `${offerPercentOn(offer, now)}% OFF` };
+    const total = discountAmountFor(offer, basePrice, now);
+    if (total > 0 && (!best || total > best.totalDiscount)) {
+      const { instant, wallet } = splitOfferDiscount(total);
+      best = {
+        offer,
+        basePrice,
+        finalPrice: basePrice - instant,
+        savings: instant,
+        offerCashback: wallet,
+        totalDiscount: total,
+        label: `${offerPercentOn(offer, now)}% OFF`
+      };
     }
   }
   return best;

@@ -74,11 +74,12 @@ const notifyBookingFCM = async ({ salonId, title, body, data }) => {
 
 // Recalculate the bill from DB (service price + live offers + coupon) and compare with
 // what the customer's app sent. Rejects any booking that tries to pay less than allowed.
-const verifyBookingPrices = async (data) => {
+// stylistPicked = customer chose a real, active stylist of this salon (→ Stylist fee from Platform Settings)
+const verifyBookingPrices = async (data, { stylistPicked = false } = {}) => {
     const mongoose = require('mongoose');
     const Service = require('../models/Service');
     const Coupon = require('../models/Coupon');
-    const { loadLiveOffersForSalon, priceWithBestOffer } = require('../utils/offerPricing');
+    const { loadLiveOffersForSalon, bestOfferSplit } = require('../utils/offerPricing');
     const REFRESH = 'Prices have changed. Please refresh your cart and try again.';
     const TOL = 1; // ₹1 rounding tolerance
 
@@ -92,6 +93,7 @@ const verifyBookingPrices = async (data) => {
 
     // 1) Every service: real DB price (+ best live offer) must match what the app sent
     let subtotal = 0;
+    let offerCashback = 0; // wallet half of the offers (credited when the booking is Completed)
     for (const item of items) {
         const qty = Math.max(1, Math.min(10, Math.round(Number(item.quantity) || 1)));
         if (!mongoose.Types.ObjectId.isValid(String(item.id))) {
@@ -101,11 +103,12 @@ const verifyBookingPrices = async (data) => {
         if (!svc || String(svc.salonId) !== String(data.salonId) || svc.isActive === false) {
             return { ok: false, message: `"${item.name || 'A service'}" is no longer available. ${REFRESH}` };
         }
-        const serverPrice = priceWithBestOffer(svc, offers);
+        const { price: serverPrice, cashback } = bestOfferSplit(svc, offers);
         if (Math.abs(Number(item.price) - serverPrice) > TOL) {
             return { ok: false, message: `Price of "${svc.title}" is ₹${serverPrice} now. ${REFRESH}` };
         }
         subtotal += serverPrice * qty;
+        offerCashback += cashback * qty;
     }
 
     // 2) Bill total must match the server's total
@@ -135,14 +138,15 @@ const verifyBookingPrices = async (data) => {
     const Customer = require('../models/Customer');
     const s = (await PlatformSettings.findOne().lean()) || {};
     const pct = (v, d) => (v === undefined || v === null || Number.isNaN(Number(v)) ? d : Math.max(0, Number(v)));
-    const instantPct = pct(s.instantDiscountPercent, 20);
+    const instantPct = 0; // Instant discount removed — not applied on bookings (same as customer app)
     const cashbackPct = pct(s.walletCashbackPercent, 20);
     const redeemPct = pct(s.walletRedeemPercent, 50);
     const instantDiscount = Math.round((subtotal * instantPct) / 100);
-    const walletCashback = Math.round((subtotal * cashbackPct) / 100);
+    // platform cashback + wallet half of the offers
+    const walletCashback = Math.round((subtotal * cashbackPct) / 100) + offerCashback;
     // Booking must belong to a real customer in DB (so wallet / cashback reach the right account)
     const cust = mongoose.Types.ObjectId.isValid(String(data.customerId))
-        ? await Customer.findById(data.customerId).select('wallet_balance').lean()
+        ? await Customer.findById(data.customerId).select('wallet_balance is_elite').lean()
         : null;
     if (!cust) {
         return { ok: false, message: 'Please login or sign up first to confirm your booking.' };
@@ -151,27 +155,25 @@ const verifyBookingPrices = async (data) => {
     const maxRedeem = Math.min(Math.round((walletBalance * redeemPct) / 100), Math.max(0, subtotal - instantDiscount - allowedDiscount));
     const walletRedeemed = Math.max(0, Math.min(Number(data.walletRedeemed) || 0, maxRedeem));
 
-    // 5) Amount paid can't be lower than (total − coupon − instant discount − wallet used); tax / fees only add on top
-    if (Number(data.finalPaid) < subtotal - allowedDiscount - instantDiscount - walletRedeemed - TOL) {
+    // 5) Amount paid can't be lower than the full bill — same formula as the customer app (CustomerContext.cartSummary):
+    //    total − coupon − wallet used + convenience fee (0 for Elite) + Safety & Hygiene fee
+    //    + Stylist fee (only when a specific stylist was picked) + GST on (total − coupon)
+    const safetyHygieneFee = Math.max(0, Number(s.safetyHygieneFee) || 0);
+    const stylistFee = stylistPicked ? Math.max(0, Number(s.stylistFee) || 0) : 0;
+    const convenienceFee = cust.is_elite ? 0 : Math.max(0, Number(s.convenienceFee) || 0);
+    const couponUsed = Math.min(discount, allowedDiscount);
+    const taxAmount = Math.round((Math.max(0, subtotal - couponUsed) * (Number(s.taxRatePercent) || 0)) / 100);
+    const minPayable = Math.max(0, subtotal - instantDiscount - couponUsed - walletRedeemed + convenienceFee + safetyHygieneFee + stylistFee) + taxAmount;
+    if (Number(data.finalPaid) < minPayable - TOL) {
         return { ok: false, message: REFRESH };
     }
 
-    return { ok: true, rewards: { instantDiscount, walletRedeemed, walletCashback } };
+    return { ok: true, rewards: { instantDiscount, walletRedeemed, walletCashback, stylistFee } };
 };
 
 exports.createBooking = async (req, res) => {
     try {
         const bookingData = req.body;
-
-        // ── Server-side price check: never trust prices sent by the customer's app ──
-        const priceCheck = await verifyBookingPrices(bookingData);
-        if (!priceCheck.ok) {
-            return res.status(409).json({ success: false, code: 'PRICE_MISMATCH', message: priceCheck.message });
-        }
-
-        // Custom ID generation for "IT-XXXXXX"
-        const count = await Booking.countDocuments();
-        const customId = `IT-${220000 + count + 1}`; // Start from 220001
 
         // Stylist picked at checkout: must be an active staff of THIS salon; name always from DB
         let staffId = null;
@@ -184,6 +186,16 @@ exports.createBooking = async (req, res) => {
                 staffName = st.name;
             }
         }
+
+        // ── Server-side price check: never trust prices sent by the customer's app ──
+        const priceCheck = await verifyBookingPrices(bookingData, { stylistPicked: !!staffId });
+        if (!priceCheck.ok) {
+            return res.status(409).json({ success: false, code: 'PRICE_MISMATCH', message: priceCheck.message });
+        }
+
+        // Custom ID generation for "IT-XXXXXX"
+        const count = await Booking.countDocuments();
+        const customId = `IT-${220000 + count + 1}`; // Start from 220001
 
         // Picked stylist already booked at this time (scheduled slot) → don't double-book them
         const newStart = clockToMinutes(bookingData.time);
@@ -208,11 +220,12 @@ exports.createBooking = async (req, res) => {
             }
         }
 
-        const rewards = priceCheck.rewards || { instantDiscount: 0, walletRedeemed: 0, walletCashback: 0 };
+        const rewards = priceCheck.rewards || { instantDiscount: 0, walletRedeemed: 0, walletCashback: 0, stylistFee: 0 };
         const booking = new Booking({
             ...bookingData,
             staffId,
             staffName,
+            stylistFee: rewards.stylistFee || 0, // server value (DB setting), never the app's
             // server-calculated rewards (never trusted from the app)
             instantDiscount: rewards.instantDiscount,
             walletRedeemed: rewards.walletRedeemed,

@@ -149,7 +149,7 @@ export const CartDrawer = () => {
                         <p className="text-[10px] text-stone-500 mt-0.5">{formatDuration(item.duration)} • {item.salonName || 'Salon Partner'}</p>
                         <div className="flex items-baseline gap-1.5 mt-1">
                           <span className="text-xs font-black text-stone-900">₹{item.price}</span>
-                          {item.originalPrice && (
+                          {Number(item.originalPrice) > Number(item.price) && (
                             <span className="text-[10px] text-stone-400 line-through">₹{item.originalPrice}</span>
                           )}
                         </div>
@@ -238,10 +238,12 @@ export const CartDrawer = () => {
                     <span>Item Total</span>
                     <span>₹{billValue}</span>
                   </div>
-                  <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
-                    <span>Instant Discount ({cartSummary.instantDiscountPercent}%)</span>
-                    <span>-₹{instantDiscount}</span>
-                  </div>
+                  {instantDiscount > 0 && (
+                    <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
+                      <span>Instant Discount ({cartSummary.instantDiscountPercent}%)</span>
+                      <span>-₹{instantDiscount}</span>
+                    </div>
+                  )}
                   {walletRedeemed > 0 && (
                     <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
                       <span>Wallet Redeemed (50% of balance)</span>
@@ -259,9 +261,20 @@ export const CartDrawer = () => {
                       Safety & Hygiene Kit
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
                     </span>
-                    <span className="text-stone-400 line-through">₹49</span>
-                    <span className="text-emerald-600 font-bold">FREE</span>
+                    {/* admin Platform Settings → Safety & Hygiene Fee (0 = free) */}
+                    {cartSummary.safetyHygieneFee > 0 ? (
+                      <span>₹{cartSummary.safetyHygieneFee}</span>
+                    ) : (
+                      <span className="text-emerald-600 font-bold">FREE</span>
+                    )}
                   </div>
+                  {/* admin Platform Settings → Staff / Stylist Fee, only when a stylist is picked */}
+                  {cartSummary.stylistFee > 0 && (
+                    <div className="flex justify-between text-[11px] text-stone-600">
+                      <span>Stylist Fee ({cartSummary.stylistName})</span>
+                      <span>₹{cartSummary.stylistFee}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-[11px] text-stone-600">
                     <span>Platform Convenience Fee</span>
                     {convenienceFee > 0 ? (

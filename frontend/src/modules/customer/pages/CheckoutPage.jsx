@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { processPayment } from '../../../shared/lib/payments';
+import { pickedStylistId } from '../../../shared/lib/stylist';
 import { releaseHold, isHoldStillValid } from '../../../shared/lib/slotLock';
 import { HoldCountdown } from '../components/HoldCountdown';
 import {
@@ -133,8 +134,9 @@ export const CheckoutPage = () => {
         paymentStatus,
         transactionId,
         holdId: bookingSlot.holdId,
-        staffId: bookingSlot.staffId || null,
-        staffName: bookingSlot.staffName || null,
+        // only a stylist the customer picked ("Any Stylist" → salon assigns, no stylist fee) — same rule as the bill
+        staffId: pickedStylistId(bookingSlot),
+        staffName: pickedStylistId(bookingSlot) ? bookingSlot.staffName : null,
         finalPaid: calculatedPayable + (cartSummary.taxAmount || 0)
       });
 
@@ -422,10 +424,12 @@ export const CheckoutPage = () => {
             <span>₹{billValue}</span>
           </div>
 
-          <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
-            <span>Instant Discount ({cartSummary.instantDiscountPercent}%)</span>
-            <span>-₹{instantDiscount}</span>
-          </div>
+          {instantDiscount > 0 && (
+            <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
+              <span>Instant Discount ({cartSummary.instantDiscountPercent}%)</span>
+              <span>-₹{instantDiscount}</span>
+            </div>
+          )}
 
           {walletRedeemed > 0 && (
             <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
@@ -438,6 +442,24 @@ export const CheckoutPage = () => {
             <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
               <span>Coupon Savings ({appliedCoupon?.code})</span>
               <span>-₹{cartSummary.discount}</span>
+            </div>
+          )}
+
+          {/* admin Platform Settings → Safety & Hygiene Fee (0 = free) */}
+          <div className="flex justify-between text-stone-600 text-[11px]">
+            <span>Safety &amp; Hygiene Kit</span>
+            {cartSummary.safetyHygieneFee > 0 ? (
+              <span>₹{cartSummary.safetyHygieneFee}</span>
+            ) : (
+              <span className="text-emerald-600 font-bold">FREE</span>
+            )}
+          </div>
+
+          {/* admin Platform Settings → Staff / Stylist Fee, only when a stylist is picked */}
+          {cartSummary.stylistFee > 0 && (
+            <div className="flex justify-between text-stone-600 text-[11px]">
+              <span>Stylist Fee ({cartSummary.stylistName})</span>
+              <span>₹{cartSummary.stylistFee}</span>
             </div>
           )}
 

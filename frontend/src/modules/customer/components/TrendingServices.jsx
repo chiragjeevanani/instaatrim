@@ -6,6 +6,10 @@ import { motion } from 'framer-motion';
 import { SafeImage } from '../../../shared/components/SafeImage';
 import { formatDuration } from '../../../shared/store/selectors';
 import { categoriesForHomeSection, serviceInHomeSection } from '../../../shared/lib/homeSections';
+import { getBestOfferForService } from '../../../shared/lib/offers';
+
+// Card shows the offer price (display only); the cart gets the plain service and applies the offer itself
+const forCart = ({ offerDeal, ...service }) => service; // eslint-disable-line no-unused-vars
 
 export const TrendingServices = ({ genderFilter = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
@@ -68,7 +72,9 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
           isBoosted: Boolean(s.isBoosted || s.isSponsored),
           boostRank: s.boostRank || 999,
           salonName: salon?.name || 'Salon Partner',
-          discount: discountPct > 0 ? `${discountPct}% OFF` : null
+          discount: discountPct > 0 ? `${discountPct}% OFF` : null,
+          // admin offer (DB) — display only; the cart applies the same offer itself on "Add"
+          offerDeal: getBestOfferForService(s, s.salonId, state.offers || [])
         };
       })
       .sort((a, b) => {
@@ -77,7 +83,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
         if (a.isBoosted && b.isBoosted) return a.boostRank - b.boostRank;
         return 0;
       });
-  }, [state.services, state.salons, genderFilter, currentLocation, trendingCategories]);
+  }, [state.services, state.salons, state.offers, genderFilter, currentLocation, trendingCategories]);
 
   // Filter tabs = the trending categories that actually have services here (DB)
   const filterTabs = useMemo(
@@ -160,17 +166,31 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                   </div>
 
                   {/* Price Row */}
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.price}</span>
-                    {service.originalPrice && (
-                      <span className="text-[9.5px] text-stone-400 line-through">₹{service.originalPrice}</span>
-                    )}
-                    {service.discount && (
-                      <span className="text-[10px] font-semibold text-emerald-700 ml-auto">
-                        {service.discount}
-                      </span>
-                    )}
-                  </div>
+                  {service.offerDeal ? (
+                    // same price the cart will charge: half the offer off now, half to wallet after the service
+                    <>
+                      <div className="flex items-baseline gap-1 mt-1">
+                        <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.offerDeal.finalPrice}</span>
+                        <span className="text-[9.5px] text-stone-400 line-through">₹{service.offerDeal.basePrice}</span>
+                        <span className="text-[10px] font-semibold text-emerald-700 ml-auto">{service.offerDeal.label}</span>
+                      </div>
+                      {service.offerDeal.offerCashback > 0 && (
+                        <span className="text-[9.5px] font-bold text-amber-700">+ ₹{service.offerDeal.offerCashback} in wallet</span>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-baseline gap-1 mt-1">
+                      <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.price}</span>
+                      {Number(service.originalPrice) > Number(service.price) && (
+                        <span className="text-[9.5px] text-stone-400 line-through">₹{service.originalPrice}</span>
+                      )}
+                      {service.discount && (
+                        <span className="text-[10px] font-semibold text-emerald-700 ml-auto">
+                          {service.discount}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
               {/* Action Button */}
@@ -189,7 +209,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                   <span className="font-semibold">{cartItems.find(item => item.id === service.id)?.quantity || 1}</span>
                   <button
                     type="button"
-                    onClick={() => addToCart(service, { id: service.salonId, name: service.salonName })}
+                    onClick={() => addToCart(forCart(service), { id: service.salonId, name: service.salonName })}
                     className="h-full px-3 flex items-center justify-center hover:bg-rose-100 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -200,7 +220,7 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      addToCart(service, { id: service.salonId, name: service.salonName });
+                      addToCart(forCart(service), { id: service.salonId, name: service.salonName });
                     }}
                     className="mt-2.5 w-full h-8 border border-brand-maroon/50 text-brand-maroon bg-white hover:bg-rose-50/70 font-bold text-xs rounded-lg active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                   >

@@ -166,6 +166,14 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
                 ))}
               </div>
 
+              {/* Stylist the customer picked + fee charged for it (saved on the booking from DB settings) */}
+              {booking.staffName && (
+                <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
+                  <span className="font-medium text-stone-500">Stylist: <b className="text-stone-900">{booking.staffName}</b></span>
+                  <span className="text-xs font-bold text-stone-900">{Number(booking.stylistFee) > 0 ? `₹${booking.stylistFee} fee` : 'No fee'}</span>
+                </div>
+              )}
+
               <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs font-bold text-stone-900">
                 <span className="font-medium text-stone-500">Total Amount</span>
                 <span className="text-xs font-bold text-rose-900">₹{booking.totalAmount}</span>

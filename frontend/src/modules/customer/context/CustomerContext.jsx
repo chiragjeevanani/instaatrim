@@ -621,6 +621,8 @@ export const CustomerProvider = ({ children }) => {
     const instantDiscount = Math.round((subtotal * instantDiscountPercent) / 100);
     // + wallet half of every applied offer (credited after the service, like the platform cashback)
     const offerWalletCashback = cartItems.reduce((acc, item) => acc + (Number(item.offerCashback) || 0) * (item.quantity || 1), 0);
+    // Display only (not used in the payable): the instant half of the offers, already inside `subtotal`
+    const offerInstantDiscount = cartItems.reduce((acc, item) => acc + (Number(item.offerSavings) || 0) * (item.quantity || 1), 0);
     const walletCashback = Math.round((subtotal * walletCashbackPercent) / 100) + offerWalletCashback;
     const walletBalance = Number(user?.wallet_balance) || 0;
     const walletRedeemed = Math.min(
@@ -635,7 +637,7 @@ export const CustomerProvider = ({ children }) => {
 
     return {
       subtotal, originalSubtotal, discount, taxAmount, taxRatePercent, convenienceFee, safetyHygieneFee, stylistFee, stylistName, finalAmount, totalSavings,
-      instantDiscount, instantDiscountPercent, walletCashback, walletCashbackPercent, offerWalletCashback,
+      instantDiscount, instantDiscountPercent, walletCashback, walletCashbackPercent, offerWalletCashback, offerInstantDiscount,
       walletBalance, walletRedeemed, walletRedeemPercent, payableBeforeTax
     };
   }, [cartItems, appliedCoupon, state.platformSettings, user?.is_elite, user?.wallet_balance, bookingSlot]);

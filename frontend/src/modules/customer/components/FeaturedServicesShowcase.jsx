@@ -143,14 +143,14 @@ export const FeaturedServicesShowcase = ({ genderFilter = 'all' }) => {
 
               <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between">
                 {service.offerDeal ? (
-                  // same price the cart will charge: half the offer off now, half to wallet after the service
+                  // full offer price (same as cart): half of the discount off now, half to wallet after the service
                   <div className="flex flex-col">
                     <div className="flex items-baseline gap-1">
-                      <span className="font-black text-[13px] text-stone-900">₹{service.offerDeal.finalPrice}</span>
+                      <span className="font-black text-[13px] text-stone-900">₹{service.offerDeal.basePrice - service.offerDeal.totalDiscount}</span>
                       <span className="text-[9px] text-stone-400 line-through">₹{service.offerDeal.basePrice}</span>
                     </div>
                     {service.offerDeal.offerCashback > 0 && (
-                      <span className="text-[9px] font-bold text-amber-700">+ ₹{service.offerDeal.offerCashback} in wallet</span>
+                      <span className="text-[9px] font-bold text-amber-700">₹{service.offerDeal.savings} off now + ₹{service.offerDeal.offerCashback} in wallet</span>
                     )}
                   </div>
                 ) : (

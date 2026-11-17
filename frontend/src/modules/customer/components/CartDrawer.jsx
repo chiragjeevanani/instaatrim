@@ -147,12 +147,26 @@ export const CartDrawer = () => {
                           <h5 className="text-xs font-bold text-stone-900 truncate leading-tight">{item.name || item.title}</h5>
                         </div>
                         <p className="text-[10px] text-stone-500 mt-0.5">{formatDuration(item.duration)} • {item.salonName || 'Salon Partner'}</p>
-                        <div className="flex items-baseline gap-1.5 mt-1">
-                          <span className="text-xs font-black text-stone-900">₹{item.price}</span>
-                          {Number(item.originalPrice) > Number(item.price) && (
-                            <span className="text-[10px] text-stone-400 line-through">₹{item.originalPrice}</span>
-                          )}
-                        </div>
+                        {Number(item.offerSavings) > 0 ? (
+                          // Offer: full discount shown on the item; half off now (bill), half to wallet after service
+                          <>
+                            <div className="flex items-baseline gap-1.5 mt-1">
+                              <span className="text-xs font-black text-stone-900">₹{Number(item.price) - (Number(item.offerCashback) || 0)}</span>
+                              <span className="text-[10px] text-stone-400 line-through">₹{item.basePrice ?? item.originalPrice}</span>
+                              {item.discount && <span className="text-[9px] font-bold text-emerald-700">{item.discount}</span>}
+                            </div>
+                            <p className="text-[9.5px] text-amber-700 font-semibold mt-0.5">
+                              ₹{item.offerSavings} off now + ₹{Number(item.offerCashback) || 0} in wallet after service
+                            </p>
+                          </>
+                        ) : (
+                          <div className="flex items-baseline gap-1.5 mt-1">
+                            <span className="text-xs font-black text-stone-900">₹{item.price}</span>
+                            {Number(item.originalPrice) > Number(item.price) && (
+                              <span className="text-[10px] text-stone-400 line-through">₹{item.originalPrice}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <button
                         onClick={() => removeFromCart(item.id)}
@@ -236,8 +250,15 @@ export const CartDrawer = () => {
                   <h5 className="text-xs font-bold text-stone-800">Bill Breakdown</h5>
                   <div className="flex justify-between text-[11px] text-stone-600">
                     <span>Item Total</span>
-                    <span>₹{billValue}</span>
+                    <span>₹{billValue + (cartSummary.offerInstantDiscount || 0)}</span>
                   </div>
+                  {/* half of the offer is cut now; the other half goes to wallet after the service */}
+                  {cartSummary.offerInstantDiscount > 0 && (
+                    <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
+                      <span>Instant Discount (50% of offer)</span>
+                      <span>-₹{cartSummary.offerInstantDiscount}</span>
+                    </div>
+                  )}
                   {instantDiscount > 0 && (
                     <div className="flex justify-between text-[11px] text-emerald-600 font-medium">
                       <span>Instant Discount ({cartSummary.instantDiscountPercent}%)</span>
@@ -298,9 +319,20 @@ export const CartDrawer = () => {
                   </div>
 
                   {/* Excel Cashback Notification */}
-                  <div className="bg-amber-50/80 border border-amber-200/80 rounded-lg p-2 mt-1 text-[10px] text-amber-900 font-bold flex items-center justify-between">
-                    <span>✨ Wallet Cashback (after service):</span>
-                    <span className="font-black text-amber-800">+₹{walletCashbackIssued}</span>
+                  <div className="bg-amber-50/80 border border-amber-200/80 rounded-lg p-2 mt-1 text-[10px] text-amber-900 font-bold">
+                    <div className="flex items-center justify-between">
+                      <span>✨ Wallet Cashback (after service):</span>
+                      <span className="font-black text-amber-800">+₹{walletCashbackIssued}</span>
+                    </div>
+                    {/* where it comes from (only when an offer is applied) */}
+                    {cartSummary.offerWalletCashback > 0 && (
+                      <div className="mt-1 space-y-0.5 font-medium text-amber-800/90">
+                        <div className="flex justify-between"><span>• Offer cashback (50% of offer)</span><span>₹{cartSummary.offerWalletCashback}</span></div>
+                        {walletCashbackIssued - cartSummary.offerWalletCashback > 0 && (
+                          <div className="flex justify-between"><span>• DrimStyle cashback ({cartSummary.walletCashbackPercent}% of bill)</span><span>₹{walletCashbackIssued - cartSummary.offerWalletCashback}</span></div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>

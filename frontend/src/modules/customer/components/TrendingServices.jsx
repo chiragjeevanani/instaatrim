@@ -167,15 +167,15 @@ export const TrendingServices = ({ genderFilter = 'all' }) => {
 
                   {/* Price Row */}
                   {service.offerDeal ? (
-                    // same price the cart will charge: half the offer off now, half to wallet after the service
+                    // full offer price (same as cart): half of the discount off now, half to wallet after the service
                     <>
                       <div className="flex items-baseline gap-1 mt-1">
-                        <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.offerDeal.finalPrice}</span>
+                        <span className="font-bold text-[13px] lg:text-sm text-stone-900">₹{service.offerDeal.basePrice - service.offerDeal.totalDiscount}</span>
                         <span className="text-[9.5px] text-stone-400 line-through">₹{service.offerDeal.basePrice}</span>
                         <span className="text-[10px] font-semibold text-emerald-700 ml-auto">{service.offerDeal.label}</span>
                       </div>
                       {service.offerDeal.offerCashback > 0 && (
-                        <span className="text-[9.5px] font-bold text-amber-700">+ ₹{service.offerDeal.offerCashback} in wallet</span>
+                        <span className="text-[9.5px] font-bold text-amber-700">₹{service.offerDeal.savings} off now + ₹{service.offerDeal.offerCashback} in wallet</span>
                       )}
                     </>
                   ) : (

@@ -354,8 +354,22 @@ export const CheckoutPage = () => {
                     {item.name || item.title}
                   </p>
                   <p className="text-[10px] text-stone-500">{formatDuration(item.duration)}</p>
+                  {/* Offer: half off now (in the bill), half to wallet after service */}
+                  {Number(item.offerSavings) > 0 && (
+                    <p className="text-[9.5px] text-amber-700 font-semibold">
+                      ₹{item.offerSavings} off now + ₹{Number(item.offerCashback) || 0} in wallet after service
+                    </p>
+                  )}
                 </div>
-                <span className="font-black text-stone-900 text-xs">₹{item.price}</span>
+                {Number(item.offerSavings) > 0 ? (
+                  // full offer discount shown on the item (same as cart)
+                  <span className="text-right">
+                    <span className="font-black text-stone-900 text-xs">₹{Number(item.price) - (Number(item.offerCashback) || 0)}</span>{' '}
+                    <span className="text-[10px] text-stone-400 line-through">₹{item.basePrice ?? item.originalPrice}</span>
+                  </span>
+                ) : (
+                  <span className="font-black text-stone-900 text-xs">₹{item.price}</span>
+                )}
               </div>
             )))}
           </div>
@@ -421,8 +435,16 @@ export const CheckoutPage = () => {
           <span className="font-bold text-stone-800 block text-xs lg:text-sm">Price Details</span>
           <div className="flex justify-between text-stone-600 text-[11px]">
             <span>Salon Bill Value</span>
-            <span>₹{billValue}</span>
+            <span>₹{billValue + (cartSummary.offerInstantDiscount || 0)}</span>
           </div>
+
+          {/* half of the offer is cut now; the other half goes to wallet after the service */}
+          {cartSummary.offerInstantDiscount > 0 && (
+            <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
+              <span>Instant Discount (50% of offer)</span>
+              <span>-₹{cartSummary.offerInstantDiscount}</span>
+            </div>
+          )}
 
           {instantDiscount > 0 && (
             <div className="flex justify-between text-emerald-600 font-bold text-[11px]">
@@ -494,6 +516,15 @@ export const CheckoutPage = () => {
               </span>
               <span className="font-black text-amber-700">+₹{walletCashbackIssued}</span>
             </div>
+            {/* where it comes from (only when an offer is applied) */}
+            {cartSummary.offerWalletCashback > 0 && (
+              <div className="text-[10px] text-amber-800/90 space-y-0.5">
+                <div className="flex justify-between"><span>• Offer cashback (50% of offer)</span><span>₹{cartSummary.offerWalletCashback}</span></div>
+                {walletCashbackIssued - cartSummary.offerWalletCashback > 0 && (
+                  <div className="flex justify-between"><span>• DrimStyle cashback ({cartSummary.walletCashbackPercent}% of bill)</span><span>₹{walletCashbackIssued - cartSummary.offerWalletCashback}</span></div>
+                )}
+              </div>
+            )}
             <div className="flex items-center justify-between text-[10px] text-amber-800 pt-0.5 border-t border-amber-200/60">
               <span>Wallet balance after booking:</span>
               <span className="font-bold">₹{walletCashbackLeft}</span>

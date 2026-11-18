@@ -32,7 +32,7 @@ export const newSessionId = () => {
   const id = `SESS-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
   try {
     window.sessionStorage?.setItem('it_session_id', id);
-  } catch (e) {
+  } catch (e) { 
     // sessionStorage unavailable (private mode, etc) — fall back to a per-call id
   }
   return id;

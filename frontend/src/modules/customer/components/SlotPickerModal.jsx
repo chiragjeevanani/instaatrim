@@ -207,7 +207,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 50, opacity: 0 }}
-          className="relative w-full max-w-[420px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 z-10 space-y-3 border-t sm:border border-purple-200/80 max-h-[85vh] overflow-y-auto"
+          className="relative w-full max-w-[420px] bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] rounded-t-2xl sm:rounded-2xl shadow-2xl px-4 pt-4 pb-[max(3rem,calc(env(safe-area-inset-bottom)+1rem))] sm:pb-4 z-10 space-y-3 border-t sm:border border-purple-200/80 max-h-[85vh] overflow-y-auto"
         >
           <div className="flex items-center justify-between border-b border-purple-200/60 pb-2">
             <div>

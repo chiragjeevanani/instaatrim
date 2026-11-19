@@ -118,7 +118,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
   if (!salon) {
     return (
       <AnimatePresence>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setIsSlotPickerOpen(false)} />
           <div className="relative bg-white rounded-2xl p-5 text-center max-w-[300px] z-10">
             <AlertCircle className="w-6 h-6 text-amber-600 mx-auto mb-2" />
@@ -194,7 +194,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

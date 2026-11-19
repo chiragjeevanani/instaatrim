@@ -20,7 +20,7 @@ const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#09090b', color: '#a1a1aa' }}>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
       <div style={{ width: '32px', height: '32px', border: '3px solid #3f3f46', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <span style={{ fontSize: '13px', fontWeight: 500 }}>Loading Instaatrim...</span>
+      <span style={{ fontSize: '13px', fontWeight: 500 }}>Loading DrimStyle...</span>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   </div>

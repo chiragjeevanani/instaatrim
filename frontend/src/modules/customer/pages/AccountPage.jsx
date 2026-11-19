@@ -55,7 +55,7 @@ export const AccountPage = () => {
 
   return (
     <div
-      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-20 mx-auto border-x border-purple-200/50 lg:max-w-3xl lg:my-8 lg:min-h-0 lg:pb-8 lg:rounded-3xl lg:border lg:shadow-sm flex flex-col justify-between overflow-x-hidden box-border"
+      className="w-full max-w-[480px] min-w-0 bg-gradient-to-b from-[#f8f4fb] via-[#f3ebf8] to-[#ede1f5] min-h-screen pb-[calc(8rem+env(safe-area-inset-bottom))] mx-auto border-x border-purple-200/50 lg:max-w-3xl lg:my-8 lg:min-h-0 lg:pb-8 lg:rounded-3xl lg:border lg:shadow-sm flex flex-col justify-between overflow-x-hidden box-border"
     >
       {/* Compact Header Profile Summary */}
       <header className="bg-stone-900 text-white px-4 pt-4 pb-3.5 lg:px-8 lg:pt-8 lg:pb-6 rounded-b-2xl shadow-sm relative overflow-hidden">

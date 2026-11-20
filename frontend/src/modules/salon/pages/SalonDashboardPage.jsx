@@ -26,6 +26,13 @@ import { NewBookingModal } from '../components/NewBookingModal';
 import { BookingDetailModal } from '../components/BookingDetailModal';
 import { OfferModal } from '../components/OfferModal';
 import { StationCapacityModal } from '../components/StationCapacityModal';
+import { dateKey as toDateKey } from '../../../shared/lib/time';
+
+// "2026-11-18" → "18 Nov" (label for the Past date badge in the queue)
+const shortDate = (key) => {
+  const d = new Date(`${key}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? key : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+};
 
 export const SalonDashboardPage = () => {
   const navigate = useNavigate();
@@ -320,6 +327,9 @@ export const SalonDashboardPage = () => {
                 Live Appointment Queue
               </h2>
               <p className="text-[10.5px] text-stone-400 font-normal">Real-time check-in and station lifecycle</p>
+              <p className="text-[10.5px] text-stone-500 font-normal">
+                Shows all pending bookings, including past dates. The cards above count today's bookings only.
+              </p>
             </div>
             <button
               onClick={() => navigate('/salon/bookings')}
@@ -364,6 +374,12 @@ export const SalonDashboardPage = () => {
                         {isInstant ? <Zap className="w-2.5 h-2.5 fill-amber-500 text-amber-500 stroke-[1.8]" /> : <Calendar className="w-2.5 h-2.5 stroke-[1.8]" />}
                         {b.bookingMode}
                       </span>
+                      {b.dateKey && b.dateKey < toDateKey(new Date()) && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 border bg-rose-50 text-rose-800 border-rose-200 whitespace-nowrap shrink-0">
+                          <Calendar className="w-2.5 h-2.5 stroke-[1.8]" />
+                          {shortDate(b.dateKey)} · Past date
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1 text-[11px] font-semibold text-stone-600 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/60">

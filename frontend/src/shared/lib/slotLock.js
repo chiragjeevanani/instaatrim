@@ -12,7 +12,7 @@ import { api } from '../services/api';
 import { newHoldId, newSessionId } from './ids';
 import { dateKey } from './time';
 
-export const DEFAULT_HOLD_TTL_MS = 8 * 60 * 1000; // 8 minutes
+export const DEFAULT_HOLD_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 export async function acquireHold({ salonId, serviceId, staffId, dateObj, startMin, endMin }) {
   const hold = {

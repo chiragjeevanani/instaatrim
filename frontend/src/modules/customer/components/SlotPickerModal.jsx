@@ -156,7 +156,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           holdExpiresAt: hold.expiresAt,
           durationMinutes
         }));
-        showToast(`Instant slot held for 8 minutes — ${instantAvailability.label}`);
+        showToast(`Instant slot held for 15 minutes — ${instantAvailability.label}`);
       } else {
         if (!selectedSlot) {
           showToast('Pick a time slot first');
@@ -181,7 +181,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           holdExpiresAt: hold.expiresAt,
           durationMinutes
         }));
-        showToast(`Slot held for 8 minutes — ${selectedDay.label}, ${selectedSlot.time}`);
+        showToast(`Slot held for 15 minutes — ${selectedDay.label}, ${selectedSlot.time}`);
       }
       setPendingHold(null); // ownership passes to bookingSlot / checkout now
       setIsSlotPickerOpen(false);

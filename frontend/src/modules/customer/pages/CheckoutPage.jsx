@@ -37,7 +37,8 @@ export const CheckoutPage = () => {
     appliedCoupon,
     createBooking,
     showToast,
-    user
+    user,
+    setIsSlotPickerOpen
   } = useCustomer();
   const { state } = useAppData();
 
@@ -49,7 +50,11 @@ export const CheckoutPage = () => {
   const isRealCustomer = Boolean(
     user?.isLoggedIn && /^[a-f0-9]{24}$/i.test(String(user?.id || '')) && localStorage.getItem('instaatrim_token')
   );
-  const [holdExpired, setHoldExpired] = useState(false);
+  // Expired flag belongs to one hold: picking a new slot (new holdId) clears it automatically.
+  const holdKey = bookingSlot.holdId || bookingSlot.holdExpiresAt || 'none';
+  const [expiredHoldKey, setExpiredHoldKey] = useState(null);
+  const holdExpired = expiredHoldKey === holdKey;
+  const setHoldExpired = (val) => setExpiredHoldKey(val ? holdKey : null);
   const [showSuccessTick, setShowSuccessTick] = useState(false);
 
   // Exact Business Commercial Calculation (as per spreadsheet):
@@ -121,6 +126,7 @@ export const CheckoutPage = () => {
   const handleHoldExpire = () => {
     if (holdExpired) return;
     setHoldExpired(true);
+    releaseHold(bookingSlot.holdId); // drop the expired hold so the customer can pick the same time again
     showToast('Your held slot expired. Please pick a new one.');
   };
 
@@ -169,6 +175,7 @@ export const CheckoutPage = () => {
 
     if (bookingSlot.holdId && !isHoldStillValid({ id: bookingSlot.holdId }, state.holds)) {
       setHoldExpired(true);
+      releaseHold(bookingSlot.holdId);
       showToast('Your held slot has expired. Please choose a new slot.');
       return;
     }
@@ -284,9 +291,9 @@ export const CheckoutPage = () => {
           <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-bold text-red-800">Your slot hold expired</p>
-            <p className="text-[10.5px] text-red-700 mt-0.5">Go back and pick a slot again — someone else may now hold it.</p>
+            <p className="text-[10.5px] text-red-700 mt-0.5">Pick a slot again — someone else may now hold it.</p>
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => setIsSlotPickerOpen(true)}
               className="mt-2 text-[11px] font-bold text-red-700 underline"
             >
               Pick a new slot

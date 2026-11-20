@@ -176,7 +176,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
           holdExpiresAt: hold.expiresAt,
           durationMinutes
         }));
-        showToast(`Instant slot locked for 8 mins!`);
+        showToast(`Instant slot locked for 15 mins!`);
       } else {
         if (!selectedSlot) {
           showToast('Please select a timeslot first.');
@@ -208,7 +208,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
           holdExpiresAt: hold.expiresAt,
           durationMinutes
         }));
-        showToast(`Slot locked for 8 mins — ${selectedDay.label}, ${selectedSlot.time}`);
+        showToast(`Slot locked for 15 mins — ${selectedDay.label}, ${selectedSlot.time}`);
       }
 
       // If category has product recommendations, go to Step 3, otherwise Step 4

@@ -669,6 +669,31 @@ export const CustomerProvider = ({ children }) => {
         walletRedeemed: cartSummary.walletRedeemed,
         walletCashback: cartSummary.walletCashback,
         finalPaid: cartSummary.finalAmount,
+        // same bill rows the customer saw in the cart → shown again in My Bookings
+        billBreakdown: {
+          itemTotal: (cartSummary.subtotal || 0) + (cartSummary.offerInstantDiscount || 0),
+          offerInstantDiscount: cartSummary.offerInstantDiscount || 0,
+          instantDiscountPercent: cartSummary.instantDiscountPercent || 0,
+          walletRedeemPercent: cartSummary.walletRedeemPercent || 0,
+          safetyHygieneFee: cartSummary.safetyHygieneFee || 0,
+          convenienceFee: cartSummary.convenienceFee || 0,
+          taxAmount: cartSummary.taxAmount || 0,
+          taxRatePercent: cartSummary.taxRatePercent ?? 0,
+          offerWalletCashback: cartSummary.offerWalletCashback || 0,
+          walletCashbackPercent: cartSummary.walletCashbackPercent || 0,
+          // each service's price exactly as the cart showed it
+          items: cartItems.map((i) => {
+            const offer = Number(i.offerSavings) > 0;
+            return {
+              id: i.id,
+              price: offer ? Number(i.price) - (Number(i.offerCashback) || 0) : Number(i.price) || 0,
+              cutPrice: offer ? Number(i.basePrice ?? i.originalPrice) || 0 : Number(i.originalPrice) > Number(i.price) ? Number(i.originalPrice) : 0,
+              discountLabel: offer && i.discount ? String(i.discount) : '',
+              offerSavings: offer ? Number(i.offerSavings) : 0,
+              offerCashback: offer ? Number(i.offerCashback) || 0 : 0
+            };
+          })
+        },
         couponApplied: appliedCoupon ? appliedCoupon.code : null,
         preferredProduct: preferredProduct || bookingData.preferredProduct || null,
         paymentMethod: bookingData.paymentMethod || 'UPI (Google Pay)',

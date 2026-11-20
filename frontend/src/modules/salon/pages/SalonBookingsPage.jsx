@@ -14,7 +14,7 @@ import {
   MoreVertical,
   Clock
 } from 'lucide-react';
-import { BookingDetailModal } from '../components/BookingDetailModal';
+import { BookingDetailModal, salonBillTotal } from '../components/BookingDetailModal';
 import { NewBookingModal } from '../components/NewBookingModal';
 import { dateKey as toDateKey, formatDateKeyFriendly } from '../../../shared/lib/time';
 import { stationLabelFor } from '../../../shared/store/selectors';
@@ -185,7 +185,7 @@ export const SalonBookingsPage = () => {
                       <span className="text-[10px] text-stone-500 font-normal truncate pr-2">
                         {b.paymentMethod}
                       </span>
-                      <span className="font-bold text-rose-900 shrink-0">₹{b.totalAmount}</span>
+                      <span className="font-bold text-rose-900 shrink-0">₹{salonBillTotal(b)}</span>
                     </div>
                   </div>
 

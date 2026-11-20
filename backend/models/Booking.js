@@ -39,6 +39,8 @@ const bookingSchema = new mongoose.Schema({
   staffId: { type: String },
   staffName: { type: String }, // stylist the customer picked at checkout
   stylistFee: { type: Number, default: 0 }, // fee for picking that stylist (Platform Settings at booking time)
+  // Bill shown in the cart at booking time (display only — amounts above stay the source of truth)
+  billBreakdown: { type: Object },
   stationId: { type: String },
   status: { type: String, enum: ['Confirmed', 'Active', 'Completed', 'Cancelled', 'No-Show'], default: 'Confirmed' },
   cancelReason: { type: String }

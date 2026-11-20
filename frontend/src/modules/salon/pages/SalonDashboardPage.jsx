@@ -23,7 +23,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { NewBookingModal } from '../components/NewBookingModal';
-import { BookingDetailModal } from '../components/BookingDetailModal';
+import { BookingDetailModal, salonBillTotal } from '../components/BookingDetailModal';
 import { OfferModal } from '../components/OfferModal';
 import { StationCapacityModal } from '../components/StationCapacityModal';
 import { dateKey as toDateKey } from '../../../shared/lib/time';
@@ -410,7 +410,7 @@ export const SalonDashboardPage = () => {
                         }`} />
                         {b.status}
                       </span>
-                      <span className="text-[11.5px] font-bold text-stone-900">₹{b.totalAmount}</span>
+                      <span className="text-[11.5px] font-bold text-stone-900">₹{salonBillTotal(b)}</span>
                     </div>
 
                     {/* Inline progression button */}

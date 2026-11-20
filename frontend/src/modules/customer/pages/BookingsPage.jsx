@@ -43,6 +43,113 @@ const StatusProgress = ({ status }) => {
   );
 };
 
+// Service line priced exactly like the cart (new bookings); older bookings show the saved price.
+const ServiceLines = ({ b }) => {
+  const shown = b.billBreakdown?.items || [];
+  if (!b.services?.length) return null;
+  return (
+    <div className="space-y-1">
+      {b.services.map((item, i) => {
+        const s = shown.find((x) => x.id && x.id === item.id) || shown[i] || null;
+        return (
+          <div key={i} className="text-[11px] text-stone-700">
+            <div className="flex justify-between gap-2">
+              <span className="min-w-0">{item.name || item.title}{(item.quantity || 1) > 1 ? ` × ${item.quantity}` : ''}</span>
+              <span className="shrink-0 flex items-baseline gap-1">
+                <span className="font-bold">₹{s ? s.price : item.price}</span>
+                {s && Number(s.cutPrice) > Number(s.price) && <span className="text-[10px] text-stone-400 line-through">₹{s.cutPrice}</span>}
+                {s?.discountLabel && <span className="text-[9px] font-bold text-emerald-700">{s.discountLabel}</span>}
+              </span>
+            </div>
+            {s && Number(s.offerSavings) > 0 && (
+              <p className="text-[9.5px] text-amber-700 font-semibold">
+                ₹{s.offerSavings} off now + ₹{Number(s.offerCashback) || 0} in wallet after service
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// Same Bill Breakdown rows as the cart, read from the saved booking.
+// New bookings carry `billBreakdown` (cart snapshot); older ones fall back to the saved amounts.
+const BookingBill = ({ b }) => {
+  const n = (v) => Number(v) || 0;
+  const bb = b.billBreakdown || null;
+  const total = n(b.totalAmount);
+  const coupon = Math.round(n(b.discountAmount));
+  const instant = n(b.instantDiscount);
+  const wallet = n(b.walletRedeemed);
+  const stylistFee = n(b.stylistFee);
+  const paid = n(b.finalPaid ?? b.totalAmount);
+  const cashback = n(b.walletCashback);
+  const free = <span className="text-emerald-600 font-bold">FREE</span>;
+  const cancelled = b.status === 'Cancelled' || b.status === 'No-Show' || b.status === 'No Show';
+
+  const rows = [];
+  if (bb) {
+    rows.push({ label: 'Item Total', value: `₹${n(bb.itemTotal)}` });
+    if (n(bb.offerInstantDiscount) > 0) rows.push({ label: 'Instant Discount (50% of offer)', value: `-₹${n(bb.offerInstantDiscount)}`, green: true });
+    if (instant > 0) rows.push({ label: `Instant Discount${n(bb.instantDiscountPercent) > 0 ? ` (${n(bb.instantDiscountPercent)}%)` : ''}`, value: `-₹${instant}`, green: true });
+    if (wallet > 0) rows.push({ label: `Wallet Redeemed${n(bb.walletRedeemPercent) > 0 ? ` (${n(bb.walletRedeemPercent)}% of balance)` : ''}`, value: `-₹${wallet}`, green: true });
+    if (coupon > 0) rows.push({ label: `Coupon Savings${b.couponApplied ? ` (${b.couponApplied})` : ''}`, value: `-₹${coupon}`, green: true });
+    rows.push({ label: 'Safety & Hygiene Kit', value: n(bb.safetyHygieneFee) > 0 ? `₹${n(bb.safetyHygieneFee)}` : free });
+    if (stylistFee > 0) rows.push({ label: `Stylist Fee${b.staffName ? ` (${b.staffName})` : ''}`, value: `₹${stylistFee}` });
+    rows.push({ label: 'Platform Convenience Fee', value: n(bb.convenienceFee) > 0 ? `₹${n(bb.convenienceFee)}` : free });
+    rows.push({ label: `Taxes & GST (${n(bb.taxRatePercent)}%)`, value: `₹${n(bb.taxAmount)}` });
+  } else {
+    // older booking: only the saved totals are known → fees & taxes shown together
+    const taxesFees = Math.max(0, Math.round(paid - (total - coupon - instant - wallet + stylistFee)));
+    rows.push({ label: 'Item Total', value: `₹${total}` });
+    if (instant > 0) rows.push({ label: 'Instant Discount', value: `-₹${instant}`, green: true });
+    if (wallet > 0) rows.push({ label: 'Wallet Redeemed', value: `-₹${wallet}`, green: true });
+    if (coupon > 0) rows.push({ label: `Coupon Savings${b.couponApplied ? ` (${b.couponApplied})` : ''}`, value: `-₹${coupon}`, green: true });
+    if (stylistFee > 0) rows.push({ label: `Stylist Fee${b.staffName ? ` (${b.staffName})` : ''}`, value: `₹${stylistFee}` });
+    if (taxesFees > 0) rows.push({ label: 'Taxes & fees', value: `₹${taxesFees}` });
+  }
+
+  const offerCb = bb ? n(bb.offerWalletCashback) : 0;
+  return (
+    <div className="pt-2 border-t border-stone-100 space-y-1">
+      <h5 className="text-[11px] font-bold text-stone-800">Bill Breakdown</h5>
+      {rows.map((r) => (
+        <div key={r.label} className={`flex justify-between gap-2 text-[11px] ${r.green ? 'text-emerald-600 font-medium' : 'text-stone-600'}`}>
+          <span className="min-w-0">{r.label}</span>
+          <span className="shrink-0">{r.value}</span>
+        </div>
+      ))}
+      <div className="border-t border-stone-200 pt-1 flex justify-between font-black text-xs text-stone-900">
+        <span>{cancelled ? 'Total' : /salon|cod/i.test(b.paymentMethod || '') && b.status !== 'Completed' ? 'To Pay at Salon' : 'Total Paid'}</span>
+        <span>₹{paid}</span>
+      </div>
+      {cashback > 0 && (
+        <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-2 text-[10.5px] text-amber-900 space-y-0.5">
+          <div className="flex justify-between gap-2 font-bold">
+            <span className="min-w-0">
+              Wallet Cashback{' '}
+              {b.cashbackCredited ? '(credited ✓)' : cancelled ? '(not applicable — booking cancelled)' : '(after service)'}
+            </span>
+            <span className="shrink-0 text-amber-700">+₹{cashback}</span>
+          </div>
+          {offerCb > 0 && (
+            <>
+              <div className="flex justify-between text-amber-800"><span>• Offer cashback (50% of offer)</span><span>₹{offerCb}</span></div>
+              {cashback - offerCb > 0 && (
+                <div className="flex justify-between text-amber-800">
+                  <span>• DrimStyle cashback{n(bb.walletCashbackPercent) > 0 ? ` (${n(bb.walletCashbackPercent)}% of bill)` : ''}</span>
+                  <span>₹{cashback - offerCb}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const BookingsPage = () => {
   const navigate = useNavigate();
   const { bookings, cancelBooking } = useCustomer();
@@ -134,14 +241,7 @@ export const BookingsPage = () => {
                   </div>
 
                   {/* Services */}
-                  <div className="space-y-0.5">
-                    {b.services?.map((item, i) => (
-                      <div key={i} className="flex justify-between text-[11px] text-stone-700">
-                        <span>{item.name || item.title}</span>
-                        <span className="font-bold">₹{item.price}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <ServiceLines b={b} />
 
                   {b.preferredProduct && (
                     <div className="flex items-center gap-1.5 text-[10px] text-purple-900 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200/50">
@@ -149,6 +249,8 @@ export const BookingsPage = () => {
                       <span className="truncate">Treatment formulation: <strong className="text-brand-maroon">{b.preferredProduct}</strong></span>
                     </div>
                   )}
+
+                  <BookingBill b={b} />
 
                   {/* Live Status Progression — now bound to the real status */}
                   <StatusProgress status={b.status} />
@@ -194,6 +296,11 @@ export const BookingsPage = () => {
                     <h3 className="font-bold text-stone-900 text-xs">{b.salonName}</h3>
                     <p className="text-[10.5px] text-stone-500 mt-0.5">{formatDateKeyFriendly(b.dateKey)} at {b.time} • ₹{b.finalPaid}</p>
                   </div>
+
+                  {/* Services */}
+                  <ServiceLines b={b} />
+
+                  <BookingBill b={b} />
 
                   {b.rating && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-1.5 flex items-center gap-1.5 text-[11px] text-amber-900">

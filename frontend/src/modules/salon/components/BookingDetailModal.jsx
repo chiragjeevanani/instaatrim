@@ -19,6 +19,19 @@ import {
 import { formatDateKeyFriendly } from '../../../shared/lib/time';
 import { stationLabelFor } from '../../../shared/store/selectors';
 
+// Salon-side amount for a booking: service prices as the customer saw them in the cart
+// + Safety & Hygiene Kit + stylist fee (display only). Older / walk-in bookings → saved totalAmount.
+// eslint-disable-next-line react-refresh/only-export-components
+export const salonBillTotal = (booking) => {
+  const items = booking?.billBreakdown?.items;
+  if (!Array.isArray(items)) return booking?.totalAmount;
+  const services = booking.services || [];
+  return services.reduce((sum, item, i) => {
+    const s = items.find((x) => x.id && x.id === item.id) || items[i] || null;
+    return sum + (s ? Number(s.price) || 0 : Number(item.price) || 0) * (Number(item.quantity) || 1);
+  }, 0) + (Number(booking.billBreakdown.safetyHygieneFee) || 0) + (Number(booking.stylistFee) || 0);
+};
+
 export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
   const { checkInCustomer, startService, completeService, cancelBooking, markNoShow, stations, staff, openModal, closeModal } = useSalon();
 
@@ -38,6 +51,12 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
   if (!isOpen || !booking) return null;
 
   const isInstant = booking.bookingMode === 'Instant';
+
+  // Service prices exactly as the customer saw them in the cart (saved on new bookings).
+  // Older / walk-in bookings have no snapshot → shown as before.
+  const shownItems = Array.isArray(booking.billBreakdown?.items) ? booking.billBreakdown.items : null;
+  const shownFor = (item, i) => (shownItems ? shownItems.find((x) => x.id && x.id === item.id) || shownItems[i] || null : null);
+  const hygieneFee = shownItems ? Number(booking.billBreakdown.safetyHygieneFee) || 0 : 0;
 
   return (
     <AnimatePresence>
@@ -155,16 +174,35 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
                 Services Ordered
               </span>
               <div className="divide-y divide-stone-100">
-                {booking.services.map((item, i) => (
-                  <div key={i} className="py-2 flex items-center justify-between">
-                    <div>
-                      <p className="text-[11.5px] font-bold text-stone-900">{item.name}</p>
-                      <span className="text-[10px] text-stone-400 font-normal">{item.duration}</span>
+                {booking.services.map((item, i) => {
+                  const s = shownFor(item, i);
+                  return (
+                    <div key={i} className="py-2 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[11.5px] font-bold text-stone-900">{item.name}{(Number(item.quantity) || 1) > 1 ? ` × ${item.quantity}` : ''}</p>
+                        <span className="text-[10px] text-stone-400 font-normal">{item.duration}</span>
+                      </div>
+                      {s ? (
+                        <span className="shrink-0 flex items-baseline gap-1">
+                          <span className="text-xs font-bold text-stone-900">₹{s.price}</span>
+                          {Number(s.cutPrice) > Number(s.price) && <span className="text-[10px] text-stone-400 line-through">₹{s.cutPrice}</span>}
+                          {s.discountLabel && <span className="text-[9px] font-bold text-emerald-700">{s.discountLabel}</span>}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-stone-900">₹{item.price}</span>
+                      )}
                     </div>
-                    <span className="text-xs font-bold text-stone-900">₹{item.price}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Safety & Hygiene Kit fee the customer paid on this booking */}
+              {hygieneFee > 0 && (
+                <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
+                  <span className="font-medium text-stone-500">Safety &amp; Hygiene Kit</span>
+                  <span className="text-xs font-bold text-stone-900">₹{hygieneFee}</span>
+                </div>
+              )}
 
               {/* Stylist the customer picked + fee charged for it (saved on the booking from DB settings) */}
               {booking.staffName && (
@@ -176,7 +214,7 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
 
               <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs font-bold text-stone-900">
                 <span className="font-medium text-stone-500">Total Amount</span>
-                <span className="text-xs font-bold text-rose-900">₹{booking.totalAmount}</span>
+                <span className="text-xs font-bold text-rose-900">₹{salonBillTotal(booking)}</span>
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-stone-500 pt-1 border-t border-stone-100 font-normal">

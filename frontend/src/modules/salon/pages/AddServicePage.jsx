@@ -709,7 +709,7 @@ export const AddServicePage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
               <div>
                 <label className="text-[10px] font-semibold text-stone-700 block mb-1">
-                  Your Service Price (₹) <span className="text-rose-600">*</span>
+                  Your Service Price (₹) (Before discount) <span className="text-rose-600">*</span>
                 </label>
                 <div className="flex items-center bg-[#faf7fc] rounded-xl border border-purple-100 px-2.5 py-2 focus-within:bg-white focus-within:border-rose-900 focus-within:ring-1 focus-within:ring-rose-900/30 transition-all">
                   <IndianRupee className="w-3.5 h-3.5 text-stone-400 mr-1 shrink-0" />
@@ -730,7 +730,7 @@ export const AddServicePage = () => {
 
               <div>
                 <label className="text-[10px] font-semibold text-stone-700 block mb-1">
-                  Customer Display Price (₹)
+                  Customer Display Price (₹) (Before discount)
                 </label>
                 <div className="flex items-center bg-stone-100/80 rounded-xl border border-stone-200/70 px-2.5 py-2 cursor-not-allowed">
                   <IndianRupee className="w-3.5 h-3.5 text-stone-400 mr-1 shrink-0" />

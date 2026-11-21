@@ -4,15 +4,26 @@ const path = require('path');
 
 let messagingInstance = null;
 
-try {
-    const serviceAccount = require('./drimstyle-48987-firebase-adminsdk-fbsvc-7614ff8d89.json');
+// Service account key path comes from FIREBASE_SERVICE_ACCOUNT_PATH (.env) so the key
+// file can live outside git. Falls back to the original file in this folder.
+const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH
+    ? path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)
+    : path.join(__dirname, 'drimstyle-48987-firebase-adminsdk-fbsvc-7614ff8d89.json');
 
-    const app = getApps().length === 0 ? initializeApp({
-        credential: cert(serviceAccount)
-    }) : getApps()[0];
+try {
+    const serviceAccount = require(keyPath);
+    const credential = cert(serviceAccount);
+
+    const app = getApps().length === 0 ? initializeApp({ credential }) : getApps()[0];
 
     messagingInstance = getMessaging(app);
-    console.log('Firebase Admin SDK messaging initialized successfully');
+    console.log(`Firebase Admin SDK messaging initialized (key id ${String(serviceAccount.private_key_id).slice(0, 8)}...)`);
+
+    // Verify the key with Google at startup so a revoked/invalid key is reported
+    // immediately instead of only failing silently on every push.
+    credential.getAccessToken()
+        .then(() => console.log('[FCM] Service account key verified with Google — push notifications ready'))
+        .catch((err) => console.error(`[FCM] SERVICE ACCOUNT KEY REJECTED by Google (${err.message.split('.')[0]}). Push notifications will NOT be delivered until a valid key is installed.`));
 } catch (error) {
     console.error('Failed to initialize Firebase Admin SDK:', error);
 }

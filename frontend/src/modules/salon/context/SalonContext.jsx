@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
-import { BOOKING_STATUS } from '../../../shared/lib/bookingStatus';
+import { BOOKING_STATUS, isPaidOnline, isTerminal } from '../../../shared/lib/bookingStatus';
 import { dateKey, minutesToClock, nowMinutesOfDay } from '../../../shared/lib/time';
 import { io } from 'socket.io-client';
 import { requestFirebaseToken, messaging } from '../../../shared/lib/firebase';
@@ -607,9 +607,13 @@ export const SalonProvider = ({ children }) => {
     const confirmedToday = todayBookings.filter((b) => b.status === BOOKING_STATUS.CONFIRMED);
     const cancelledToday = todayBookings.filter((b) => b.status === BOOKING_STATUS.CANCELLED);
 
-    const totalRevenueToday =
-      completedToday.reduce((acc, b) => acc + (b.finalPaid || b.totalAmount), 0) +
-      inServiceToday.reduce((acc, b) => acc + (b.finalPaid || b.totalAmount), 0);
+    // Today's sales = completed + in-service bookings, split by who collected the money:
+    // online (paid to DrimStyle via Razorpay) vs Pay-at-Salon (COD, collected by the salon)
+    const salesToday = [...completedToday, ...inServiceToday];
+    const saleValue = (b) => Math.round(b.finalPaid || b.totalAmount || 0);
+    const onlineSalesToday = salesToday.filter(isPaidOnline).reduce((acc, b) => acc + saleValue(b), 0);
+    const totalRevenueToday = salesToday.reduce((acc, b) => acc + saleValue(b), 0);
+    const codSalesToday = totalRevenueToday - onlineSalesToday;
 
     const instantBookingsCount = todayBookings.filter((b) => b.bookingMode === 'Instant').length;
     const scheduledBookingsCount = todayBookings.filter((b) => b.bookingMode === 'Scheduled').length;
@@ -624,11 +628,20 @@ export const SalonProvider = ({ children }) => {
       .filter((p) => p.status === 'Transferred' || p.status === 'Pending' || p.status === 'Approved')
       .reduce((sum, p) => sum + p.grossAmount, 0);
 
-    const totalSalonRevenue = allTimeCompleted.reduce((sum, b) => {
+    // Payout pending with DrimStyle = only bookings the customer paid ONLINE (money sits in
+    // DrimStyle's Razorpay account). Pay-at-Salon (COD) money is already with the salon.
+    const salonShare = (b) => {
       const billValue = b.totalAmount || b.finalPaid || 0;
-      return sum + (billValue - billValue * 0.50);
-    }, 0);
-    const availablePayout = Math.max(0, totalSalonRevenue - totalPayoutsSettledOrPending);
+      return billValue - billValue * 0.50;
+    };
+    const onlineCompleted = allTimeCompleted.filter(isPaidOnline);
+    const totalSalonRevenue = onlineCompleted.reduce((sum, b) => sum + salonShare(b), 0);
+    const availablePayout = Math.max(0, Math.round(totalSalonRevenue - totalPayoutsSettledOrPending));
+    // Online-paid but service not done yet — released to the payout once marked Completed
+    const upcomingOnline = bookings.filter(
+      (b) => isPaidOnline(b) && !isTerminal(b.status) && b.status !== 'No-Show'
+    );
+    const upcomingOnlinePayout = Math.round(upcomingOnline.reduce((sum, b) => sum + salonShare(b), 0));
 
     const customerCounts = {};
     bookings.forEach((b) => {
@@ -646,6 +659,8 @@ export const SalonProvider = ({ children }) => {
       confirmedTodayCount: confirmedToday.length,
       cancelledTodayCount: cancelledToday.length,
       totalRevenueToday,
+      onlineSalesToday,
+      codSalesToday,
       instantBookingsCount,
       scheduledBookingsCount,
       availableChairs: Math.max(0, (salonProfile.totalChairs || 0) - occupiedChairs),
@@ -657,6 +672,9 @@ export const SalonProvider = ({ children }) => {
       newCustomersToday,
       monthGmv: totalGmv,
       availablePayout,
+      onlineCompletedCount: onlineCompleted.length,
+      upcomingOnlinePayout,
+      upcomingOnlineCount: upcomingOnline.length,
       nextPayoutDate: salonProfile.payoutCycle || 'Not configured'
     };
   }, [bookings, occupiedChairs, salonProfile.totalChairs, payouts]);

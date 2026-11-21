@@ -170,8 +170,25 @@ export const SalonDashboardPage = () => {
             </div>
             <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
               <ArrowUpRight className="w-3 h-3 stroke-[2.5]" />
-              <span>Today's total</span>
+              <span>Today's total (Online + COD)</span>
             </p>
+            {/* Bifurcation: collected by DrimStyle (online) vs collected at the salon (COD) */}
+            <div className="mt-3 pt-2.5 border-t border-stone-100 space-y-1.5 text-[11px]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-stone-500 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
+                  <span className="truncate">Online<span className="hidden sm:inline"> · via DrimStyle</span></span>
+                </span>
+                <span className="font-semibold text-stone-900 shrink-0">₹{(metrics.onlineSalesToday || 0).toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-stone-500 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                  <span className="truncate">COD<span className="hidden sm:inline"> · at Salon</span></span>
+                </span>
+                <span className="font-semibold text-stone-900 shrink-0">₹{(metrics.codSalesToday || 0).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
           </div>
 
           {/* Active Appointments */}

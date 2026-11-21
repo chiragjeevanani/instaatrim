@@ -60,8 +60,15 @@ exports.getSalonAnalytics = async (req, res) => {
             .filter(p => ['Transferred', 'Pending', 'Approved'].includes(p.status))
             .reduce((sum, p) => sum + p.grossAmount, 0);
 
-        // Available Payout for Salon is based on actual Salon Revenue, not GMV
-        const availablePayout = Math.max(0, totalSalonRevenue - totalPayouts);
+        // Payout pending with DrimStyle: salon's share of ONLINE-paid completed bookings only
+        // (that money is in DrimStyle's Razorpay account). Pay-at-Salon (COD) is collected by the salon.
+        const isPaidOnline = (b) =>
+            !/cod|pay at salon/i.test(String(b.paymentMethod || '')) &&
+            ['Paid', 'Successful'].includes(b.paymentStatus);
+        const onlineSalonRevenue = completedBookings
+            .filter(isPaidOnline)
+            .reduce((sum, b) => sum + ((b.totalAmount || 0) * 0.50), 0); // same salon share rule as above
+        const availablePayout = Math.max(0, Math.round(onlineSalonRevenue - totalPayouts));
 
         // MTD Revenue (Salon's Revenue = Bill Value - 50% Promo Budget as per Excel)
         const mtdBookings = completedBookings.filter(b => new Date(b.createdAt) >= startOfMonth);

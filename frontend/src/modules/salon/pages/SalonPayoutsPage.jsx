@@ -81,7 +81,7 @@ export const SalonPayoutsPage = () => {
           <div className="flex items-center justify-between text-xs text-stone-400 mb-1">
             <span className="flex items-center gap-1 font-semibold uppercase tracking-wider text-[10px]">
               <Wallet className="w-3.5 h-3.5 text-amber-400" />
-              Settlement Wallet
+              Payout Pending with DrimStyle
             </span>
             <span className="text-purple-300 font-mono text-[11px]">{commissionRate} Comm. Rate</span>
           </div>
@@ -90,7 +90,17 @@ export const SalonPayoutsPage = () => {
             <div className="text-3xl font-extrabold tracking-tight text-white flex items-center">
               <span>₹{availableBalance.toLocaleString('en-IN')}</span>
             </div>
-            <p className="text-[11px] text-stone-300 mt-1">Available balance ready for withdrawal</p>
+            <p className="text-[11px] text-stone-300 mt-1">
+              From {metrics.onlineCompletedCount || 0} completed online-paid booking{metrics.onlineCompletedCount === 1 ? '' : 's'} — DrimStyle will settle this to your bank
+            </p>
+            {metrics.upcomingOnlinePayout > 0 && (
+              <p className="text-[10.5px] text-amber-300/90 mt-1">
+                + ₹{metrics.upcomingOnlinePayout.toLocaleString('en-IN')} from {metrics.upcomingOnlineCount} upcoming online booking{metrics.upcomingOnlineCount === 1 ? '' : 's'} (added once service is completed)
+              </p>
+            )}
+            <p className="text-[10px] text-stone-400 mt-1.5">
+              Pay at Salon (COD) bookings are not included — you collect that payment directly.
+            </p>
           </div>
 
           <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">

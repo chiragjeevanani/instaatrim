@@ -74,3 +74,10 @@ export const toneClasses = (tone) => {
       return 'bg-stone-200 text-stone-700';
   }
 };
+
+// Customer paid ONLINE (Razorpay) → the money is with DrimStyle and must be settled
+// to the salon. Pay-at-Salon (COD) bookings are collected by the salon directly.
+export const isPaidOnline = (b) =>
+  !!b &&
+  !/cod|pay at salon/i.test(String(b.paymentMethod || '')) &&
+  ['Paid', 'Successful'].includes(b.paymentStatus);

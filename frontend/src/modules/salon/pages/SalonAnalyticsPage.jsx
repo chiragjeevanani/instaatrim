@@ -67,7 +67,7 @@ export const SalonAnalyticsPage = () => {
               </div>
               <div>
                 <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
-                  Available for Payout
+                  Payout Pending with DrimStyle
                 </span>
                 <span className="text-xl font-bold text-stone-900 leading-tight">
                   ₹{(dbMetrics?.availablePayout || 0).toLocaleString()}

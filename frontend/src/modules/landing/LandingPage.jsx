@@ -144,10 +144,28 @@ const SectionHeading = ({ eyebrow, title, subtitle, dark = false, center = true,
   </Reveal>
 );
 
+// Android apps on Play Store (iOS apps not live yet).
+const ANDROID_APPS = { customer: 'com.drimstyle.customer', salon: 'com.drimstyle.salon' };
+
+// Mobile website on an Android phone's browser → open our Android app instead of the website.
+// App installed → app opens; not installed → its Play Store page. Desktop, iPhone and inside our
+// apps (Flutter WebView) keep the normal website link.
+const openAndroidApp = (e, audience, path) => {
+  const ua = navigator.userAgent || '';
+  const insideOurApp = Boolean(window.flutter_inappwebview) || /; wv\)/.test(ua);
+  const pkg = ANDROID_APPS[audience];
+  if (!pkg || !/Android/i.test(ua) || insideOurApp) return;
+  e.preventDefault();
+  const store = `https://play.google.com/store/apps/details?id=${pkg}`;
+  const target = String(path || '/').startsWith('/') ? path : '/';
+  window.location.href = `intent://${window.location.host}${target}#Intent;scheme=https;package=${pkg};S.browser_fallback_url=${encodeURIComponent(store)};end`;
+};
+
 // Buttons: a light sheen sweeps across on hover, the arrow nudges forward.
-const PrimaryButton = ({ to, children, dark = false, className = '' }) => (
+const PrimaryButton = ({ to, children, dark = false, className = '', onClick }) => (
   <SmartLink
     to={to}
+    onClick={onClick}
     className={`group relative overflow-hidden inline-flex items-center justify-center gap-2 h-12 px-6 rounded-full text-[14px] font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] ${
       dark
         ? 'bg-amber-400 text-stone-950 hover:bg-amber-300 hover:shadow-[0_14px_30px_-10px_rgba(251,191,36,0.6)]'
@@ -701,7 +719,7 @@ const Hero = ({ hero, trustPoints }) => {
                 transition={{ duration: 0.6, delay: 0.55, ease: EASE }}
                 className="mt-8 flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3"
               >
-                <PrimaryButton to={copy.primaryLink} className="w-full sm:w-auto">
+                <PrimaryButton to={copy.primaryLink} className="w-full sm:w-auto" onClick={(e) => openAndroidApp(e, audience, copy.primaryLink)}>
                   {copy.primaryLabel}
                 </PrimaryButton>
                 <GhostButton to={copy.secondaryLink} className="w-full sm:w-auto">

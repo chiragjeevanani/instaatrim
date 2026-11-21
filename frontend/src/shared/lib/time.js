@@ -107,6 +107,16 @@ export const formatDateKeyFriendly = (key) => {
 
 export const nowMinutesOfDay = (date = new Date()) => date.getHours() * 60 + date.getMinutes();
 
+// Scheduled slot whose start time has already passed (e.g. a saved "10:30 AM" reused later in the day).
+// Instant bookings ("Within 15 mins") are never "past".
+export const isScheduledSlotPast = (slot, now = Date.now()) => {
+  if (!slot || slot.type === 'Instant' || !slot.dateKey || !/^\d{4}-\d{2}-\d{2}$/.test(slot.dateKey)) return false;
+  if (!/\d{1,2}:\d{2}\s*(AM|PM)/i.test(String(slot.time || ''))) return false;
+  const mins = parseClockToMinutes(slot.time);
+  const [y, m, d] = slot.dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d, Math.floor(mins / 60), mins % 60).getTime() <= now;
+};
+
 export const addMinutes = (date, minutes) => new Date(date.getTime() + minutes * 60000);
 
 // Accepts either a Date or a raw epoch-ms timestamp — holds store

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Trash2, Calendar, Zap, Tag, ChevronRight, ShieldCheck } from 'lucide-react';
 import { formatDuration } from '../../../shared/store/selectors';
 import { StylistPicker } from './StylistPicker';
+import { isScheduledSlotPast, formatDateKeyFriendly } from '../../../shared/lib/time';
 
 export const CartDrawer = () => {
   const {
@@ -115,12 +116,15 @@ export const CartDrawer = () => {
                           {bookingSlot.type === 'Instant' ? 'Instant Booking' : 'Scheduled Slot'}
                         </span>
                         <span className="text-[9.5px] bg-stone-100 px-1.5 py-0.5 rounded text-stone-600 font-semibold">
-                          {bookingSlot.type === 'Instant' ? 'Ready Now' : bookingSlot.date}
+                          {bookingSlot.type === 'Instant' ? 'Ready Now' : bookingSlot.dateKey ? formatDateKeyFriendly(bookingSlot.dateKey).split(',')[0] : bookingSlot.date}
                         </span>
                       </div>
                       <p className="text-[10.5px] text-stone-500">
                         {bookingSlot.type === 'Instant' ? 'Seat ready in 15 mins' : bookingSlot.time}
                       </p>
+                      {isScheduledSlotPast(bookingSlot) && (
+                        <p className="text-[10px] font-bold text-red-600 mt-0.5">This time has passed — tap Change to pick a new slot</p>
+                      )}
                     </div>
                   </div>
                   <button

@@ -24,6 +24,15 @@ const durationToMinutes = (input) => {
     if (!hr && !mn) { const bare = str.match(/(\d+)/); return bare ? parseInt(bare[1], 10) : 30; }
     return (hr ? parseInt(hr[1], 10) * 60 : 0) + (mn ? parseInt(mn[1], 10) : 0);
 };
+// Scheduled booking whose date + time (India time) has already passed → true. Instant / unparsable → false.
+const isPastIndiaSlot = (dateKeyStr, clock) => {
+    const mins = clockToMinutes(clock);
+    const d = String(dateKeyStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (mins === null || !d) return false;
+    const IST_OFFSET_MS = 330 * 60 * 1000; // UTC+5:30
+    const startUtc = Date.UTC(Number(d[1]), Number(d[2]) - 1, Number(d[3]), Math.floor(mins / 60), mins % 60) - IST_OFFSET_MS;
+    return startUtc <= Date.now();
+};
 const bookingDurationMinutes = (b) =>
     (b.services || []).reduce((sum, s) => sum + durationToMinutes(s.duration) * (Number(s.quantity) || 1), 0) || 30;
 
@@ -174,6 +183,11 @@ const verifyBookingPrices = async (data, { stylistPicked = false } = {}) => {
 exports.createBooking = async (req, res) => {
     try {
         const bookingData = req.body;
+
+        // A time slot that has already passed can never be booked (e.g. an old saved "10:30 AM" reused later)
+        if (bookingData.bookingMode !== 'Instant' && isPastIndiaSlot(bookingData.dateKey, bookingData.time)) {
+            return res.status(409).json({ success: false, code: 'SLOT_PASSED', message: 'This time has already passed. Please pick a new slot.' });
+        }
 
         // Stylist picked at checkout: must be an active staff of THIS salon; name always from DB
         let staffId = null;

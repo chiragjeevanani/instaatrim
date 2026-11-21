@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StylistPicker } from '../components/StylistPicker';
+import { isScheduledSlotPast, formatDateKeyFriendly } from '../../../shared/lib/time';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { useAppData } from '../../../shared/store/AppDataProvider';
@@ -55,6 +56,13 @@ export const CheckoutPage = () => {
   const [expiredHoldKey, setExpiredHoldKey] = useState(null);
   const holdExpired = expiredHoldKey === holdKey;
   const setHoldExpired = (val) => setExpiredHoldKey(val ? holdKey : null);
+  // Picked time already over (e.g. old saved slot) → can't book it; re-checked every 30s while on this page
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+  const slotPassed = isScheduledSlotPast(bookingSlot, nowTick);
   const [showSuccessTick, setShowSuccessTick] = useState(false);
 
   // Exact Business Commercial Calculation (as per spreadsheet):
@@ -173,6 +181,11 @@ export const CheckoutPage = () => {
       return;
     }
 
+    if (isScheduledSlotPast(bookingSlot)) {
+      showToast('This time has already passed. Please pick a new slot.');
+      return;
+    }
+
     if (bookingSlot.holdId && !isHoldStillValid({ id: bookingSlot.holdId }, state.holds)) {
       setHoldExpired(true);
       releaseHold(bookingSlot.holdId);
@@ -286,6 +299,22 @@ export const CheckoutPage = () => {
         )}
       </header>
 
+      {slotPassed && !holdExpired && (
+        <div className="mx-3.5 lg:mx-0 mt-3 lg:mt-0 lg:mb-5 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-bold text-red-800">This time has already passed</p>
+            <p className="text-[10.5px] text-red-700 mt-0.5">{formatDateKeyFriendly(bookingSlot.dateKey)}, {bookingSlot.time} is over. Please pick a new slot.</p>
+            <button
+              onClick={() => setIsSlotPickerOpen(true)}
+              className="mt-2 text-[11px] font-bold text-red-700 underline"
+            >
+              Pick a new slot
+            </button>
+          </div>
+        </div>
+      )}
+
       {holdExpired && (
         <div className="mx-3.5 lg:mx-0 mt-3 lg:mt-0 lg:mb-5 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
@@ -323,7 +352,7 @@ export const CheckoutPage = () => {
             </div>
             <div>
               <p className="text-xs font-bold text-stone-900">
-                {bookingSlot.type === 'Instant' ? `Today (${bookingSlot.time})` : `${bookingSlot.date} at ${bookingSlot.time}`}
+                {bookingSlot.type === 'Instant' ? `Today (${bookingSlot.time})` : `${bookingSlot.dateKey ? formatDateKeyFriendly(bookingSlot.dateKey).split(',')[0] : bookingSlot.date} at ${bookingSlot.time}`}
               </p>
               <p className="text-[10.5px] text-stone-500 mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
@@ -566,7 +595,7 @@ export const CheckoutPage = () => {
             </p>
           )}
           <button
-            disabled={isProcessing || holdExpired}
+            disabled={isProcessing || holdExpired || slotPassed}
             onClick={handlePayAndConfirm}
             className="w-full py-3.5 text-[13px] lg:text-sm bg-brand-maroon hover:bg-brand-darkMaroon active:scale-[0.985] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >

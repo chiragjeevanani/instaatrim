@@ -445,6 +445,18 @@ export function appReducer(state, action) {
         })
       };
     }
+    case 'REPLACE_SALON_STAFF': {
+      // Authoritative refresh of one salon's staff from the DB. Replaces exactly
+      // this salon's rows (even with an empty list) and leaves other salons alone.
+      // Used after an add/edit so an in-flight bulk fetch can never drop the change.
+      const { salonId, staff = [] } = action.payload || {};
+      const target = String(salonId || '');
+      const others = (state.staff || []).filter((s) => {
+        const sid = s.salonId?._id || s.salonId?.id || s.salonId;
+        return String(sid || '') !== target;
+      });
+      return { ...state, staff: [...staff, ...others] };
+    }
     case 'ADD_STATION': {
       return { ...state, stations: [...state.stations, action.payload] };
     }

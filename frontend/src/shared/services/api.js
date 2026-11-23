@@ -608,7 +608,11 @@ const staff = {
   listBySalon: async (salonId) => {
     const res = await fetch(`${API_BASE}/staff/salon/${salonId}`);
     const json = await res.json();
-    return json.data;
+    const rows = (json.data || []).map((st) => ({ ...st, id: st._id || st.id }));
+    // Authoritative replace so the UI always matches the DB for this salon,
+    // regardless of any in-flight optimistic add/fetch ordering.
+    dispatch({ type: 'REPLACE_SALON_STAFF', payload: { salonId, staff: rows } });
+    return rows;
   },
 
   listAll: async () => {

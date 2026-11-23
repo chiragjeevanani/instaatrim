@@ -444,7 +444,12 @@ export const SalonProvider = ({ children }) => {
     (data) => {
       api.staff
         .add(salonId, data)
-        .then((st) => showToast(`Stylist "${st.name}" added to salon team`))
+        .then((st) => {
+          showToast(`Stylist "${st.name}" added to salon team`);
+          // Re-sync this salon's staff from the DB so the new member always
+          // appears on the first try (guards against add/fetch race ordering).
+          return api.staff.listBySalon(salonId);
+        })
         .catch(() => showToast('Could not add staff member', 'error'));
     },
     [salonId, showToast]
@@ -454,10 +459,13 @@ export const SalonProvider = ({ children }) => {
     (staffId, patch) => {
       api.staff
         .update(staffId, patch)
-        .then(() => showToast('Staff details updated'))
+        .then(() => {
+          showToast('Staff details updated');
+          return api.staff.listBySalon(salonId);
+        })
         .catch(() => showToast('Could not update staff member', 'error'));
     },
-    [showToast]
+    [salonId, showToast]
   );
 
   const removeStaff = useCallback(

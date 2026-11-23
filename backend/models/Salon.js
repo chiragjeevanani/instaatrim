@@ -44,6 +44,8 @@ const salonSchema = new mongoose.Schema({
     failedLoginAttempts: { type: Number, default: 0 },
     lockoutUntil: { type: Date, default: null },
     refreshToken: { type: String, default: null },
+    prevRefreshToken: { type: String, default: null }, // previous token, accepted for 2 min (parallel refresh)
+    refreshRotatedAt: { type: Date, default: null },
     // Franchise / Multi-Branch Chain Support (Looks, Apple, Enrich, etc.)
     organizationType: { type: String, enum: ['Independent Salon', 'Franchise Branch', 'Chain Outlet'], default: 'Independent Salon' },
     parentBrandName: { type: String, default: '' },

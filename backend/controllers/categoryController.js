@@ -1,6 +1,7 @@
 const Category = require('../models/Category');
 const { groupsFromTags } = require('../scripts/seedServiceCatalog');
 const multer = require('multer');
+const { imageExt, imageUploadOptions } = require('../utils/imageUpload');
 const path = require('path');
 const fs = require('fs');
 
@@ -14,11 +15,11 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        cb(null, 'cat-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+        cb(null, 'cat-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + imageExt(file));
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer(imageUploadOptions(storage));
 
 exports.uploadCategoryMiddleware = upload.single('image');
 

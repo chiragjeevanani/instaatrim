@@ -12,7 +12,12 @@ exports.getAllTickets = async (req, res) => {
 
 exports.getTicketsByUser = async (req, res) => {
     try {
-        const tickets = await Ticket.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+        const a = require('../middlewares/accessControl').identify(req);
+        const uid = String(req.params.userId);
+        if (!a.admin && uid !== a.customerId && uid !== a.salonId) {
+            return res.status(403).json({ success: false, message: 'Not allowed.' });
+        }
+        const tickets = await Ticket.find({ userId: uid }).sort({ createdAt: -1 });
         res.json({ success: true, data: tickets });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

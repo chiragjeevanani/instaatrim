@@ -22,6 +22,15 @@ exports.getReviewsBySalon = async (req, res) => {
     }
 };
 
+const { identify } = require('../middlewares/accessControl');
+// Salon partner may only reply to / flag reviews of its own salon (admin: any)
+const ownsReview = async (req, id) => {
+    const a = identify(req);
+    if (a.admin) return true;
+    const rv = await Review.findById(id).select('salonId').lean().catch(() => null);
+    return !!rv && String(rv.salonId) === a.salonId;
+};
+
 exports.createReview = async (req, res) => {
     try {
         const body = { ...req.body };
@@ -44,8 +53,9 @@ exports.createReview = async (req, res) => {
             }
             // Booking _id is a custom string (e.g. IT-220001), not an ObjectId
             {
-                const booking = await Booking.findById(String(body.bookingId)).select('salonId staffId stationId').catch(() => null);
-                if (booking && String(booking.salonId) === String(body.salonId)) {
+                const booking = await Booking.findById(String(body.bookingId)).select('salonId staffId stationId customerId').catch(() => null);
+                // 'Verified booking' only when it is the reviewer's own booking at this salon
+                if (booking && String(booking.salonId) === String(body.salonId) && String(booking.customerId) === identify(req).customerId) {
                     body.staffId = booking.staffId || '';
                     body.stationId = booking.stationId || '';
                     body.verifiedBooking = true;
@@ -66,6 +76,7 @@ exports.replyReview = async (req, res) => {
     try {
         const { id } = req.params;
         const { reply } = req.body;
+        if (!(await ownsReview(req, id))) return res.status(404).json({ success: false, message: 'Review not found' });
         const review = await Review.findByIdAndUpdate(id, { reply }, { new: true });
         if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
         res.status(200).json({ success: true, data: review });
@@ -78,6 +89,7 @@ exports.flagReview = async (req, res) => {
     try {
         const { id } = req.params;
         const { isFlagged, flagReason } = req.body;
+        if (!(await ownsReview(req, id))) return res.status(404).json({ success: false, message: 'Review not found' });
         const review = await Review.findByIdAndUpdate(id, { isFlagged, flagReason }, { new: true });
         if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
         // Flagged reviews don't count towards ratings

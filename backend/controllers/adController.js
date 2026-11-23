@@ -1,5 +1,6 @@
 const AdCampaign = require('../models/AdCampaign');
 const multer = require('multer');
+const { imageExt, imageUploadOptions } = require('../utils/imageUpload');
 const path = require('path');
 const fs = require('fs');
 
@@ -15,13 +16,13 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + imageExt(file));
     }
 });
 
-const upload = multer({ 
-    storage: storage,
-    limits: { files: 4 } // maximum 4 banners at once
+const upload = multer({
+    ...imageUploadOptions(storage),
+    limits: { files: 4, fileSize: imageUploadOptions(storage).limits.fileSize } // maximum 4 banners at once
 });
 
 exports.uploadAdsMiddleware = upload.array('images', 4);

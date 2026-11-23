@@ -16,7 +16,7 @@ import { withLatency, ApiError } from './latency';
 import { newBookingId, newReviewId, newAddressId, newCategoryId, newServiceId, newOfferId, newTicketId, newNotificationId, newStaffId, newStationId, newAdId, newPartnerId, newBannerId, newCampaignId } from '../lib/ids';
 import { BOOKING_STATUS, canTransition } from '../lib/bookingStatus';
 import { dateKey } from '../lib/time';
-import { ADMIN_CREDENTIALS } from '../data/seed';
+import { adminToken } from './authFetch';
 
 const clone = (v) => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
@@ -395,10 +395,7 @@ const salons = {
 // Service add/edit/delete need a logged-in salon partner (or admin) token.
 // Function declaration so it is hoisted above the services object.
 function serviceAuthHeaders() {
-  const state = getState();
-  const token = state && state.adminSession
-    ? 'mock-jwt-token-7a8b9c0d1e2f3g4h5i6j'
-    : localStorage.getItem('instaatrim_partner_token');
+  const token = adminToken() || localStorage.getItem('instaatrim_partner_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -552,7 +549,7 @@ const services = {
 // =============================================================================
 const adminJsonHeaders = () => ({
   'Content-Type': 'application/json',
-  Authorization: 'Bearer mock-jwt-token-7a8b9c0d1e2f3g4h5i6j'
+  Authorization: `Bearer ${adminToken()}`
 });
 
 const readJson = async (res, fallbackMsg) => {
@@ -774,12 +771,15 @@ const bookings = {
         body: JSON.stringify({ status, ...extra })
       });
       const json = await res.json();
+      // Server said no (not allowed / already finished) → show it, don't fake it locally
+      if (res.status >= 400 && res.status < 500) throw new ApiError(json.message || 'Could not update booking', json.code || 'REJECTED');
       if (!json.success) throw new Error(json.message || 'Failed to update status');
 
       const updatedBooking = { ...json.data, id: json.data._id };
       dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId, status: updatedBooking.status, extra, force } });
       return updatedBooking;
     } catch (e) {
+      if (e instanceof ApiError) throw e;
       console.error('Real status update failed, falling back to mock:', e);
       const current = getState().bookings.find((b) => b.id === bookingId);
       if (!current) throw new ApiError(`Booking ${bookingId} not found`, 'NOT_FOUND');
@@ -806,12 +806,14 @@ const bookings = {
         body: JSON.stringify({ dateKey: newDateKey, time })
       });
       const json = await res.json();
+      if (res.status >= 400 && res.status < 500) throw new ApiError(json.message || 'Could not reschedule booking', json.code || 'REJECTED');
       if (!json.success) throw new Error(json.message || 'Failed to reschedule booking');
 
       const updatedBooking = { ...json.data, id: json.data._id };
       dispatch({ type: 'PATCH_BOOKING', payload: { bookingId, patch: updatedBooking } });
       return updatedBooking;
     } catch (e) {
+      if (e instanceof ApiError) throw e;
       console.error('Real booking reschedule failed, falling back to mock:', e);
       const patch = { dateKey: newDateKey, time, status: BOOKING_STATUS.CONFIRMED };
       dispatch({ type: 'PATCH_BOOKING', payload: { bookingId, patch } });
@@ -834,7 +836,7 @@ const bookings = {
 // Method names kept the same so admin / salon / customer screens keep working.
 const offerAdminHeaders = () => ({
   'Content-Type': 'application/json',
-  Authorization: 'Bearer mock-jwt-token-7a8b9c0d1e2f3g4h5i6j'
+  Authorization: `Bearer ${adminToken()}`
 });
 
 const readOfferJson = async (res, fallback) => {
@@ -1349,11 +1351,7 @@ const tickets = {
 
 // Helper: get stored JWT token from localStorage, or mock admin token if admin is logged in
 const getAuthToken = () => {
-  const state = getState();
-  if (state && state.adminSession) {
-    return 'mock-jwt-token-7a8b9c0d1e2f3g4h5i6j';
-  }
-  return localStorage.getItem('instaatrim_token');
+  return adminToken() || localStorage.getItem('instaatrim_token');
 };
 
 // Helper: build auth headers with Bearer JWT
@@ -1561,21 +1559,32 @@ const customers = {
 // Admin Auth & Operations
 // =============================================================================
 const admin = {
-  login: (email, password) =>
-    withLatency(() => {
-      const trimmedEmail = String(email || '').trim().toLowerCase();
-      if (trimmedEmail !== ADMIN_CREDENTIALS.email.toLowerCase() || password !== ADMIN_CREDENTIALS.password) {
-        throw new ApiError('Invalid admin email or password.', 'ADMIN_AUTH_FAILED');
-      }
-      const session = {
-        email: ADMIN_CREDENTIALS.email,
-        name: ADMIN_CREDENTIALS.name,
-        role: ADMIN_CREDENTIALS.role,
-        loggedInAt: new Date().toISOString()
-      };
-      dispatch({ type: 'SET_ADMIN_SESSION', payload: session });
-      return clone(session);
-    }),
+  // Checked on the server; the session keeps the admin token used for admin API calls
+  login: async (email, password) => {
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: String(email || '').trim(), password })
+      });
+    } catch {
+      throw new ApiError('Could not reach the server. Please try again.', 'NETWORK');
+    }
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.token) {
+      throw new ApiError(json.message || 'Invalid admin email or password.', 'ADMIN_AUTH_FAILED');
+    }
+    const session = {
+      email: json.data?.email || String(email || '').trim().toLowerCase(),
+      name: json.data?.name || 'DrimStyle Super Admin',
+      role: json.data?.role || 'super_admin',
+      token: json.token,
+      loggedInAt: new Date().toISOString()
+    };
+    dispatch({ type: 'SET_ADMIN_SESSION', payload: session });
+    return clone(session);
+  },
 
   logout: () =>
     withLatency(() => {

@@ -7,10 +7,11 @@ const {
 } = require('../controllers/couponController');
 
 const router = express.Router();
+const { requireAdmin, requireLogin, requireCustomer, requireSalonOrAdmin, requireSalonParamOrAdmin, requireCustomerParamOrAdmin } = require('../middlewares/accessControl');
 
-router.post('/', createCoupon);
+router.post('/', requireAdmin, createCoupon);
 router.get('/', getAllCoupons);
-router.put('/:id', updateCoupon);
-router.delete('/:id', deleteCoupon);
+router.put('/:id', requireAdmin, updateCoupon);
+router.delete('/:id', requireAdmin, deleteCoupon);
 
 module.exports = router;

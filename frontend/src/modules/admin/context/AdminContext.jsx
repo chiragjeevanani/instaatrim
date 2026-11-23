@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
 import { useAppData } from '../../../shared/store/AppDataProvider';
 import { api } from '../../../shared/services/api';
+import { isLiveToken } from '../../../shared/services/authFetch';
 import { ADMIN_CREDENTIALS } from '../../../shared/data/seed';
 
 import { io } from 'socket.io-client';
@@ -16,7 +17,8 @@ const AdminContext = createContext();
 export const AdminProvider = ({ children }) => {
   const { state, dispatch } = useAppData();
 
-  const isAuthenticated = Boolean(state.adminSession);
+  // Logged in only with a valid server-issued admin token (old sessions without one log in again once)
+  const isAuthenticated = isLiveToken(state.adminSession?.token);
   const adminSession = state.adminSession;
 
   useEffect(() => {

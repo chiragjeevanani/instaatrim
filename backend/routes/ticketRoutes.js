@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { requireAdmin, requireLogin, requireCustomer, requireSalonOrAdmin, requireSalonParamOrAdmin, requireCustomerParamOrAdmin } = require('../middlewares/accessControl');
 const {
     getAllTickets,
     getTicketsByUser,
@@ -8,10 +9,10 @@ const {
     replyToTicket
 } = require('../controllers/ticketController');
 
-router.get('/', getAllTickets);
-router.get('/user/:userId', getTicketsByUser);
-router.post('/', createTicket);
-router.patch('/:id/status', updateTicketStatus);
-router.post('/:id/reply', replyToTicket);
+router.get('/', requireAdmin, getAllTickets);
+router.get('/user/:userId', requireLogin, getTicketsByUser);
+router.post('/', requireLogin, createTicket);
+router.patch('/:id/status', requireAdmin, updateTicketStatus);
+router.post('/:id/reply', requireAdmin, replyToTicket);
 
 module.exports = router;

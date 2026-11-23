@@ -2,6 +2,45 @@ const Booking = require('../models/Booking');
 const Salon = require('../models/Salon');
 const PlatformSettings = require('../models/PlatformSettings');
 const { sendPushNotification } = require('../config/firebase');
+const { identify } = require('../middlewares/accessControl');
+
+// ── Who may see / change a booking ──
+// admin → any; salon partner → its own salon's bookings; customer → their own bookings
+const bookingAccess = (req, booking) => {
+    const a = identify(req);
+    if (a.admin) return 'admin';
+    if (a.salonId && String(booking.salonId) === a.salonId) return 'salon';
+    if (a.customerId && String(booking.customerId) === a.customerId) return 'customer';
+    return null;
+};
+// Once a booking is finished it can't be moved back (stops Completed ↔ Cancelled wallet tricks)
+const FINAL_STATUSES = ['Completed', 'Cancelled', 'No Show', 'No-Show', 'Refunded'];
+
+// ── Online payment check: the Razorpay payment must be real, successful, unused and cover the bill ──
+// → { ok: true } | { ok: false, message } | { ok: null } (Razorpay unreachable → save as payment Pending)
+const verifyOnlinePayment = async (paymentId, finalPaid) => {
+    if (!paymentId || typeof paymentId !== 'string' || !/^pay_[A-Za-z0-9]+$/.test(paymentId)) {
+        return { ok: false, message: 'Payment could not be verified. If money was deducted, please contact support.' };
+    }
+    const used = await Booking.exists({ transactionId: paymentId });
+    if (used) return { ok: false, message: 'This payment is already used for another booking.' };
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) return { ok: null };
+    try {
+        const Razorpay = require('razorpay');
+        const rz = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+        const p = await rz.payments.fetch(paymentId);
+        const paidEnough = Number(p.amount) >= Math.round((Number(finalPaid) || 0) * 100) - 100; // ₹1 rounding margin
+        if (['captured', 'authorized'].includes(p.status) && p.currency === 'INR' && paidEnough) return { ok: true };
+        return { ok: false, message: 'Payment could not be verified. If money was deducted, please contact support.' };
+    } catch (e) {
+        const code = e && (e.statusCode || (e.error && e.error.code));
+        if (code === 400 || code === 404 || code === 'BAD_REQUEST_ERROR') {
+            return { ok: false, message: 'Payment could not be verified. If money was deducted, please contact support.' };
+        }
+        console.error('[Booking] Razorpay payment check unavailable:', e && (e.message || e.error || e));
+        return { ok: null };
+    }
+};
 
 // ── Stylist time helpers (same rules as frontend shared/lib/availability.js) ──
 const NON_BLOCKING_STATUSES = ['Cancelled', 'No Show', 'Refunded'];
@@ -182,7 +221,12 @@ const verifyBookingPrices = async (data, { stylistPicked = false } = {}) => {
 
 exports.createBooking = async (req, res) => {
     try {
-        const bookingData = req.body;
+        const bookingData = { ...req.body };
+
+        // The booking always belongs to the logged-in customer (never an id sent by the app)
+        bookingData.customerId = identify(req).customerId;
+        // A new booking starts as Confirmed (default) or Pending — never as Completed etc.
+        if (!['Pending', 'Confirmed'].includes(bookingData.status)) delete bookingData.status;
 
         // A time slot that has already passed can never be booked (e.g. an old saved "10:30 AM" reused later)
         if (bookingData.bookingMode !== 'Instant' && isPastIndiaSlot(bookingData.dateKey, bookingData.time)) {
@@ -232,6 +276,15 @@ exports.createBooking = async (req, res) => {
                     message: `${staffName} is already booked at ${bookingData.time}. Please pick another time or stylist.`
                 });
             }
+        }
+
+        // "Paid online" is only accepted after Razorpay confirms the payment
+        if (['Paid', 'Successful'].includes(bookingData.paymentStatus)) {
+            const pay = await verifyOnlinePayment(bookingData.transactionId, bookingData.finalPaid);
+            if (pay.ok === false) {
+                return res.status(402).json({ success: false, code: 'PAYMENT_NOT_VERIFIED', message: pay.message });
+            }
+            if (pay.ok === null) bookingData.paymentStatus = 'Pending'; // saved, but not counted as paid until checked
         }
 
         const rewards = priceCheck.rewards || { instantDiscount: 0, walletRedeemed: 0, walletCashback: 0, stylistFee: 0 };
@@ -308,7 +361,7 @@ exports.getBookingById = async (req, res) => {
     try {
         const { id } = req.params;
         const booking = await Booking.findById(id);
-        if (!booking) {
+        if (!booking || !bookingAccess(req, booking)) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
         }
         res.status(200).json({ success: true, data: booking });
@@ -370,6 +423,18 @@ exports.updateBookingStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status, cancelReason } = req.body;
+
+        const current = await Booking.findById(id).select('status salonId customerId').lean();
+        const role = current ? bookingAccess(req, current) : null;
+        if (!current || !role) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+        if (role === 'customer' && status !== 'Cancelled') {
+            return res.status(403).json({ success: false, code: 'ILLEGAL_TRANSITION', message: 'You can only cancel your booking.' });
+        }
+        if (role !== 'admin' && status !== current.status && FINAL_STATUSES.includes(current.status)) {
+            return res.status(409).json({ success: false, code: 'ILLEGAL_TRANSITION', message: `This booking is already ${current.status}.` });
+        }
 
         const updateData = { status };
         if (cancelReason) updateData.cancelReason = cancelReason;
@@ -449,6 +514,14 @@ exports.rescheduleBooking = async (req, res) => {
     try {
         const { id } = req.params;
         const { dateKey, time } = req.body;
+
+        const current = await Booking.findById(id).select('status salonId customerId').lean();
+        if (!current || !bookingAccess(req, current)) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+        if (FINAL_STATUSES.includes(current.status)) {
+            return res.status(409).json({ success: false, code: 'ILLEGAL_TRANSITION', message: `This booking is already ${current.status}.` });
+        }
 
         const booking = await Booking.findByIdAndUpdate(id, { dateKey, time, status: 'Confirmed' }, { new: true });
 

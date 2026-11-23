@@ -1,9 +1,12 @@
 const Payout = require('../models/Payout');
+const { identify } = require('../middlewares/accessControl');
 
 // GET /api/payouts
 exports.getPayouts = async (req, res) => {
     try {
-        const payouts = await Payout.find();
+        const auth = identify(req);
+        // Admin sees all payouts; a salon partner only its own
+        const payouts = await Payout.find(auth.admin ? {} : { salonId: auth.salonId });
         res.status(200).json({ success: true, data: payouts });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server Error' });
@@ -13,9 +16,12 @@ exports.getPayouts = async (req, res) => {
 // POST /api/payouts
 exports.createPayout = async (req, res) => {
     try {
-        const payload = req.body;
+        const auth = identify(req);
+        // A salon can only request a payout for itself, and it always starts as Pending
+        const { status, utr, ...payload } = req.body || {};
         const newPayout = new Payout({
             ...payload,
+            ...(auth.admin ? { status, utr } : { salonId: auth.salonId, status: 'Pending' }),
             id: `pay-${Date.now()}`
         });
         await newPayout.save();

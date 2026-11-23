@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const { requireAdmin, requireLogin, requireCustomer, requireSalonOrAdmin, requireSalonParamOrAdmin, requireCustomerParamOrAdmin } = require('../middlewares/accessControl');
 const multer = require('multer');
+const { imageExt, imageUploadOptions } = require('../utils/imageUpload');
 const path = require('path');
 const fs = require('fs');
 const ritualController = require('../controllers/ritualController');
@@ -18,16 +20,16 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const extension = path.extname(file.originalname) || '.jpg';
+        const extension = imageExt(file);
         cb(null, file.fieldname + '-' + uniqueSuffix + extension);
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer(imageUploadOptions(storage));
 
 router.get('/', ritualController.getAllRituals);
-router.post('/', upload.single('image'), ritualController.createRitual);
-router.put('/:id', upload.single('image'), ritualController.updateRitual);
-router.delete('/:id', ritualController.deleteRitual);
+router.post('/', requireAdmin, upload.single('image'), ritualController.createRitual);
+router.put('/:id', requireAdmin, upload.single('image'), ritualController.updateRitual);
+router.delete('/:id', requireAdmin, ritualController.deleteRitual);
 
 module.exports = router;

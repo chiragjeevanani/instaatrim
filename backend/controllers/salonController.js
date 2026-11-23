@@ -1,6 +1,28 @@
 const Salon = require('../models/Salon');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
+const { identify } = require('../middlewares/accessControl');
+
+// Never sent to any browser
+const SECRET_FIELDS = ['password', 'refreshToken', 'prevRefreshToken', 'refreshRotatedAt', 'failedLoginAttempts', 'lockoutUntil', 'fcmtoken', 'fcmtokenweb'];
+// Only the salon itself and the admin may see these
+const PRIVATE_FIELDS = ['accountNumber', 'ifscCode', 'bankName', 'gstin', 'shopActLicense', 'payoutCycle', 'email'];
+// Only the admin may change these (salon profile saves send the whole salon object back)
+const ADMIN_ONLY_FIELDS = [
+    'isVerified', 'verificationStatus', 'commissionRate', 'rejectionReason', 'rating', 'reviewsCount',
+    'isBoosted', 'isSponsored', 'boostRank', 'sponsorBadge', 'boostReason'
+];
+
+// Salon document → plain object safe for this caller
+const toPublicSalon = (salon, req) => {
+    const data = typeof salon.toObject === 'function' ? salon.toObject() : { ...salon };
+    data.id = String(data._id || data.id);
+    SECRET_FIELDS.forEach((f) => delete data[f]);
+    const auth = req ? identify(req) : {};
+    if (!(auth.admin || auth.salonId === data.id)) PRIVATE_FIELDS.forEach((f) => delete data[f]);
+    return data;
+};
+exports.toPublicSalon = toPublicSalon;
 
 exports.deleteSalon = async (req, res) => {
     let session;
@@ -232,8 +254,7 @@ exports.getSalonById = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Salon not found' });
         }
 
-        const salonData = salon.toObject();
-        salonData.id = salon._id.toString();
+        const salonData = toPublicSalon(salon, req);
 
         res.status(200).json({
             success: true,
@@ -258,8 +279,7 @@ exports.getAllSalons = async (req, res) => {
         allCategories.forEach(c => { catMap[c._id.toString()] = c; });
 
         let mappedSalons = salons.map(salon => {
-            const salonData = salon.toObject();
-            salonData.id = salon._id.toString();
+            const salonData = toPublicSalon(salon, req);
 
             // If category is stored as ObjectId, resolve it to name/slug
             if (salonData.category) {
@@ -304,8 +324,7 @@ exports.verifySalon = async (req, res) => {
 
         if (!salon) return res.status(404).json({ success: false, message: 'Salon not found' });
 
-        const salonData = salon.toObject();
-        salonData.id = salon._id.toString();
+        const salonData = toPublicSalon(salon, req);
         res.status(200).json({ success: true, data: salonData });
     } catch (error) {
         console.error('Error verifying salon:', error);
@@ -323,8 +342,7 @@ exports.rejectSalon = async (req, res) => {
 
         if (!salon) return res.status(404).json({ success: false, message: 'Salon not found' });
 
-        const salonData = salon.toObject();
-        salonData.id = salon._id.toString();
+        const salonData = toPublicSalon(salon, req);
         res.status(200).json({ success: true, data: salonData });
     } catch (error) {
         console.error('Error rejecting salon:', error);
@@ -340,8 +358,7 @@ exports.setSalonCommission = async (req, res) => {
 
         if (!salon) return res.status(404).json({ success: false, message: 'Salon not found' });
 
-        const salonData = salon.toObject();
-        salonData.id = salon._id.toString();
+        const salonData = toPublicSalon(salon, req);
         res.status(200).json({ success: true, data: salonData });
     } catch (error) {
         console.error('Error setting salon commission:', error);
@@ -352,16 +369,18 @@ exports.setSalonCommission = async (req, res) => {
 exports.updateSalon = async (req, res) => {
     try {
         const salonId = req.params.id;
-        const updates = req.body;
-        
+        const updates = { ...(req.body || {}) };
+        // Login secrets are never changed here; approval/commission/rating/boost only by admin
+        [...SECRET_FIELDS, '_id', 'id', '__v', 'createdAt', 'updatedAt'].forEach((f) => delete updates[f]);
+        if (!identify(req).admin) ADMIN_ONLY_FIELDS.forEach((f) => delete updates[f]);
+
         const salon = await Salon.findByIdAndUpdate(salonId, updates, { new: true });
         
         if (!salon) {
             return res.status(404).json({ success: false, message: 'Salon not found' });
         }
         
-        const salonData = salon.toObject();
-        salonData.id = salon._id.toString();
+        const salonData = toPublicSalon(salon, req);
         
         res.status(200).json({ success: true, data: salonData });
     } catch (error) {

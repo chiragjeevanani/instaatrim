@@ -46,11 +46,14 @@ app.use(requestIdMiddleware);
 // 4. Latency tracker for p50/p95/p99 SLA calculation
 app.use(latencyMiddleware);
 
-// 5. Global API Rate Limiter
+// 5. CORS first, so even a "too many requests" reply reaches the app (not a blind network error).
+// maxAge: browsers reuse the CORS preflight answer for 10 min (login headers trigger one)
+app.use(cors({ maxAge: 600 }));
+
+// 6. Global API Rate Limiter
 app.use('/api', generalApiRateLimiter);
 
-// 6. CORS & Body Parsers
-app.use(cors());
+// 7. Body Parsers
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -64,7 +67,15 @@ app.use((err, req, res, next) => {
 });
 
 // Serve static uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const { IMAGE_EXTENSIONS } = require('./utils/imageUpload');
+app.use('/uploads', (req, res, next) => {
+    if (!IMAGE_EXTENSIONS.includes(path.extname(req.path).toLowerCase())) {
+        return res.status(404).end();
+    }
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+    next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Enterprise System Routes (Healthz, Readyz, Status & SLA, GDPR Export & Erasure, Consent)
 app.use('/api/enterprise', require('./routes/enterpriseRoutes'));

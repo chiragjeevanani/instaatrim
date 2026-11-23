@@ -66,7 +66,9 @@ const authRateLimiter = rateLimit({
 // General API Rate Limiter
 const generalApiRateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 min
-    max: 180, // 180 requests per min
+    max: 180, // 180 requests per min,
+    // CORS preflight (OPTIONS) checks are not real API calls
+    skip: (req) => req.method === 'OPTIONS',
     standardHeaders: true,
     legacyHeaders: false,
     message: {

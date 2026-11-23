@@ -1,4 +1,13 @@
 const Staff = require('../models/Staff');
+const { identify } = require('../middlewares/accessControl');
+
+// Salon partner may only touch its own staff (admin: any)
+const ownsStaff = async (req, staffId) => {
+    const a = identify(req);
+    if (a.admin) return true;
+    const st = await Staff.findById(staffId).select('salonId').lean().catch(() => null);
+    return !!st && String(st.salonId) === a.salonId;
+};
 
 exports.createStaff = async (req, res) => {
     try {
@@ -46,6 +55,9 @@ exports.getAllStaff = async (req, res) => {
 
 exports.updateStaff = async (req, res) => {
     try {
+        if (!(await ownsStaff(req, req.params.id))) {
+            return res.status(404).json({ success: false, message: 'Staff not found' });
+        }
         const { rating, reviewCount, salonId, ...safeBody } = req.body; // rating comes only from real reviews
         const staff = await Staff.findByIdAndUpdate(req.params.id, safeBody, { new: true, runValidators: true });
         if (!staff) {
@@ -64,6 +76,9 @@ const Station = require('../models/Station');
 exports.deleteStaff = async (req, res) => {
     try {
         const staffId = req.params.id;
+        if (!(await ownsStaff(req, staffId))) {
+            return res.status(404).json({ success: false, message: 'Staff not found' });
+        }
         const staff = await Staff.findByIdAndDelete(staffId);
 
         // Also unassign any station chair referencing this deleted staff

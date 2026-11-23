@@ -33,6 +33,47 @@ export const EditSalonProfilePage = () => {
     salonProfile.amenities || ['AC', 'Free WiFi', 'Complimentary Beverages', 'Sanitized Kits']
   );
   const [newAmenity, setNewAmenity] = useState('');
+  const [coverError, setCoverError] = useState('');
+
+  // Read a picked image, downscale it to max 1200px wide JPEG and store as a data URL.
+  const resizeImageFile = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Could not read the file'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Not a valid image'));
+        img.onload = () => {
+          const maxW = 1200;
+          const scale = Math.min(1, maxW / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const pickCoverFile = (useCamera) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    if (useCamera) input.capture = 'environment';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setCoverError('');
+      try {
+        setCoverImage(await resizeImageFile(file));
+      } catch (err) {
+        setCoverError(err.message || 'Could not use this image. Try another.');
+      }
+    };
+    input.click();
+  };
 
   const sampleCoverImages = [
     { label: 'Modern Luxury', url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80' },
@@ -119,6 +160,26 @@ export const EditSalonProfilePage = () => {
                 </span>
               </div>
             </div>
+
+            {/* Upload from device / camera. Resized client-side so the salon record stays small. */}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => pickCoverFile(false)}
+                className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-brand-maroon bg-brand-maroon text-white flex items-center justify-center gap-1.5"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                Upload Photo
+              </button>
+              <button
+                type="button"
+                onClick={() => pickCoverFile(true)}
+                className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-stone-300 bg-white text-stone-700 flex items-center justify-center gap-1.5 hover:bg-stone-50"
+              >
+                Take Photo
+              </button>
+            </div>
+            {coverError && <p className="text-[10.5px] text-rose-700">{coverError}</p>}
 
             <div className="flex gap-1.5 pt-1 overflow-x-auto no-scrollbar">
               {sampleCoverImages.map((img, i) => (

@@ -138,7 +138,9 @@ export const SalonStaffPage = () => {
     setEditingStation(st);
     setStationName(st.name || '');
     const currentStaffId = typeof st.staffId === 'object' ? (st.staffId?._id || st.staffId?.id) : (st.staffId || '');
-    setStationStaffId(currentStaffId || '');
+    // A chair still pointing at a removed stylist opens as unassigned
+    const stillOnTeam = staff.some((s) => String(s.id || s._id || '') === String(currentStaffId || ''));
+    setStationStaffId(stillOnTeam ? String(currentStaffId) : '');
     setIsStationModalOpen(true);
   };
 

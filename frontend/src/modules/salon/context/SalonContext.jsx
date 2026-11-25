@@ -62,22 +62,9 @@ export const SalonProvider = ({ children }) => {
         })
         .catch(console.error);
 
-      // Fetch staff for this salon
-      fetch(`${apiBase}/staff/salon/${salonId}`)
-        .then((res) => res.json())
-        .then((json) => {
-          if (json.success && Array.isArray(json.data)) {
-            json.data.forEach(st => {
-              const exists = state.staff.find(s => s.id === st.id || s.id === st._id);
-              if (!exists) {
-                dispatch({ type: 'ADD_STAFF', payload: { ...st, id: st._id || st.id } });
-              } else {
-                dispatch({ type: 'UPDATE_STAFF', payload: { staffId: st._id || st.id, patch: st } });
-              }
-            });
-          }
-        })
-        .catch(console.error);
+      // Fetch staff for this salon. Replace (not merge) so staff deleted earlier —
+      // still saved in this browser — never show up again in the chair dropdown.
+      api.staff.listBySalon(salonId).catch(console.error);
 
       // Fetch stations from DB
       fetch(`${apiBase}/stations/salon/${salonId}`)
@@ -472,18 +459,28 @@ export const SalonProvider = ({ children }) => {
     (staffId) => {
       api.staff
         .remove(staffId)
-        .then(() => showToast('Staff member removed'))
+        .then(() => {
+          showToast('Staff member removed');
+          // The server also unassigns this person from their chairs — reload both
+          return Promise.all([api.staff.listBySalon(salonId), api.stations.listBySalon(salonId)]);
+        })
         .catch(() => showToast('Could not remove staff member', 'error'));
     },
-    [showToast]
+    [salonId, showToast]
   );
 
   const addStation = useCallback(
     (data) => {
       api.stations
         .add(salonId, data)
-        .then((st) => showToast(`Station "${st.name}" added successfully`))
-        .catch((err) => showToast(err?.message || 'Could not add station', 'error'));
+        .then((st) => {
+          showToast(`Station "${st.name}" added successfully`);
+          return api.stations.listBySalon(salonId);
+        })
+        .catch((err) => {
+          showToast(err?.message || 'Could not add station', 'error');
+          api.staff.listBySalon(salonId).catch(() => {});
+        });
     },
     [salonId, showToast]
   );
@@ -492,10 +489,16 @@ export const SalonProvider = ({ children }) => {
     (stationId, patch) => {
       api.stations
         .update(stationId, patch)
-        .then(() => showToast('Station updated'))
-        .catch(() => showToast('Could not update station', 'error'));
+        .then(() => {
+          showToast('Station updated');
+          return api.stations.listBySalon(salonId);
+        })
+        .catch((err) => {
+          showToast(err?.message || 'Could not update station', 'error');
+          api.staff.listBySalon(salonId).catch(() => {});
+        });
     },
-    [showToast]
+    [salonId, showToast]
   );
 
   const removeStation = useCallback(

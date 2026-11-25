@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Station = require('../models/Station');
 const Salon = require('../models/Salon');
+const Staff = require('../models/Staff');
 
 const STAFF_FIELDS = 'name role rating reviewCount serviceCategories';
 
@@ -15,6 +16,14 @@ const syncChairCount = async (salonId) => {
     } catch (e) {
         console.error('[Station] chair count sync failed:', e.message);
     }
+};
+
+// A chair can only be given to a stylist who is still on this salon's team
+const STAFF_GONE = 'That stylist is no longer on your team. Please pick another stylist.';
+const staffBelongs = async (staffId, salonId) => {
+    if (!staffId) return true;
+    if (!mongoose.Types.ObjectId.isValid(staffId)) return false;
+    return !!(await Staff.exists({ _id: staffId, salonId }));
 };
 
 // Salon partner may only touch its own stations (admin may touch any)
@@ -65,7 +74,11 @@ exports.createStation = async (req, res) => {
         if (!salonId || !name) {
             return res.status(400).json({ success: false, message: 'SalonId and Name are required' });
         }
-        const newStation = new Station({ salonId, name, staffId: cleanStaff(req.body.staffId) });
+        const staffId = cleanStaff(req.body.staffId);
+        if (!(await staffBelongs(staffId, salonId))) {
+            return res.status(400).json({ success: false, message: STAFF_GONE });
+        }
+        const newStation = new Station({ salonId, name, staffId });
         await newStation.save();
         if (newStation.staffId) {
             await newStation.populate('staffId', STAFF_FIELDS);
@@ -95,7 +108,12 @@ exports.updateStation = async (req, res) => {
         delete updateData._id;
         delete updateData.id;
         delete updateData.salonId; // a chair can't be moved to another salon
-        if ('staffId' in updateData) updateData.staffId = cleanStaff(updateData.staffId);
+        if ('staffId' in updateData) {
+            updateData.staffId = cleanStaff(updateData.staffId);
+            if (!(await staffBelongs(updateData.staffId, existing.salonId))) {
+                return res.status(400).json({ success: false, message: STAFF_GONE });
+            }
+        }
 
         const updated = await Station.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('staffId', STAFF_FIELDS);
         res.status(200).json({ success: true, data: updated });

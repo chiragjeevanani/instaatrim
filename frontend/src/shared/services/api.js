@@ -657,6 +657,12 @@ const stations = {
   listBySalon: async (salonId) => {
     const res = await fetch(`${API_BASE}/stations/salon/${salonId}`);
     const json = await res.json();
+    if (json.success && Array.isArray(json.data)) {
+      const rows = json.data.map((s) => ({ ...s, id: s._id }));
+      // DB is the source of truth for this salon's chairs
+      dispatch({ type: 'REPLACE_SALON_STATIONS', payload: { salonId, stations: rows } });
+      return rows;
+    }
     return json.data;
   },
 

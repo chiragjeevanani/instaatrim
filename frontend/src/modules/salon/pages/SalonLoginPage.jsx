@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { requestFirebaseToken } from '../../../shared/lib/firebase';
 import { AuthBrandPanel } from '../../../shared/components/AuthBrandPanel';
+import { PARTNER_EXPIRED_FLAG } from '../../../shared/services/authFetch';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 
@@ -14,7 +15,18 @@ export const SalonLoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  // Signed out automatically because the saved login had expired (see authFetch)
+  const [error, setError] = useState(() => {
+    try {
+      if (sessionStorage.getItem(PARTNER_EXPIRED_FLAG)) {
+        sessionStorage.removeItem(PARTNER_EXPIRED_FLAG);
+        return 'Your login session has expired. Please log in again.';
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
 
   const canSubmit = loginId.trim().length > 0 && password.length > 0 && !isSubmitting;
 

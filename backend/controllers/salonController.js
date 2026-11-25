@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const { identify } = require('../middlewares/accessControl');
 
 // Never sent to any browser
-const SECRET_FIELDS = ['password', 'refreshToken', 'prevRefreshToken', 'refreshRotatedAt', 'failedLoginAttempts', 'lockoutUntil', 'fcmtoken', 'fcmtokenweb'];
+const SECRET_FIELDS = ['password', 'refreshToken', 'prevRefreshToken', 'refreshRotatedAt', 'refreshTokens', 'failedLoginAttempts', 'lockoutUntil', 'fcmtoken', 'fcmtokenweb'];
 // Only the salon itself and the admin may see these
 const PRIVATE_FIELDS = ['accountNumber', 'ifscCode', 'bankName', 'gstin', 'shopActLicense', 'payoutCycle', 'email'];
 // Only the admin may change these (salon profile saves send the whole salon object back)
@@ -211,7 +211,8 @@ exports.loginSalon = async (req, res) => {
             expiresIn: '1h'
         });
         const refreshToken = `rft_${crypto.randomBytes(32).toString('hex')}`;
-        salon.refreshToken = refreshToken;
+        // Add this device's token; other devices stay logged in (newest 10 kept)
+        salon.refreshTokens = [...(salon.refreshTokens || []), { token: refreshToken, createdAt: new Date() }].slice(-10);
 
         // Update FCM tokens if provided
         if (fcmtoken || fcmtokenweb) {
@@ -234,6 +235,8 @@ exports.loginSalon = async (req, res) => {
         salonData.id = salon._id.toString();
         delete salonData.password;
         delete salonData.refreshToken;
+        delete salonData.prevRefreshToken;
+        delete salonData.refreshTokens;
 
         res.status(200).json({
             success: true,

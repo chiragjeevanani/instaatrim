@@ -21,17 +21,33 @@ router.post('/refresh-token', async (req, res) => {
         // Rotate refresh token atomically (only one request can rotate it). The old one stays
         // valid for 2 min so two tabs/requests refreshing at the same moment don't log the partner out.
         let newRefreshToken = `rft_${crypto.randomBytes(32).toString('hex')}`;
+        const now = new Date();
+        const graceSince = new Date(Date.now() - 2 * 60 * 1000);
+        // 1) This device's token (one per device) → rotate just that one
         let salon = await Salon.findOneAndUpdate(
-            { refreshToken },
-            { $set: { refreshToken: newRefreshToken, prevRefreshToken: refreshToken, refreshRotatedAt: new Date() } },
+            { 'refreshTokens.token': refreshToken },
+            { $set: { 'refreshTokens.$.token': newRefreshToken, 'refreshTokens.$.prev': refreshToken, 'refreshTokens.$.rotatedAt': now } },
             { new: true }
         );
+        // 2) Login from before per-device tokens → move it into the device list
         if (!salon) {
-            salon = await Salon.findOne({ prevRefreshToken: refreshToken, refreshRotatedAt: { $gt: new Date(Date.now() - 2 * 60 * 1000) } });
-            if (!salon || !salon.refreshToken) {
+            salon = await Salon.findOneAndUpdate(
+                { refreshToken },
+                {
+                    $set: { refreshToken: null, prevRefreshToken: refreshToken, refreshRotatedAt: now },
+                    $push: { refreshTokens: { $each: [{ token: newRefreshToken, prev: refreshToken, rotatedAt: now, createdAt: now }], $slice: -10 } }
+                },
+                { new: true }
+            );
+        }
+        // 3) Same token renewed moments ago (two tabs at once) → hand out the current one
+        if (!salon) {
+            salon = await Salon.findOne({ refreshTokens: { $elemMatch: { prev: refreshToken, rotatedAt: { $gt: graceSince } } } });
+            const entry = salon && salon.refreshTokens.find((t) => t.prev === refreshToken);
+            if (!entry) {
                 return res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
             }
-            newRefreshToken = salon.refreshToken; // already rotated moments ago → hand out the current one
+            newRefreshToken = entry.token;
         }
 
         const newToken = jwt.sign({ id: salon._id, role: 'salon' }, process.env.JWT_SECRET || 'secret123', {

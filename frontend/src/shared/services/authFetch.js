@@ -9,7 +9,7 @@
 // The salon partner token lives 1 hour: it is renewed with the refresh token just
 // before it expires (one renewal at a time), and a request rejected with 401 is
 // retried once after renewing.
-import { getState, isBridgeReady } from '../store/bridge';
+import { getState, dispatch, isBridgeReady } from '../store/bridge';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:6200/api';
 const PARTNER_TOKEN = 'instaatrim_partner_token';
@@ -121,6 +121,26 @@ export const installAuthFetch = () => {
         return nativeFetch(input, withTokens(init, { ...tokens, salon: renewed }));
       }
     }
+    if (res.status === 401) endDeadPartnerSession();
     return res;
   };
+};
+
+// The partner panel still looks logged in, but its login has expired and can't be
+// renewed (no refresh token / refresh refused). Saves would fail quietly, so sign
+// out and send the partner to the login page with an explanation.
+export const PARTNER_EXPIRED_FLAG = 'drimstyle_partner_session_expired';
+const endDeadPartnerSession = () => {
+  try {
+    if (!isBridgeReady() || !getState()?.partnerSession) return;
+    if (isLiveToken(lsGet(PARTNER_TOKEN))) return; // login is fine — 401 was for something else
+    const rt = lsGet(PARTNER_REFRESH);
+    if (rt && rt !== deadRefreshToken) return; // a renewal can still work
+    localStorage.removeItem(PARTNER_TOKEN);
+    localStorage.removeItem(PARTNER_REFRESH);
+    sessionStorage.setItem(PARTNER_EXPIRED_FLAG, '1');
+    dispatch({ type: 'SET_PARTNER_SESSION', payload: null });
+  } catch {
+    // never break the request because of this
+  }
 };

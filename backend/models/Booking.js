@@ -42,7 +42,7 @@ const bookingSchema = new mongoose.Schema({
   // Bill shown in the cart at booking time (display only — amounts above stay the source of truth)
   billBreakdown: { type: Object },
   stationId: { type: String },
-  status: { type: String, enum: ['Confirmed', 'Active', 'Completed', 'Cancelled', 'No-Show'], default: 'Confirmed' },
+  status: { type: String, enum: ['Pending', 'Confirmed', 'Checked-In', 'Service Started', 'Active', 'Completed', 'Cancelled', 'No Show', 'No-Show', 'Refunded'], default: 'Confirmed' },
   cancelReason: { type: String }
 }, {
   timestamps: true

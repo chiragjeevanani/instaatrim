@@ -273,26 +273,18 @@ export const SalonProvider = ({ children }) => {
 
   const createWalkInBooking = useCallback(
     (walkInData) => {
-      const services = walkInData.services || [];
-      const amount = walkInData.totalAmount || services[0]?.price || 0;
+      // Server prices it from the salon's menu (walk-ins don't get app offers / fees / wallet)
+      const services = (walkInData.services || []).map((s) => ({ id: s.id || s._id, name: s.name || s.title, quantity: s.quantity || 1 }));
       api.bookings
-        .create({
-          customerId: null,
-          customerName: walkInData.customerName || 'Walk-In Guest',
-          customerPhone: walkInData.customerPhone || '+91 99999 00000',
+        .createWalkIn({
           salonId,
-          salonName: salonProfile.name,
-          address: salonProfile.area,
-          bookingMode: 'Instant',
+          customerName: walkInData.customerName || 'Walk-In Guest',
+          customerPhone: walkInData.customerPhone || '',
           status: BOOKING_STATUS.SERVICE_STARTED,
           dateKey: dateKey(new Date()),
           time: minutesToClock(nowMinutesOfDay()),
           services,
-          totalAmount: amount,
-          discountAmount: 0,
-          finalPaid: amount,
           paymentMethod: walkInData.paymentMethod || 'Pay at Salon (Cash)',
-          paymentStatus: 'Pending',
           notes: walkInData.notes || 'Direct walk-in customer',
           stationId: walkInData.stationId || null,
           staffId: walkInData.staffId || null

@@ -219,6 +219,90 @@ const verifyBookingPrices = async (data, { stylistPicked = false } = {}) => {
     return { ok: true, rewards: { instantDiscount, walletRedeemed, walletCashback, stylistFee } };
 };
 
+// Walk-in seated by the salon at the counter. Paid at the salon, so: the service's own menu
+// price from DB (customer-app offers, platform fees, wallet & cashback are for app bookings
+// only), never linked to a customer account, chair/stylist must belong to this salon.
+const WALKIN_STATUSES = ['Confirmed', 'Checked-In', 'Service Started'];
+exports.createWalkInBooking = async (req, res) => {
+    try {
+        const mongoose = require('mongoose');
+        const Service = require('../models/Service');
+        const Station = require('../models/Station');
+        const Staff = require('../models/Staff');
+        const auth = identify(req);
+        const salonId = auth.salonId && auth.primary !== 'admin' ? auth.salonId : (req.body.salonId || auth.salonId);
+        if (!salonId || !mongoose.Types.ObjectId.isValid(String(salonId))) {
+            return res.status(400).json({ success: false, message: 'Invalid salon.' });
+        }
+        const salon = await Salon.findById(salonId).select('name area').lean();
+        if (!salon) return res.status(404).json({ success: false, message: 'Salon not found.' });
+
+        const items = Array.isArray(req.body.services) ? req.body.services : [];
+        if (items.length === 0) return res.status(400).json({ success: false, message: 'Please pick a service.' });
+        const services = [];
+        let total = 0;
+        for (const item of items) {
+            const sid = String(item.id || item._id || '');
+            const svc = mongoose.Types.ObjectId.isValid(sid) ? await Service.findById(sid).lean() : null;
+            if (!svc || String(svc.salonId) !== String(salonId) || svc.isActive === false) {
+                return res.status(400).json({ success: false, message: `"${item.name || item.title || 'This service'}" is not on your menu any more. Please refresh and try again.` });
+            }
+            const qty = Math.max(1, Math.min(10, Math.round(Number(item.quantity) || 1)));
+            const price = Math.max(0, Number(svc.price) || 0);
+            services.push({ id: String(svc._id), name: svc.title, price, quantity: qty, duration: svc.duration });
+            total += price * qty;
+        }
+
+        let stationId = null;
+        let stationStaff = null; // stylist assigned to the chosen chair
+        if (req.body.stationId) {
+            const st = mongoose.Types.ObjectId.isValid(String(req.body.stationId))
+                ? await Station.findOne({ _id: req.body.stationId, salonId }).select('_id staffId').lean() : null;
+            if (!st) return res.status(400).json({ success: false, message: 'That chair is not in your salon. Please refresh and try again.' });
+            stationId = String(st._id);
+            stationStaff = st.staffId ? String(st.staffId) : null;
+        }
+        let staffId = null, staffName = null;
+        const wantStaff = req.body.staffId || stationStaff;
+        if (wantStaff && mongoose.Types.ObjectId.isValid(String(wantStaff))) {
+            const sf = await Staff.findOne({ _id: wantStaff, salonId, isActive: { $ne: false } }).select('name').lean();
+            if (sf) { staffId = String(sf._id); staffName = sf.name; }
+        }
+
+        const count = await Booking.countDocuments();
+        const booking = new Booking({
+            _id: `IT-${220000 + count + 1}`,
+            customerId: 'walk-in', // not a customer account (no wallet / cashback)
+            customerName: String(req.body.customerName || 'Walk-In Guest').slice(0, 80),
+            customerPhone: String(req.body.customerPhone || '').slice(0, 20),
+            salonId: String(salonId),
+            salonName: salon.name,
+            address: salon.area,
+            bookingMode: 'Instant',
+            status: WALKIN_STATUSES.includes(req.body.status) ? req.body.status : 'Service Started',
+            dateKey: req.body.dateKey,
+            time: req.body.time,
+            services,
+            totalAmount: total,
+            discountAmount: 0,
+            finalPaid: total,
+            paymentMethod: String(req.body.paymentMethod || 'Pay at Salon (Cash)').slice(0, 60),
+            paymentStatus: 'Pending',
+            notes: String(req.body.notes || 'Direct walk-in customer').slice(0, 500),
+            stationId,
+            staffId,
+            staffName
+        });
+        const saved = await booking.save();
+        const io = getSocketIO();
+        if (io) io.emit('booking_created', saved);
+        res.status(201).json({ success: true, data: saved });
+    } catch (error) {
+        console.error('Error creating walk-in booking:', error);
+        res.status(500).json({ success: false, message: 'Could not create walk-in booking. Please try again.' });
+    }
+};
+
 exports.createBooking = async (req, res) => {
     try {
         const bookingData = { ...req.body };

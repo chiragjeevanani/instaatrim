@@ -769,6 +769,27 @@ const bookings = {
     return newBooking;
   },
 
+  // Salon counter walk-in: priced by the server from the salon's own menu (no app offers / fees)
+  createWalkIn: async (payload) => {
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/bookings/walk-in`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      throw new ApiError('Could not reach the server. Please check your internet and try again.', 'NETWORK');
+    }
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success || !json.data?._id) {
+      throw new ApiError(`Walk-in failed: ${json.message || 'Please try again.'}`, json.code || 'BOOKING_FAILED');
+    }
+    const newBooking = { ...json.data, id: json.data._id };
+    dispatch({ type: 'ADD_BOOKING', payload: newBooking });
+    return newBooking;
+  },
+
   updateStatus: async (bookingId, status, extra = {}, { force = false } = {}) => {
     try {
       const res = await fetch(`${API_BASE}/bookings/${bookingId}/status`, {

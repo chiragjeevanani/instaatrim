@@ -6,12 +6,14 @@ import { occupiedStationIds } from '../../../shared/store/selectors';
 import { dateKey } from '../../../shared/lib/time';
 
 export const NewBookingModal = ({ isOpen, onClose }) => {
-  const { services, stations, staff, bookings, createWalkInBooking, openModal, closeModal } = useSalon();
+  const { services: allServices, stations, staff, bookings, createWalkInBooking, openModal, closeModal } = useSalon();
 
   // Defect D9 fix: walk-ins used to be seated at a hardcoded "Chair 4"
   // with no check against real occupancy, so the salon could seat more
   // guests than it has stations. Only stations that are actually free
   // right now are offered.
+  // Only services currently on the menu can be booked
+  const services = useMemo(() => allServices.filter((s) => s.isActive !== false), [allServices]);
   const todayKey = dateKey(new Date());
   const occupied = useMemo(() => occupiedStationIds(bookings.filter((b) => b.dateKey === todayKey)), [bookings, todayKey]);
   const freeStations = stations.filter((s) => !occupied.has(s.id));
@@ -36,6 +38,17 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
   const [paymentMethod, setPaymentMethod] = useState('Cash at Salon');
   const [notes, setNotes] = useState('');
 
+  // Chairs load after the dashboard mounts: keep a real, free chair selected (the dropdown
+  // showed the first chair while nothing was selected, so Confirm silently did nothing)
+  useEffect(() => {
+    if (!freeStations.some((st) => st.id === stationId)) setStationId(freeStations[0]?.id || '');
+  }, [freeStations, stationId]);
+
+  // Same for the service list (and a service that was switched off)
+  useEffect(() => {
+    if (services.length > 0 && !services.some((sv) => sv.id === selectedServiceId)) setSelectedServiceId(services[0].id);
+  }, [services, selectedServiceId]);
+
   useEffect(() => {
     if (services.length > 0 && !selectedServiceId) {
       setSelectedServiceId(services[0].id);
@@ -51,9 +64,9 @@ export const NewBookingModal = ({ isOpen, onClose }) => {
     const station = stations.find((s) => s.id === stationId);
     createWalkInBooking({
       customerName: customerName || 'Walk-In Guest',
-      customerPhone: customerPhone || '+91 98000 00000',
+      customerPhone: customerPhone || '',
       stationId,
-      staffId: station?.staffId || null,
+      staffId: (station?.staffId && typeof station.staffId === 'object' ? station.staffId._id || station.staffId.id : station?.staffId) || null,
       services: [serviceObj],
       totalAmount: serviceObj.price,
       paymentMethod,

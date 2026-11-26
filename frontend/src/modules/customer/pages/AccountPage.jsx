@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { COMPANY_CREDIT } from '../../../shared/data/company';
 import { useNavigate } from 'react-router-dom';
 import { useCustomer } from '../context/CustomerContext';
 import { BottomNav } from '../components/BottomNav';
@@ -305,6 +306,9 @@ export const AccountPage = () => {
           <LogOut className="w-3.5 h-3.5 text-stone-500" />
           <span>{user?.isLoggedIn ? 'Log Out of DrimStyle' : 'Log In / Register'}</span>
         </button>
+        <p className="pt-1 text-center text-[10px] text-stone-400 leading-snug">
+          © {new Date().getFullYear()} DrimStyle. All rights reserved.<br />{COMPANY_CREDIT}.
+        </p>
       </main>
 
       <BottomNav />

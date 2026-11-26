@@ -291,7 +291,7 @@ export const LANDING_DEFAULTS = {
     tagline: 'Save money, save time.',
     about:
       'DrimStyle is India’s first real-time grooming infrastructure platform — making quality grooming available within 15 minutes, at a salon or in the comfort of your home.',
-    legalName: 'DrimStyle Pvt. Ltd.',
+    legalName: 'MINDPIXEL GLOBAL TECH PRIVATE LIMITED',
     phone: '',
     email: 'support@drimstyle.com',
     address: 'Gr Floor, 242/1&2/38, Tejaswini Soc, D P Road, Baner Gaon, Pune, Maharashtra 411045'

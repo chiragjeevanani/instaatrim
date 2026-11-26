@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { COMPANY_LEGAL_NAME } from '../../shared/data/company';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   motion,
@@ -1508,7 +1509,7 @@ const Footer = ({ data, nav, contact, onLanding, showAbout = true }) => {
       </div>
       <div className="border-t border-rose-100 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-[12.5px] text-stone-500">© {new Date().getFullYear()} {data.legalName || 'DrimStyle'}. All rights reserved.</p>
+          <p className="text-[12.5px] text-stone-500 text-center sm:text-left">© {new Date().getFullYear()} DrimStyle. All rights reserved. DrimStyle is a brand of {data.legalName || COMPANY_LEGAL_NAME}.</p>
           <p className="font-serif italic text-[13px] text-brand-maroon">{data.tagline}</p>
         </div>
       </div>

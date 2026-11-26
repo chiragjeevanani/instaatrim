@@ -88,7 +88,7 @@ export const PRIVACY_DEFAULTS = {
     },
     {
       title: 'Grievance Officer',
-      body: 'Privacy-related complaints may be submitted to the designated grievance officer at DrimStyle Pvt. Ltd., Gr Floor, 242/1&2/38, Tejaswini Soc, D P Road, Baner Gaon, Pune, Haveli, Maharashtra, India, 411045.'
+      body: 'Privacy-related complaints may be submitted to the designated grievance officer at MINDPIXEL GLOBAL TECH PRIVATE LIMITED (owner of the DrimStyle brand), Gr Floor, 242/1&2/38, Tejaswini Soc, D P Road, Baner Gaon, Pune, Haveli, Maharashtra, India, 411045.'
     },
     {
       title: 'Contact',
@@ -142,7 +142,7 @@ export const TERMS_DEFAULTS = {
     },
     {
       title: 'Intellectual Property',
-      body: 'All DrimStyle trademarks, logos, software, content, and platform features remain the property of DrimStyle Pvt. Ltd.'
+      body: 'All DrimStyle trademarks, logos, software, content, and platform features remain the property of MINDPIXEL GLOBAL TECH PRIVATE LIMITED (owner of the DrimStyle brand)'
     },
     {
       title: 'Limitation of Liability',
@@ -174,7 +174,7 @@ export const TERMS_DEFAULTS = {
     },
     {
       title: 'Contact Information',
-      body: 'For support, grievances, or legal notices, contact DrimStyle Pvt. Ltd. through official communication channels.'
+      body: 'For support, grievances, or legal notices, contact MINDPIXEL GLOBAL TECH PRIVATE LIMITED (owner of the DrimStyle brand) through official communication channels.'
     }
   ]
 };

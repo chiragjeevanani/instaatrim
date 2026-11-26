@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { COMPANY_CREDIT } from '../../../shared/data/company';
 import { useNavigate } from 'react-router-dom';
 import { useSalon } from '../context/SalonContext';
 import { InfoSheet } from '../../../shared/components/InfoSheet';
@@ -284,6 +285,9 @@ export const SalonProfilePage = () => {
           <LogOut className="w-3.5 h-3.5 text-stone-500" />
           <span>{isLoggingOut ? 'Logging out…' : 'Log Out'}</span>
         </button>
+        <p className="pt-1 text-center text-[10px] text-stone-400 leading-snug">
+          © {new Date().getFullYear()} DrimStyle. All rights reserved.<br />{COMPANY_CREDIT}.
+        </p>
       </main>
 
       <SalonSupportModal

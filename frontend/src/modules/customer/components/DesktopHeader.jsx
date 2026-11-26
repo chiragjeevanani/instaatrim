@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { COMPANY_CREDIT } from '../../../shared/data/company';
 import { NavLink, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { MapPin, ChevronDown, Search, Bell, ShoppingBag, User, Crown, Gift } from 'lucide-react';
 import { useCustomer } from '../context/CustomerContext';
@@ -213,22 +214,24 @@ export const DesktopFooter = () => {
   return (
     <footer className="hidden lg:block border-t border-purple-100 bg-white/70">
       <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-          <img src="/DrimStylelogo.png" alt="DrimStyle" className="h-9 w-[120px] object-cover object-center" />
-          <span className="text-[12px] text-stone-500">© {new Date().getFullYear()} DrimStyle. Save money, save time.</span>
-        </div>
+        <img src="/DrimStylelogo.png" alt="DrimStyle" className="h-9 w-[120px] object-cover object-center shrink-0" />
         <nav className="flex items-center gap-5">
           {links.map((l) => (
             <button
               key={l.to}
               type="button"
               onClick={() => navigate(l.to)}
-              className="text-[12px] font-medium text-stone-600 hover:text-brand-maroon transition-colors cursor-pointer"
+              className="text-[12px] font-medium text-stone-600 hover:text-brand-maroon transition-colors cursor-pointer whitespace-nowrap"
             >
               {l.label}
             </button>
           ))}
         </nav>
+      </div>
+      <div className="border-t border-purple-100/70">
+        <p className="max-w-7xl mx-auto px-6 py-3 text-center text-[11.5px] text-stone-500">
+          © {new Date().getFullYear()} DrimStyle. All rights reserved. {COMPANY_CREDIT}.
+        </p>
       </div>
     </footer>
   );

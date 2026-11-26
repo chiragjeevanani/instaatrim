@@ -1,4 +1,5 @@
 import React from 'react';
+import { COMPANY_CREDIT } from '../data/company';
 import { CheckCircle2 } from 'lucide-react';
 
 // Left-hand brand panel for the desktop (lg+) split-screen auth layouts.
@@ -34,6 +35,6 @@ export const AuthBrandPanel = ({ eyebrow, title, subtitle, points = [], image })
       )}
     </div>
 
-    <p className="relative z-10 text-xs text-rose-100/50">© {new Date().getFullYear()} DrimStyle · Save money, save time.</p>
+    <p className="relative z-10 text-xs text-rose-100/50">© {new Date().getFullYear()} DrimStyle · {COMPANY_CREDIT}.</p>
   </aside>
 );

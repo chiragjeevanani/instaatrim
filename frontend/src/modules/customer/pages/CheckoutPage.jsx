@@ -354,6 +354,12 @@ export const CheckoutPage = () => {
               <p className="text-xs font-bold text-stone-900">
                 {bookingSlot.type === 'Instant' ? `Today (${bookingSlot.time})` : `${bookingSlot.dateKey ? formatDateKeyFriendly(bookingSlot.dateKey).split(',')[0] : bookingSlot.date} at ${bookingSlot.time}`}
               </p>
+              {bookingSlot.type !== 'Instant' && bookingSlot.altTimes?.length > 0 && (
+                <p className="text-[10.5px] text-stone-600 mt-0.5">Also OK: <b>{bookingSlot.altTimes.join(', ')}</b></p>
+              )}
+              {bookingSlot.type !== 'Instant' && (
+                <p className="text-[10px] text-amber-700 font-semibold mt-0.5">The salon will confirm your time within 15 mins.</p>
+              )}
               <p className="text-[10.5px] text-stone-500 mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-brand-maroon shrink-0" />
                 {currentLocation?.area || currentLocation?.address || 'Location not set'}

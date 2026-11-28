@@ -121,6 +121,7 @@ export const CartDrawer = () => {
                       </div>
                       <p className="text-[10.5px] text-stone-500">
                         {bookingSlot.type === 'Instant' ? 'Seat ready in 15 mins' : bookingSlot.time}
+                        {bookingSlot.type !== 'Instant' && bookingSlot.altTimes?.length > 0 && <span className="text-stone-400"> · also {bookingSlot.altTimes.join(', ')}</span>}
                       </p>
                       {isScheduledSlotPast(bookingSlot) && (
                         <p className="text-[10px] font-bold text-red-600 mt-0.5">This time has passed — tap Change to pick a new slot</p>

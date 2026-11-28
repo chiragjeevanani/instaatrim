@@ -191,7 +191,8 @@ export const SalonProvider = ({ children }) => {
     socket.on('booking_updated', (booking) => {
       if (String(booking.salonId) === String(salonId)) {
         const mapped = { ...booking, id: booking._id || booking.id };
-        dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId: mapped.id, status: mapped.status, patch: mapped } });
+        // extra → also brings the confirmed time to this salon's other open devices
+        dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId: mapped.id, status: mapped.status, patch: mapped, extra: { time: mapped.time } } });
       }
     });
 
@@ -241,6 +242,16 @@ export const SalonProvider = ({ children }) => {
     [showToast]
   );
 
+  // Waiting (Pending) booking → confirm it at one of the customer's times (customer gets a sound + push)
+  const confirmBooking = useCallback(
+    (bookingId, time) => {
+      api.bookings
+        .updateStatus(bookingId, BOOKING_STATUS.CONFIRMED, time ? { time } : {})
+        .then((b) => showToast(`Booking #${bookingId} confirmed for ${b?.time || time || ''}. Customer notified.`))
+        .catch((e) => showToast(e.message || 'Could not confirm booking', 'error'));
+    },
+    [showToast]
+  );
   const checkInCustomer = useCallback((bookingId) => updateBookingStatus(bookingId, BOOKING_STATUS.CHECKED_IN), [updateBookingStatus]);
   const startService = useCallback((bookingId) => updateBookingStatus(bookingId, BOOKING_STATUS.SERVICE_STARTED), [updateBookingStatus]);
   const completeService = useCallback(
@@ -719,6 +730,7 @@ export const SalonProvider = ({ children }) => {
         openModal,
         closeModal,
         updateBookingStatus,
+        confirmBooking,
         checkInCustomer,
         startService,
         completeService,

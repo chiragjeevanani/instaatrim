@@ -16,7 +16,7 @@ import {
   UserX,
   CreditCard
 } from 'lucide-react';
-import { formatDateKeyFriendly } from '../../../shared/lib/time';
+import { formatDateKeyFriendly, isScheduledSlotPast } from '../../../shared/lib/time';
 import { stationLabelFor } from '../../../shared/store/selectors';
 
 // Salon-side amount for a booking: service prices as the customer saw them in the cart
@@ -33,7 +33,7 @@ export const salonBillTotal = (booking) => {
 };
 
 export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
-  const { checkInCustomer, startService, completeService, cancelBooking, markNoShow, stations, staff, openModal, closeModal } = useSalon();
+  const { confirmBooking, checkInCustomer, startService, completeService, cancelBooking, markNoShow, stations, staff, openModal, closeModal } = useSalon();
 
   // Prevent background scrolling and notify context when modal is open
   useEffect(() => {
@@ -244,6 +244,36 @@ export const BookingDetailModal = ({ booking, isOpen, onClose }) => {
 
             {/* Operational Action Buttons (Section 24 Lifecycle) */}
             <div className="pt-1.5 space-y-2">
+              {/* Waiting booking: customer gave up to 3 times → salon confirms one */}
+              {booking.status === 'Pending' && (
+                <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 space-y-2">
+                  <p className="text-[11px] font-bold text-amber-900">
+                    Customer is waiting — please confirm a time within 15 mins
+                    {booking.createdAt ? ` (requested ${Math.max(0, Math.round((Date.now() - new Date(booking.createdAt).getTime()) / 60000))} min ago)` : ''}
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[booking.time, ...(booking.altTimes || [])].filter(Boolean).map((t, i) => {
+                      const passed = isScheduledSlotPast({ type: 'Scheduled', dateKey: booking.dateKey, time: t });
+                      return (
+                        <button
+                          key={t}
+                          disabled={passed}
+                          onClick={() => {
+                            confirmBooking(booking.id, t);
+                            onClose();
+                          }}
+                          className="py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold rounded-lg shadow-xs transition-all flex flex-col items-center disabled:bg-stone-300 disabled:cursor-not-allowed"
+                        >
+                          <span className="text-[11px] font-bold">{t}</span>
+                          <span className="text-[8.5px] uppercase tracking-wider opacity-90">{passed ? 'Passed' : `Confirm · ${['1st', '2nd', '3rd'][i]}`}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-amber-800">None of these work? Use Cancel Booking below.</p>
+                </div>
+              )}
+
               {booking.status === 'Confirmed' && (
                 <button
                   onClick={() => {

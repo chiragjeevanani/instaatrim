@@ -62,6 +62,8 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
   const [bookingType, setBookingType] = useState(bookingSlot.type || 'Scheduled');
   const [selectedDayKey, setSelectedDayKey] = useState(bookingSlot.dateKey || days[1]?.key || days[0]?.key);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  // up to 2 more times on the same day (2nd / 3rd choice) — the salon confirms one of them
+  const [extraSlots, setExtraSlots] = useState([]);
   const [isConfirming, setIsConfirming] = useState(false);
   const [pendingHold, setPendingHold] = useState(null);
 
@@ -111,7 +113,30 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
 
   useEffect(() => {
     setSelectedSlot(null);
+    setExtraSlots([]);
   }, [selectedDayKey, bookingType]);
+
+  // Tap a time: 1st tap = preferred time, next taps = 2nd / 3rd choice; tap again to remove
+  const toggleSlot = (slot) => {
+    if (!slot.available) return;
+    if (selectedSlot?.time === slot.time) {
+      setSelectedSlot(extraSlots[0] || null);
+      setExtraSlots(extraSlots.slice(1));
+    } else if (extraSlots.some((x) => x.time === slot.time)) {
+      setExtraSlots(extraSlots.filter((x) => x.time !== slot.time));
+    } else if (!selectedSlot) {
+      setSelectedSlot(slot);
+    } else if (extraSlots.length < 2) {
+      setExtraSlots([...extraSlots, slot]);
+    } else {
+      showToast('You can pick up to 3 times');
+    }
+  };
+  const choiceNo = (slot) => {
+    if (selectedSlot?.time === slot.time) return 1;
+    const i = extraSlots.findIndex((x) => x.time === slot.time);
+    return i === -1 ? 0 : i + 2;
+  };
 
   if (!isSlotPickerOpen) return null;
 
@@ -151,6 +176,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           dateKey: dateKey(new Date()),
           date: 'Today',
           time: instantAvailability.slot.time,
+          altTimes: [],
           ...keepPickedStylist(prev, instantAvailability.slot.staffId),
           holdId: hold.id,
           holdExpiresAt: hold.expiresAt,
@@ -176,6 +202,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
           dateKey: selectedDay.key,
           date: selectedDay.isToday ? 'Today' : selectedDay.label,
           time: selectedSlot.time,
+          altTimes: extraSlots.map((x) => x.time),
           ...keepPickedStylist(prev, selectedSlot.staffId),
           holdId: hold.id,
           holdExpiresAt: hold.expiresAt,
@@ -283,6 +310,7 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
                 <label className="text-[10.5px] font-bold text-stone-600 mb-1 block uppercase tracking-wider">
                   Available Time Slots
                 </label>
+                <p className="text-[10px] text-stone-500 mb-1.5">Pick up to 3 times (1st = your preferred). The salon confirms one within 15 mins.</p>
                 {daySlots.length === 0 ? (
                   <div className="flex items-start gap-2 bg-stone-100 border border-stone-200 rounded-lg p-2.5">
                     <AlertCircle className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
@@ -294,18 +322,21 @@ export const SlotPickerModal = ({ salonId: propSalonId }) => {
                       <button
                         key={slot.time}
                         disabled={!slot.available}
-                        onClick={() => slot.available && setSelectedSlot(slot)}
+                        onClick={() => toggleSlot(slot)}
                         className={`py-1.5 px-1 rounded-lg text-center border transition-all flex flex-col items-center justify-center gap-0.5 ${!slot.available
                           ? 'border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed opacity-75'
                           : selectedSlot?.time === slot.time
                             ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
-                            : 'border-stone-300 bg-white text-stone-700 hover:border-brand-maroon/50'
+                            : choiceNo(slot) > 1
+                              ? 'border-brand-maroon bg-rose-50 text-brand-maroon font-bold'
+                              : 'border-stone-300 bg-white text-stone-700 hover:border-brand-maroon/50'
                           }`}
                       >
                         <div className="flex items-center gap-1 text-[11px] font-medium">
                           {selectedSlot?.time === slot.time && <CheckCircle2 className="w-3 h-3" />}
                           <span className={!slot.available ? 'line-through' : ''}>{slot.time}</span>
                         </div>
+                        {choiceNo(slot) > 0 && <span className="text-[8px] uppercase tracking-wider font-black">{['', '1st choice', '2nd choice', '3rd choice'][choiceNo(slot)]}</span>}
                         {!slot.available && <span className="text-[8px] uppercase tracking-widest font-black text-rose-500/80">Booked</span>}
                       </button>
                     ))}

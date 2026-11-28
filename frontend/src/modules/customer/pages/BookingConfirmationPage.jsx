@@ -59,6 +59,8 @@ export const BookingConfirmationPage = () => {
   }
 
   const idDisplay = booking?.id || booking?._id || bookingId;
+  // Scheduled booking waiting for the salon to confirm the time
+  const isPending = booking?.status === 'Pending';
 
   return (
     <motion.div
@@ -73,11 +75,24 @@ export const BookingConfirmationPage = () => {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-          className="w-14 h-14 bg-emerald-600 text-white rounded-full flex items-center justify-center mx-auto shadow-md mt-2"
+          className={`w-14 h-14 ${isPending ? 'bg-amber-500' : 'bg-emerald-600'} text-white rounded-full flex items-center justify-center mx-auto shadow-md mt-2`}
         >
-          <Check className="w-7 h-7 stroke-[3]" />
+          {isPending ? <Clock className="w-7 h-7 stroke-[3]" /> : <Check className="w-7 h-7 stroke-[3]" />}
         </motion.div>
 
+        {isPending ? (
+          <div>
+            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest block mb-0.5">
+              Booking Request Sent!
+            </span>
+            <h1 className="text-lg font-black text-stone-900 tracking-tight">
+              Waiting for salon confirmation
+            </h1>
+            <p className="text-[11px] text-stone-500 mt-0.5">
+              The salon will confirm your time within 15 mins. You'll hear a sound and get a notification once it's confirmed.
+            </p>
+          </div>
+        ) : (
         <div>
           <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest block mb-0.5">
             Booking Confirmed!
@@ -89,6 +104,7 @@ export const BookingConfirmationPage = () => {
             Appointment details generated successfully.
           </p>
         </div>
+        )}
 
         {/* Unique Booking ID Badge */}
         <div className="inline-block bg-white/80 px-3 py-1 rounded-full border border-stone-300/80">
@@ -106,8 +122,8 @@ export const BookingConfirmationPage = () => {
                 {booking?.address || 'Address not available'}
               </p>
             </div>
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-              {booking?.status || 'Confirmed'}
+            <span className={`text-[10px] ${isPending ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'} font-bold px-2 py-0.5 rounded-full`}>
+              {isPending ? 'Awaiting Confirmation' : booking?.status || 'Confirmed'}
             </span>
           </div>
 
@@ -127,6 +143,9 @@ export const BookingConfirmationPage = () => {
               </div>
             </div>
           </div>
+          {isPending && booking?.altTimes?.length > 0 && (
+            <p className="text-[10.5px] text-stone-600 -mt-1">Also OK: <b>{booking.altTimes.join(', ')}</b></p>
+          )}
 
           {/* Booked Services */}
           <div className="space-y-1">
@@ -212,6 +231,17 @@ export const BookingConfirmationPage = () => {
         {/* TOUCHPOINT 7: POST-BOOKING CONFIRMATION AFTERCARE RETAIL & CROSS-SELL */}
         <div className="bg-gradient-to-br from-white via-purple-50/30 to-stone-50 rounded-2xl p-3.5 border-2 border-purple-200/80 shadow-xs text-left space-y-3">
           {/* Wireframe Confirmed Banner */}
+          {isPending ? (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 flex items-center justify-between text-amber-900 shadow-2xs">
+              <span className="text-xs font-black flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-600 stroke-[3]" />
+                Request Sent! ID: #{idDisplay}
+              </span>
+              <span className="text-[9px] bg-amber-200/80 text-amber-950 font-extrabold px-2 py-0.5 rounded-full">
+                Awaiting Salon
+              </span>
+            </div>
+          ) : (
           <div className="bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 flex items-center justify-between text-emerald-900 shadow-2xs">
             <span className="text-xs font-black flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
@@ -221,6 +251,7 @@ export const BookingConfirmationPage = () => {
               Ready For Visit
             </span>
           </div>
+          )}
         </div>
       </main>
 

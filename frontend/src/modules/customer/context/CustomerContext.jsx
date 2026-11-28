@@ -165,6 +165,11 @@ export const CustomerProvider = ({ children }) => {
     [state.customers, state.currentCustomerId]
   );
 
+  // Latest bookings / toast for the live socket listener (to spot "Pending → Confirmed")
+  const bookingsRef = useRef(state.bookings);
+  useEffect(() => { bookingsRef.current = state.bookings; }, [state.bookings]);
+  const showToastRef = useRef(null);
+
   useEffect(() => {
     if (user?.id) {
       api.bookings.listByCustomer(user.id).catch(console.error);
@@ -196,6 +201,13 @@ export const CustomerProvider = ({ children }) => {
     // and refresh the wallet right away (cashback credited / wallet used refunded on the server).
     socket.on('booking_updated', (b) => {
       if (!b || !user?.id || String(b.customerId) !== String(user.id)) return;
+      // Salon confirmed my waiting booking → confirmation sound + message
+      const id = b._id || b.id;
+      const before = (bookingsRef.current || []).find((x) => (x.id || x._id) === id);
+      if (before?.status === 'Pending' && b.status === 'Confirmed') {
+        handleRealtimeBookingAlert({ type: 'BOOKING_CONFIRMED', booking: b, role: 'customer' });
+        showToastRef.current?.(`✅ ${b.salonName || 'Salon'} confirmed your booking for ${b.time}`);
+      }
       dispatch({ type: 'SET_BOOKINGS', payload: [{ ...b, id: b._id || b.id }] });
       if (localStorage.getItem('instaatrim_token')) api.customers.fetchMyProfile().catch(() => {});
     });
@@ -450,6 +462,7 @@ export const CustomerProvider = ({ children }) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   }, []);
+  useEffect(() => { showToastRef.current = showToast; }, [showToast]);
 
   const addToCart = useCallback(
     (rawService, salon) => {
@@ -662,6 +675,8 @@ export const CustomerProvider = ({ children }) => {
         bookingMode: bookingSlot.type,
         dateKey: bookingSlot.dateKey,
         time: bookingSlot.type === 'Instant' ? 'Within 15 mins' : bookingSlot.time,
+        // other times (same day) the customer is OK with — the salon confirms one
+        altTimes: bookingSlot.type === 'Instant' ? [] : (Array.isArray(bookingSlot.altTimes) ? bookingSlot.altTimes : []),
         services: cartItems.length > 0 ? cartItems.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity || 1, duration: i.duration })) : bookingData.items || [],
         totalAmount: cartSummary.subtotal,
         discountAmount: cartSummary.discount,

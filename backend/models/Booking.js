@@ -11,6 +11,8 @@ const bookingSchema = new mongoose.Schema({
   bookingMode: { type: String, enum: ['Scheduled', 'Instant'], default: 'Scheduled' },
   dateKey: { type: String }, // e.g. "2026-10-02"
   time: { type: String }, // e.g. "11:00 AM" or "Within 15 mins"
+  // Scheduled booking: up to 2 more times (same day) the customer is OK with — salon confirms one
+  altTimes: [{ type: String }],
   services: [
     {
       id: { type: String },

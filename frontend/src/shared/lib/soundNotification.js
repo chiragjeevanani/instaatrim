@@ -89,7 +89,8 @@ export const handleRealtimeBookingAlert = ({ type, booking, role = 'salon' }) =>
   }
 
   const isCreated = type === 'BOOKING_CREATED';
-  const soundType = isCreated ? 'ringtone' : 'alert';
+  const isConfirmed = type === 'BOOKING_CONFIRMED'; // customer: salon confirmed my booking
+  const soundType = isCreated || isConfirmed ? 'ringtone' : 'alert';
 
   // 1. Play sound
   playNotificationSound(soundType);
@@ -99,11 +100,14 @@ export const handleRealtimeBookingAlert = ({ type, booking, role = 'salon' }) =>
     try {
       let title = '';
       let body = '';
-      const tag = `${isCreated ? 'booking' : 'cancel'}-${bookingId}`;
+      const tag = `${isCreated ? 'booking' : isConfirmed ? 'confirm' : 'cancel'}-${bookingId}`;
 
       if (type === 'SYSTEM_BROADCAST') {
         title = booking.customerName || 'DrimStyle Announcement 📢';
         body = booking.salonName || 'You have a new update from DrimStyle.';
+      } else if (isConfirmed) {
+        title = 'Booking Confirmed ✅';
+        body = `${booking.salonName || 'The salon'} confirmed your booking for ${booking.time || ''} (#${bookingId})`;
       } else if (isCreated) {
         title = role === 'admin'
           ? `New Booking: ${booking.salonName || 'Partner Salon'} 🎉`

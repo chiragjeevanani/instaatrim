@@ -309,8 +309,13 @@ exports.createBooking = async (req, res) => {
 
         // The booking always belongs to the logged-in customer (never an id sent by the app)
         bookingData.customerId = identify(req).customerId;
-        // A new booking starts as Confirmed (default) or Pending — never as Completed etc.
-        if (!['Pending', 'Confirmed'].includes(bookingData.status)) delete bookingData.status;
+        // A new booking starts as Pending (scheduled: waits for the salon to confirm a time)
+        // or Confirmed (instant seat) — never as Completed etc.
+        bookingData.status = bookingData.bookingMode === 'Instant' ? 'Confirmed' : 'Pending';
+        // Extra times the customer is OK with (same day, max 2, valid & not already passed)
+        bookingData.altTimes = bookingData.bookingMode === 'Instant' ? [] : [...new Set((Array.isArray(bookingData.altTimes) ? bookingData.altTimes : [])
+            .map((t) => String(t || '').trim())
+            .filter((t) => clockToMinutes(t) !== null && t !== bookingData.time && !isPastIndiaSlot(bookingData.dateKey, t)))].slice(0, 2);
 
         // A time slot that has already passed can never be booked (e.g. an old saved "10:30 AM" reused later)
         if (bookingData.bookingMode !== 'Instant' && isPastIndiaSlot(bookingData.dateKey, bookingData.time)) {
@@ -508,7 +513,7 @@ exports.updateBookingStatus = async (req, res) => {
         const { id } = req.params;
         const { status, cancelReason } = req.body;
 
-        const current = await Booking.findById(id).select('status salonId customerId').lean();
+        const current = await Booking.findById(id).select('status salonId customerId dateKey time altTimes staffId staffName services.duration services.quantity').lean();
         const role = current ? bookingAccess(req, current) : null;
         if (!current || !role) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -522,6 +527,39 @@ exports.updateBookingStatus = async (req, res) => {
 
         const updateData = { status };
         if (cancelReason) updateData.cancelReason = cancelReason;
+
+        // Salon confirms a waiting (Pending) booking at one of the customer's times
+        const confirmingPending = current.status === 'Pending' && status === 'Confirmed';
+        if (confirmingPending) {
+            const options = [current.time, ...(current.altTimes || [])].filter(Boolean);
+            const pickedTime = req.body.time ? String(req.body.time).trim() : current.time;
+            if (!options.includes(pickedTime)) {
+                return res.status(400).json({ success: false, code: 'INVALID_TIME', message: 'Please pick one of the times the customer asked for.' });
+            }
+            if (isPastIndiaSlot(current.dateKey, pickedTime)) {
+                return res.status(409).json({ success: false, code: 'SLOT_PASSED', message: `${pickedTime} has already passed. Please pick a later time or cancel the booking.` });
+            }
+            // Picked stylist already booked at the new time → don't double-book them
+            const newStart = clockToMinutes(pickedTime);
+            if (pickedTime !== current.time && current.staffId && current.dateKey && newStart !== null) {
+                const newEnd = newStart + bookingDurationMinutes(current);
+                const sameDay = await Booking.find({
+                    _id: { $ne: id },
+                    salonId: String(current.salonId),
+                    staffId: current.staffId,
+                    dateKey: current.dateKey,
+                    status: { $nin: NON_BLOCKING_STATUSES }
+                }).select('time services.duration services.quantity').lean();
+                const clash = sameDay.some((b) => {
+                    const s = clockToMinutes(b.time);
+                    return s !== null && newStart < s + bookingDurationMinutes(b) && s < newEnd;
+                });
+                if (clash) {
+                    return res.status(409).json({ success: false, code: 'STYLIST_BUSY', message: `${current.staffName || 'The stylist'} is already booked at ${pickedTime}. Please pick another time.` });
+                }
+            }
+            updateData.time = pickedTime;
+        }
 
         const booking = await Booking.findByIdAndUpdate(id, updateData, { new: true });
 
@@ -572,6 +610,27 @@ exports.updateBookingStatus = async (req, res) => {
             }
         }
 
+        // Customer's app: push (with sound) once the salon confirms their time
+        if (confirmingPending && booking.customerId) {
+            try {
+                const Customer = require('../models/Customer');
+                const cust = await Customer.findById(booking.customerId).select('fcmtoken fcmtokenweb').lean();
+                const tokens = [...new Set([cust?.fcmtoken, cust?.fcmtokenweb].filter((t) => t && typeof t === 'string'))];
+                for (const token of tokens) {
+                    await sendPushNotification(token, 'Booking Confirmed ✅', `${booking.salonName || 'The salon'} confirmed your booking for ${booking.time} on ${booking.dateKey} (#${booking._id})`, {
+                        type: 'BOOKING_CONFIRMED',
+                        bookingId: String(booking._id),
+                        salonId: String(booking.salonId || ''),
+                        sound: 'ringtone',
+                        tag: `confirm-${booking._id}`,
+                        link: '/customer/bookings'
+                    });
+                }
+            } catch (pushErr) {
+                console.error('[FCM] customer confirm push error:', pushErr.message);
+            }
+        }
+
         if (status === 'Cancelled') {
             notifyBookingFCM({
                 salonId: booking.salonId,
@@ -607,7 +666,9 @@ exports.rescheduleBooking = async (req, res) => {
             return res.status(409).json({ success: false, code: 'ILLEGAL_TRANSITION', message: `This booking is already ${current.status}.` });
         }
 
-        const booking = await Booking.findByIdAndUpdate(id, { dateKey, time, status: 'Confirmed' }, { new: true });
+        // A booking still waiting for the salon stays waiting (new time → salon confirms it again)
+        const changes = current.status === 'Pending' ? { dateKey, time, status: 'Pending', altTimes: [] } : { dateKey, time, status: 'Confirmed' };
+        const booking = await Booking.findByIdAndUpdate(id, changes, { new: true });
 
         if (!booking) {
             return res.status(404).json({ success: false, message: 'Booking not found' });

@@ -22,7 +22,7 @@ const PROGRESSION = [
 // bar regardless of the booking's actual status.
 const StatusProgress = ({ status }) => {
   if (status === BOOKING_STATUS.PENDING) {
-    return <p className="text-[10px] text-amber-700 font-bold pt-1.5 border-t border-stone-100">Awaiting salon confirmation</p>;
+    return <p className="text-[10px] text-amber-700 font-bold pt-1.5 border-t border-stone-100">Awaiting salon confirmation — the salon confirms your time within 15 mins</p>;
   }
   const currentIdx = PROGRESSION.indexOf(status);
   if (currentIdx === -1) return null;
@@ -239,6 +239,10 @@ export const BookingsPage = () => {
                       <span>{b.time}</span>
                     </div>
                   </div>
+                  {/* other times the customer is OK with (salon confirms one) */}
+                  {b.status === BOOKING_STATUS.PENDING && b.altTimes?.length > 0 && (
+                    <p className="text-[10.5px] text-stone-600 -mt-1">Also OK: <b>{b.altTimes.join(', ')}</b></p>
+                  )}
 
                   {/* Services */}
                   <ServiceLines b={b} />

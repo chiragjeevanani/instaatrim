@@ -79,6 +79,8 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
   const [bookingType, setBookingType] = useState(bookingSlot.type || 'Scheduled');
   const [selectedDayKey, setSelectedDayKey] = useState(bookingSlot.dateKey || days[1]?.key || days[0]?.key);
   const [selectedSlot, setSelectedSlot] = useState(null);
+  // up to 2 more times on the same day (2nd / 3rd choice) — the salon confirms one of them
+  const [extraSlots, setExtraSlots] = useState([]);
   const [isHoldingSlot, setIsHoldingSlot] = useState(false);
 
   const selectedDay = days.find((d) => d.key === selectedDayKey) || days[0];
@@ -126,7 +128,30 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
   // Reset slot when date changes
   useEffect(() => {
     setSelectedSlot(null);
+    setExtraSlots([]);
   }, [selectedDayKey, bookingType]);
+
+  // Tap a time: 1st tap = preferred time, next taps = 2nd / 3rd choice; tap again to remove
+  const toggleSlot = (slot) => {
+    if (!slot.available) return;
+    if (selectedSlot?.time === slot.time) {
+      setSelectedSlot(extraSlots[0] || null);
+      setExtraSlots(extraSlots.slice(1));
+    } else if (extraSlots.some((x) => x.time === slot.time)) {
+      setExtraSlots(extraSlots.filter((x) => x.time !== slot.time));
+    } else if (!selectedSlot) {
+      setSelectedSlot(slot);
+    } else if (extraSlots.length < 2) {
+      setExtraSlots([...extraSlots, slot]);
+    } else {
+      showToast('You can pick up to 3 times');
+    }
+  };
+  const choiceNo = (slot) => {
+    if (selectedSlot?.time === slot.time) return 1;
+    const i = extraSlots.findIndex((x) => x.time === slot.time);
+    return i === -1 ? 0 : i + 2;
+  };
 
   if (!isBookingFlowOpen) return null;
 
@@ -171,6 +196,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
           dateKey: dateKey(new Date()),
           date: 'Today',
           time: instantAvailability.slot.time,
+          altTimes: [],
           ...keepPickedStylist(prev, instantAvailability.slot.staffId),
           holdId: hold.id,
           holdExpiresAt: hold.expiresAt,
@@ -203,6 +229,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
           dateKey: selectedDay.key,
           date: selectedDay.isToday ? 'Today' : selectedDay.label,
           time: selectedSlot.time,
+          altTimes: extraSlots.map((x) => x.time),
           ...keepPickedStylist(prev, selectedSlot.staffId),
           holdId: hold.id,
           holdExpiresAt: hold.expiresAt,
@@ -553,6 +580,7 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                       <label className="text-[10.5px] font-bold text-stone-600 mb-1.5 block uppercase tracking-wider">
                         Select Start Time
                       </label>
+                      <p className="text-[10px] text-stone-500 -mt-1 mb-1.5">Pick up to 3 times (1st = your preferred). The salon confirms one within 15 mins.</p>
                       {daySlots.length === 0 ? (
                         <div className="flex items-start gap-2 bg-stone-100 border border-stone-200 rounded-xl p-3">
                           <AlertCircle className="w-4 h-4 text-stone-500 shrink-0 mt-0.5" />
@@ -564,19 +592,22 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                             <button
                               key={slot.time}
                               disabled={!slot.available}
-                              onClick={() => setSelectedSlot(slot)}
+                              onClick={() => toggleSlot(slot)}
                               className={`py-1.5 px-1 text-[11px] rounded-lg font-medium text-center border transition-all flex flex-col items-center justify-center gap-0.5 ${
-                                !slot.available 
+                                !slot.available
                                   ? 'border-stone-100 bg-stone-50 text-stone-400 opacity-60 cursor-not-allowed'
                                   : selectedSlot?.time === slot.time
                                     ? 'border-brand-maroon bg-brand-maroon text-white font-bold shadow-xs'
-                                    : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50 cursor-pointer'
+                                    : choiceNo(slot) > 1
+                                      ? 'border-brand-maroon bg-rose-50 text-brand-maroon font-bold cursor-pointer'
+                                      : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50 cursor-pointer'
                               }`}
                             >
                               <div className="flex items-center gap-1">
                                 {selectedSlot?.time === slot.time && <CheckCircle2 className="w-3 h-3" />}
                                 <span>{slot.time}</span>
                               </div>
+                              {choiceNo(slot) > 0 && <span className="text-[8px] uppercase tracking-wider font-black">{['', '1st choice', '2nd choice', '3rd choice'][choiceNo(slot)]}</span>}
                               {!slot.available && <span className="text-[8.5px] font-bold text-rose-500 uppercase">Booked</span>}
                             </button>
                           ))}
@@ -729,6 +760,9 @@ export const BookingFlowModal = ({ salonId: propSalonId }) => {
                       <p className="text-xs font-bold text-stone-900">
                         {bookingSlot.type === 'Instant' ? `Today (${bookingSlot.time})` : `${bookingSlot.date} at ${bookingSlot.time}`}
                       </p>
+                      {bookingSlot.type !== 'Instant' && bookingSlot.altTimes?.length > 0 && (
+                        <p className="text-[10.5px] text-stone-600 mt-0.5">Also OK: <b>{bookingSlot.altTimes.join(', ')}</b></p>
+                      )}
                       <p className="text-[10.5px] text-stone-500 mt-0.5">{salon.address}</p>
                     </div>
                   </div>

@@ -210,6 +210,17 @@ export const SalonBookingsPage = () => {
                     </div>
 
                     <div onClick={(e) => e.stopPropagation()}>
+                      {/* Waiting booking → open details to confirm one of the customer's times */}
+                      {b.status === 'Pending' && (
+                        <button
+                          onClick={() => setSelectedBooking(b)}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-[10px] rounded-lg shadow-2xs transition-transform flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3 h-3 stroke-[2]" />
+                          <span>Confirm Time</span>
+                        </button>
+                      )}
+
                       {b.status === 'Confirmed' && (
                         <button
                           onClick={() => checkInCustomer(b.id)}
